@@ -40,7 +40,7 @@ policy :: PubKeyHash -> Scripts.MintingPolicy
 policy pkh = mkMintingPolicyScript $
     $$(PlutusTx.compile [|| Scripts.wrapMintingPolicy . mkPolicy ||])
     `PlutusTx.applyCode`
-    (PlutusTx.liftCode pkh)
+    PlutusTx.liftCode pkh
 
 curSymbol :: PubKeyHash -> CurrencySymbol
 curSymbol = scriptCurrencySymbol . policy
