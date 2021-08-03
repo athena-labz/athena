@@ -3,9 +3,60 @@ DigiServices is a Cardano-based project that aims to be a trustworthy,
 reward-driven, platform for goods and service exchanges
 
 ## Table of Contents
+* [Tokenomics](#tokenomics)
+  * [Supply](#supply)
 * [Alice and Bob example](#alice-and-bob-example)
 * [White Paper](#white-paper)
   * [Abstract](#abstract)
+
+## Tokenomics
+
+### Supply
+
+Differently from traditional currencies, such as Bitcoin, Litecoin and Ethereum,
+DigiServices tokens (DSET) are not deflationary. This is important in order to
+incentivise cooperative and honest behaviour in the platform.
+
+A fixed amount of DSET tokens is monthly minted and distributed according to a
+Credit Assesment System (CAS). Users receive tokens proportionally to their
+scores, obeying the following function:
+
+```haskell
+-- The total amount of tokens that will be minted every month
+totalAmt :: Int
+totalAmt = 1000
+
+-- Review is an integer between 0 and 100
+calculateRewards :: [Review] -> [Int]
+calculateRewards [] = []
+calculateRewards (x:xs) = ((x `div` revSum) * totalAmt `div` 100) : calculateRewards xs
+  where
+    revSum :: Integer
+    revSum = sum xs
+```
+
+### Distribution
+
+**Need development**
+
+### Utility
+
+In order to ensure that dishonest parties are penalised, DigiServices makes it
+possible for service providers to lock an arbitrary amount of tokens inside
+their proposal in the marketplace and require that their client do the same. In
+this way, not only both know that each other is sufficiently honest to have this
+amount of tokens, but they can also use it as a pledge in case there is a conflict.
+
+In this sense, DSET utility is to provide a good measure of honesty inside the
+platform and ensure parties are not violated, as well as, possibly in the
+future be used as a voting mechanism to ensure decentralisation in the platform.
+
+### Network
+
+Because users receive rewards for being active, inviting new members and
+mantaining a good reputation, the network is benefited as a whole. Not only does
+DSET creates a viable way of classifying someone's honesty, but it also
+incentivises constant use of the platform and good services provion.
 
 ## Alice and Bob example
 
