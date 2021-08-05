@@ -33,6 +33,7 @@ instance Eq ServiceState where
   _ == _ = False
 
 PlutusTx.unstableMakeIsData ''ServiceState
+PlutusTx.makeLift ''ServiceState
 
 data Service = Service
   { publisher :: PubKeyHash, -- The pkh of the person that published this service
@@ -42,13 +43,14 @@ data Service = Service
     trust :: Value,
     state :: ServiceState -- Indicates the service availability
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
 instance Eq Service where
   (Service pu ti d pr tr s) == (Service pu' ti' d' pr' tr' s') =
     pu == pu' && ti == ti' && d == d' && pr == pr' && tr == tr' && s == s'
 
 PlutusTx.unstableMakeIsData ''Service
+PlutusTx.makeLift ''Service
 
 -- Defaults for debugging purposes
 {-# INLINEABLE defPrice #-}
