@@ -44,7 +44,7 @@ The token will have a total supply of 100 billion, the distribution of which wil
    ● 10% - Marketing Partner
    ● 10% - Public Sale
    
-## Membership Rewards
+#### Membership Rewards
 A coefficient determines distribution weight for each member.
 I suggest a weighted average including:
 1 – no. of tx per period 
