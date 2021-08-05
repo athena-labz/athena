@@ -41,22 +41,17 @@ calculateRewards (x:xs) = ((x `div` revSum) * totalAmt `div` 100) : calculateRew
 
 ### Utility
 
-In order to ensure that dishonest parties are penalised, DigiServices makes it
-possible for service providers to lock an arbitrary amount of tokens inside
-their proposal in the marketplace and require that their client do the same. In
-this way, not only both know that each other is sufficiently honest to have this
-amount of tokens, but they can also use it as a pledge in case there is a conflict.
+In order to de-incentive dishonest behaviour, DigiServices makes it
+possible for service providers to lock an arbitrary amount of tokens (Trust Token, TT) into
+the contract proposal in the marketplace and request from the client the same amount. In
+this way, there is commitment by both parties and a pledge in case of a conflict.
 
-In this sense, DSET utility is to provide a good measure of honesty inside the
-platform and ensure parties are not violated, as well as, possibly in the
-future be used as a voting mechanism to ensure decentralisation in the platform.
+Thus DSET utility provides the basis for a trustworthy platform by setting a good measure of reliability through the CAS (Credit Assessment Systm);
+furthermore it is an important element for the decentralized voting mechanism about the platform development.
 
 ### Network
 
-Because users receive rewards for being active, inviting new members and
-mantaining a good reputation, the network is benefited as a whole. Not only does
-DSET creates a viable way of classifying someone's honesty, but it also
-incentivises constant use of the platform and good services provion.
+Users'activiy is rewarded: inviting new members, acting as a judge, scoring a high CAS provide benefit for the member and for the platform as a whole. 
 
 ## Alice and Bob example
 
