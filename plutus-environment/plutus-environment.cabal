@@ -1,7 +1,7 @@
 Cabal-Version:       2.4
 Name:                plutus-environment
 Version:             0.1.0.0
-Author:              Mateus Santos, Gabriele Castaldi, Samuel Santos
+Author:              The DigiServices developers
 Maintainer:          santos.mateus@protonmail.com, vareca@live.com, samuelssan28@gmail.com
 Build-Type:          Simple
 Copyright:           © 2021 Mateus Santos, Gabriele Castaldi, Samuel Santos
@@ -11,6 +11,8 @@ License-files:       LICENSE
 library
   hs-source-dirs:      src
   exposed-modules:     DSET
+                     , MarketHandler
+                     , Test
   build-depends:       aeson
                      , base ^>=4.14.1.0
                      , containers
@@ -22,6 +24,7 @@ library
                      , plutus-ledger-api
                      , plutus-tx-plugin
                      , plutus-tx
+                     , plutus-use-cases
                      , text
   default-language:    Haskell2010
-  ghc-options:         -Wall -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas -fno-strictness -fno-spec-constr -fno-specialise -fplugin-opt PlutusTx.Plugin:defer-errors
+  ghc-options:         -Wall -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas -fno-strictness -fno-spec-constr -fno-specialise
