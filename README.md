@@ -165,4 +165,5 @@ in our current society.
 ## White Paper
 
 ### Abstract
+Abstract
 The growing need of goods and services exchange require a trustworthy social platform to act as escrow. Even though physical contracts appear to provide a solution, they are often misinterpreted because of their subjective language and they commonly lack the practicality needed in our digital word. We propose a platform that enables parties to create contracts stored in the Cardano blockchain and builds member trust based on token rewards calculated through an algorithm that collects statistics related to the service transactions and returns the amount of tokens per hour that will be rewarded. Parties that refuse to follow the rules pre-defined in the contract will be penalized by losing tokens proportionally to the severity of their misbehavior.
