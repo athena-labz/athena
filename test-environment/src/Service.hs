@@ -19,13 +19,18 @@ import GHC.Generics (Generic)
 import Ledger (PubKeyHash, Value, pubKeyHash)
 import Ledger.Value as Value (geq, singleton)
 import qualified PlutusTx
-import PlutusTx.Prelude (Bool, ByteString, ($))
+import PlutusTx.Prelude (Bool (False, True), ByteString, Eq, ($), (&&), (==))
 import Wallet.Emulator.Wallet (Wallet (Wallet), walletPubKey)
 import Prelude (Semigroup (..), Show (..))
 import qualified Prelude
 
 data ServiceState = Available | Sold
   deriving (Show, Generic, FromJSON, ToJSON, Prelude.Eq)
+
+instance Eq ServiceState where
+  Available == Available = True
+  Sold == Sold = True
+  _ == _ = False
 
 PlutusTx.unstableMakeIsData ''ServiceState
 
@@ -37,17 +42,24 @@ data Service = Service
     trust :: Value,
     state :: ServiceState -- Indicates the service availability
   }
-  deriving (Show, Generic, FromJSON, ToJSON, Prelude.Eq)
+  deriving (Show, Generic, FromJSON, ToJSON)
+
+instance Eq Service where
+  (Service pu ti d pr tr s) == (Service pu' ti' d' pr' tr' s') =
+    pu == pu' && ti == ti' && d == d' && pr == pr' && tr == tr' && s == s'
 
 PlutusTx.unstableMakeIsData ''Service
 
 -- Defaults for debugging purposes
+{-# INLINEABLE defPrice #-}
 defPrice :: Value
 defPrice = singleton "ff" "DSET" 300
 
+{-# INLINEABLE defTrust #-}
 defTrust :: Value
 defTrust = singleton "ff" "DSET" 30
 
+{-# INLINEABLE defService #-}
 defService :: Service
 defService =
   Service
@@ -59,10 +71,10 @@ defService =
       state = Available
     }
 
-{-# INLINABLE paidOffer #-}
+{-# INLINEABLE paidOffer #-}
 paidOffer :: Value -> Value -> Service -> Bool
 paidOffer input output s = output `geq` (input <> trust s)
 
-{-# INLINABLE paidRequest #-}
+{-# INLINEABLE paidRequest #-}
 paidRequest :: Value -> Value -> Service -> Bool
 paidRequest input output s = output `geq` (input <> trust s <> price s)
