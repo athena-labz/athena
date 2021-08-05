@@ -184,3 +184,96 @@ in our current society.
 ### Abstract
 Abstract
 The growing need of goods and services exchange require a trustworthy social platform to act as escrow. Even though physical contracts appear to provide a solution, they are often misinterpreted because of their subjective language and they commonly lack the practicality needed in our digital word. We propose a platform that enables parties to create contracts stored in the Cardano blockchain and builds member trust based on token rewards calculated through an algorithm that collects statistics related to the service transactions and returns the amount of tokens per hour that will be rewarded. Parties that refuse to follow the rules pre-defined in the contract will be penalized by losing tokens proportionally to the severity of their misbehavior.
+
+
+DigiServices Features
+Intuitive
+Create Smart Contracts in a few clicks, assisted also by an advanced interactive drag and drop editor
+Marketplace
+Cut the cost: relying on available templates
+All In-Platform
+Creating your smart legal contract, negotiate clauses with your client with an integrated dispute resolution system.
+High Customizability
+Ready made templates, clauses, and logical flows allow users to build flexible and versatile smart legal contracts for any need.
+
+The Problem - Non-Payment and Non-Delivery Crimes
+The internet 2.0 revolution started end of the 90s solved a wide range of problems and vastly increased economic efficiency. But this revolution did very little to modernize our legal systems, which have not kept pace with technological and economic progress. Non-Payment and Non-Delivery Crimes show an exponential grow and accounted in Y2020 for 265 mio. USD losses in the US only (1). In general cyber crimes are sky-rocketing to level still hard to foresee. 
+
+The Digiservices Solution
+The solution proposed by Digiservices aims to overcome the limits of physical contracts.  Misinterpretation due to subjective language and the innate  lack of easy-handling make them useless to tackle the issue.
+TdigiSerivces is  a platform that enables parties to create contracts stored in the Cardano blockchain and builds member trust based on token rewards and penalties, supported by a Credit Assessesment System (CAS) able to address every platform member. An algorithm collects statistics related to the service transactions, credit score, activity and returns the amount of tokens that will be rewarded. 
+Furthermore parties that refuse to follow the rules pre-defined in the contract will be penalized by losing tokens proportionally to the severity of their misbehavior.
+
+
+No anonymity
+Holding and transfer of DSET Tokens and use of the DigiServices platform ( will not be anonymous. Your address and such participation will be
+recorded on a permissionless blockchain. It is possible to match addresses to
+identities.
+
+Governance
+Digiservices is a platform that is developed with a community in mind, and as such it is only right that the community has a say over the direction of the platform. As such, Digiservices will implement a governance system using DSET tokens. These tokens will allow users of the platform to vote on proposed changes such as fee changes, safety protocol changes etc.
+
+The token will have a total supply of 100 million, the distribution of which will be as follows:
+   ● 50% - Users
+   ● 20% - Development Fund
+   ● 10% - Team
+   ● 10% - Delegators
+   ● 10% - Public Sale
+
+
+Voting
+Voting on the platform will utilize the quadratic voting method, whereby voting power of an individual user is proportional to the square root of their investment amount. This method, along with other precautions, prevent so-called 'whale' investors from gaining control of the voting process and denying other users the ability to cast votes.
+
+
+Utility token DSET
+Blockchain can be used to create decentralized ecosystems in which a token is issued in order to fund and assist the development of an ecosystem and that can be later used to purchase goods /services or being an integral part of a service itself, benefiting from the advantages of a decentralized structure, eliminating or reducing the presence of a central intermediary body, thus
+allowing the value shift from the center to the ends.
+DigiServices’ vision encompasses this model where the blockchain is used to create a truly decentralized self-sustaining ecosystem. DigiServices strongly believes that the future of the internet lies in services powered by utility tokens, improving existing services with new paradigms that cannot be achieved in the absence of a distributed ledger.
+
+Nature and uses of the DSET Token
+DSET token is a hybrid token that has both utility token characteristics and payment token characteristics. The DSET token is the token on which the ecosystem is based. 
+Parties to a contractual relationship and members need DSET tokens for:
+● Service transactions payments (depositing escrows(
+● Trust Token Deposit
+purchasing Smart Legal Contracts templates (both purchase fees paid to
+creators and commissions on revenue paid by creators to Jur);
+● Conflict fees payments
+● Penalties payments
+● Rewards accruals
+
+
+
+Business model
+DigiServices believes that a decentralized economy must provide mechanisms for sustaining the platform that supports this trustworthy system
+
+DigiService’s choice is to adopt a flexible mechanism, which can be expanded or reduced according to the needs of the project and feedback from the members community.
+DigiService therefore anticipates the use of fees and reserves the right to reduce or increase them on the basis of the progress of the project and the value of the DSET Token.
+The following fees payable to DigiServices  apply at the moment:
+● one-time membership fees
+● accusation contract fees
+● transaction fees for escrow 
+● gas fees
+
+Conflict Event
+to be completed
+
+Judges Selection Mechanism and Trustworthiness Assessment
+to be completed
+
+CAS (Credit Assessment System) – Trustworthiness Ground
+to be completed
+
+
+Judges Inputs – AI-supported deterministic decisions → for MVP to be done ‘manually’
+Judges are expected to provide ‘Inputs’ on occasion of ‘Conflict Event’.
+Deterministic inputs are a pre-condition to assure a smooth and just conflict settlement. For this purpose trustworthy judges are required as well as pre-made contract clauses selected by DigiServices as those less prone to misunderstanding and misbehavior. The selection occurs through an integrated machine learning process trained through past transaction cases and which keep accumulating knowledge and thus reliability.
+
+Rewards and Penalty Systems
+to be completed
+
+Timeline
+DigiServices aims to launch an early version of the platform in Dec. 2021. leveraging smart contracts availability on the Cardano blockchain mainnet. 
+
+
+Sources
+(1) Statista 2021
