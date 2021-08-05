@@ -46,50 +46,49 @@ possible for service providers to lock an arbitrary amount of tokens (Trust Toke
 the contract proposal in the marketplace and request from the client the same amount. In
 this way, there is commitment by both parties and a pledge in case of a conflict.
 
-Thus DSET utility provides the basis for a trustworthy platform by setting a good measure of reliability through the CAS (Credit Assessment Systm);
-furthermore it is an important element for the decentralized voting mechanism about the platform development.
+Thus DSET utility provides the basis for a trustworthy platform by setting a good measure of
+reliability through the CAS (Credit Assessment System);furthermore it is an important element
+for the decentralized voting mechanism about the platform development.
 
 ### Network
 
-Users'activiy is rewarded: inviting new members, acting as a judge, scoring a high CAS provide benefit for the member and for the platform as a whole. 
+Users'activiy is rewarded: inviting new members, acting as a judge, scoring a high CAS provide
+benefit for the member and for the platform as a whole. 
 
 ## Alice and Bob example
 
-Suppose Alice want’s to offer her services as a writer. In normal circunstances
+Suppose Alice wants to offer her services as a writer. In normal circumstances
 she could search for a publishing company and sign a contract with them.
-The problem, in this case, is that natural language contracts open doors for
-ambiguity and misinterpretation. Additionally, physical contracts do not fit the
-requirements of practicallaty and quickness.
+The problem, in this case, is that natural language contracts is open to
+ambiguity and misinterpretation. Additionally, physical contracts draw-backs
+are convenience and drafting management.
 
-Another approach, would be for Alice to access an online website focused on
-freelance jobs (e.g. Fiverr or Upwork). In this case, alongside with the
+For Alice an alternative would be to access an online website focused on
+freelancer jobs (e.g. Fiverr or Upwork). In this case, alongside with the
 ambiguity and flexibility problems (as these websites usually make use of
 pre-made natural language contracts), there could be the possibility of Alice
 not delivering the project or even of the client not paying the agreed amount.
 
-To solve these issues, we propose DigiServices: a digital platform that, by
-making use of Cardano smart contracts, enables parties to offer their services
-in a trustfull manner avoiding misinterpratation or ambiguity and using a
-reputation system that penalizes dishonest parties and reward honest ones.
+DigiServices tackles and solves these issues. A Cardano-smart-contract-based 
+digital platform enables parties to offer their services avoiding misinterpratation
+and ambiguity and leveraging a reputation system that penalizes dishonest parties
+and reward honest ones.
 
-Simmilarly to the second example, with DigiServices Alice would be able to
-access a user-friendly web application and publish her service there. One of the
-key differences, though, would be that this service would not be stored inside a
-centralized database, but, rather, inside the Datum of a Plutus Validator called
-marketplace.
+Likewise freelancer online websites, through DigiServices Alice would be able to
+access a user-friendly web application and publish her service. One of the key 
+differences, though, will be the service not to be stored inside a centralized
+database; the Datum of a Plutus Validator called 'marketplace' will store it.
 
 The Datum of the marketplace contains a list of `Service`s. `Service` is a special
 data type that holds four values: A `Title`, a `Description`, a `Price` and a
 `Signature` symbol.
 
-The first value (title) is the service Alice will provide (e.g. "Novel writer").
-The second value (description) can contain a little bit of her background
-and should provide a nice explanation of what she will do (only for marketing
-reasons since it shoudn't affect the judge decision in case of a conflict). The
-third value (price) is the amount of DSET tokens the client should pay in order
+The first value (Title) is the service Alice will provide (e.g. "Novel writer").
+The second value (Description) will expand on her background, including an extended 
+explanation of what she will do. This content is qualitatively explained and will not
+the judge decision in the event of a conflict. The third value (Price) is the amount of DSET tokens the client should pay in order
 to receive the service.
-
-The last value (signature) is a non-fungible token that is only valid if it
+The last value (Signature) is a non-fungible token NFT, valid only valid if it
 contains a cryptographic signature resulted from the combination of the owner’s
 private key and the `Accusation Contract` validator hash.
 
@@ -108,15 +107,14 @@ data Sig = Sig { signatory          :: Ledger.PubKeyHash
                } deriving (Eq, Show)
 ```
 
-This means that the signature can be used to prove someone agreed with a
-determined contract.
+The signature proves that someone agreed with a determined contract.
 
 In our example, Alice would first create an accusation contract. Let’s suppose
 she uses Charlie, Daniel and Emma public keys as the list of judges.
 Additionally, let’s say the inputs are `“Was a book actually written and
 delivered?”`, `“Did it have more than 200 pages”` and `“Was the
 client collaborative, providing any information needed?”`. Lastly, let’s
-say the logic written was the following:
+assume the written logic was the following:
 
 ```haskell
 type ClientTokens = Int
@@ -136,32 +134,35 @@ distributeTokens inp1 inp2 inp3 totalAmt =
     judgeAmt = totalAmt `div` 20
 ```
 
-Bob could then, agreeing with the contract and seeing that Alice's judges are
-reliable and qualified, decide to actually request her services. For that
+Bob could agree with the contract and see that Alice's judges are
+reliable and qualified and decide to actually request her services. For that
 he would need to provide his signature token and lock the same amount of trust
-tokens provided by Alice, as well as, the amount of DSET Alice set as her
-service price.
+tokens TT provided by Alice, as well as, the amount of DSET Alice set as her
+service price. Let us assume TT + Service fees = 60 DSET.
 
-Supposing Alice is rebellious, though, and decide's to write a book with only
-100 pages (contrary to the rules she herself defined), Bob could invoke an
-"Accuse" event inside the accusation contract, which would notify the first
-judge in the list (Charlie) and give him a hardcoded fixed deadline (e.g. 24h)
+Supposing Alice is not meeting the agreed terms and decides to write a book with
+only 100 pages (against the rules she herself defined and confirmed), Bob could
+invoke an "Accuse" event inside the "accusation contract", which would notify the 
+first judge in the list (Charlie) and give him a hardcoded fixed deadline (e.g. 24h)
 to provide answers to the inputs defined by Alice ("Was a book actually...").
 
-If he does, then the logic will be executed according to the inputs provided
-(e.g. `(True, False, True)`) and would distribute the tokens accordingly.
-Because of how the contract was defined, Alice would receive nothing, Bob 57 TT
+If he does, then the logic will be executed according to the inputs, provided
+to each of the terms (e.g. `(True, False, True)`) and would distribute the tokens 
+according to the agreed contract terms.
+Because of the contract conditions, Alice would receive nothing, Bob 57 TT
 and Charlie 3 TT. It is possible, though, that Charlie does not respond within
 the deadline. In this case, the next judge in the list will be notified and the
 cycle repeat.
 
 Of course, in our example Bob was the one to invoke the accusation, but nothing
 stops Alice to do the same in case Bob is not cooperative and does not follow
-the agreed rules. DigiServices, therefore proves to be a great way of making
-sure contracts are followed, eliminating ambiguity normally attached to natural
-language contracts and providing the ease of use so valued in our current world.
+the agreed rules. DigiServices aims at preventive Non-Payment-Non-Delivery crimes,
+assuring through contract conditions a deterministic result for unsatisfactory 
+outcomes. This is achieved eliminating ambiguity normally attached to natural
+language contracts and providing the ease of use extremely valubale and necessary
+in our current society.
 
 ## White Paper
 
 ### Abstract
-The growing need of goods and services exchange require a trusty social platform to act as escrow. Even though physical contracts appear to provide a solution, they are often misinterpreted because of their subjective language and they commonly lack the practicality needed in our digital word. We propose a platform that enables parties to create contracts stored in the Cardano blockchain and builds member trust based on token rewards calculated through an algorithm that collects statistics related to the service or good provided and returns the amount of tokens per hour that will be rewarded. Parties that refuse to follow the rules pre-defined in the contract will be penalized by losing tokens proportionally to the severity of their misbehavior.
+The growing need of goods and services exchange require a trustworthy social platform to act as escrow. Even though physical contracts appear to provide a solution, they are often misinterpreted because of their subjective language and they commonly lack the practicality needed in our digital word. We propose a platform that enables parties to create contracts stored in the Cardano blockchain and builds member trust based on token rewards calculated through an algorithm that collects statistics related to the service transactions and returns the amount of tokens per hour that will be rewarded. Parties that refuse to follow the rules pre-defined in the contract will be penalized by losing tokens proportionally to the severity of their misbehavior.
