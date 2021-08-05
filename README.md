@@ -155,7 +155,7 @@ Bob could agree with the contract and see that Alice's judges are
 reliable and qualified and decide to actually request her services. For that
 he would need to provide his signature token and lock the same amount of trust
 tokens TT provided by Alice, as well as, the amount of DSET Alice set as her
-service price. Let us assume TT + Service fees = 60 DSET.
+service price. Let us assume Trust Token + Service fees = 60 DSET.
 
 Supposing Alice is not meeting the agreed terms and decides to write a book with
 only 100 pages (against the rules she herself defined and confirmed), Bob could
