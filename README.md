@@ -35,10 +35,27 @@ calculateRewards (x:xs) = ((x `div` revSum) * totalAmt `div` 100) : calculateRew
     revSum = sum xs
 ```
 
-### Distribution
+### Token Distribution
 
-**Need development**
+The token will have a total supply of 100 billion, the distribution of which will be as follows over a period of maximum 4 years:
+   ● 50% - Members, over a period of 4 years
+   ● 20% - Platform Development Fund
+   ● 10% - Core Team
+   ● 10% - Marketing Partner
+   ● 10% - Public Sale
+   
+## Membership Rewards
+A coefficient determines distribution weight for each member.
+I suggest a weighted average including:
+1 – no. of tx per period 
+2 – no. of acts as judge (judge activity is rewarded twice(
+3- root square of no. of tokens own in wallet → this is also the weight value for voting mechanism 
+Period: 3 months
 
+
+
+   
+   
 ### Utility
 
 In order to de-incentive dishonest behaviour, DigiServices makes it
