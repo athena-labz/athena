@@ -22,17 +22,17 @@ Credit Assesment System (CAS). Users receive tokens proportionally to their
 scores, obeying the following function:
 
 ```haskell
+type CAS = Integer
+
 -- The total amount of tokens that will be minted every month
-totalAmt :: Int
+totalAmt :: Integer
 totalAmt = 1000
 
--- Review is an integer between 0 and 100
-calculateRewards :: [Review] -> [Int]
-calculateRewards [] = []
-calculateRewards (x:xs) = ((x `div` revSum) * totalAmt `div` 100) : calculateRewards xs
-  where
-    revSum :: Integer
-    revSum = sum xs
+calculateReward :: CAS -> [CAS] -> Integer
+calculateReward score xs = (score `timesInteger` totalAmt) `div` sum xs
+
+calculateRewards :: [CAS] -> [Integer]
+calculateRewards xs = foldr (\x acc -> calculateReward x xs : acc) [] xs
 ```
 
 ### Distribution
@@ -41,32 +41,31 @@ calculateRewards (x:xs) = ((x `div` revSum) * totalAmt `div` 100) : calculateRew
 
 ### Utility
 
-In order to ensure that dishonest parties are penalised, DigiServices makes it
+In order to ensure that dishonest behavior is penalized, DigiServices makes it
 possible for service providers to lock an arbitrary amount of tokens inside
-their proposal in the marketplace and require that their client do the same. In
-this way, not only both know that each other is sufficiently honest to have this
-amount of tokens, but they can also use it as a pledge in case there is a conflict.
+their proposal in the marketplace and require the same by their client. These
+act as commitment as well as pledge in case there is a conflict.
 
-In this sense, DSET utility is to provide a good measure of honesty inside the
-platform and ensure parties are not violated, as well as, possibly in the
-future be used as a voting mechanism to ensure decentralisation in the platform.
+Thus DSET utility is set to provide an assurance of trust, rule compliance and
+honesty inside the platform. It serves further as a voting mechanism to ensure
+decentralization in the platform.
 
 ### Network
 
 Because users receive rewards for being active, inviting new members and
 mantaining a good reputation, the network is benefited as a whole. Not only does
 DSET creates a viable way of classifying someone's honesty, but it also
-incentivises constant use of the platform and good services provion.
+incentivises constant use of the platform and good services provision.
 
 ## Alice and Bob example
 
-Suppose Alice want’s to offer her services as a writer. In normal circunstances
+Suppose Alice want’s to offer her services as a writer. In normal circumstances
 she could search for a publishing company and sign a contract with them.
 The problem, in this case, is that natural language contracts open doors for
 ambiguity and misinterpretation. Additionally, physical contracts do not fit the
-requirements of practicallaty and quickness.
+requirements of practicality and quickness.
 
-Another approach, would be for Alice to access an online website focused on
+Another approach, would be for Alice to access an on-line website focused on
 freelance jobs (e.g. Fiverr or Upwork). In this case, alongside with the
 ambiguity and flexibility problems (as these websites usually make use of
 pre-made natural language contracts), there could be the possibility of Alice
@@ -74,13 +73,13 @@ not delivering the project or even of the client not paying the agreed amount.
 
 To solve these issues, we propose DigiServices: a digital platform that, by
 making use of Cardano smart contracts, enables parties to offer their services
-in a trustfull manner avoiding misinterpratation or ambiguity and using a
+in a trustful manner avoiding misinterpretation or ambiguity and using a
 reputation system that penalizes dishonest parties and reward honest ones.
 
-Simmilarly to the second example, with DigiServices Alice would be able to
+Similarly to the second example, with DigiServices Alice would be able to
 access a user-friendly web application and publish her service there. One of the
 key differences, though, would be that this service would not be stored inside a
-centralized database, but, rather, inside the Datum of a Plutus Validator called
+centralized database, but, rather, inside the Datum of a Plutus validator called
 marketplace.
 
 The Datum of the marketplace contains a list of `Service`s. `Service` is a special
@@ -90,7 +89,7 @@ data type that holds four values: A `Title`, a `Description`, a `Price` and a
 The first value (title) is the service Alice will provide (e.g. "Novel writer").
 The second value (description) can contain a little bit of her background
 and should provide a nice explanation of what she will do (only for marketing
-reasons since it shoudn't affect the judge decision in case of a conflict). The
+reasons since it shouldn't affect the judge decision in case of a conflict). The
 third value (price) is the amount of DSET tokens the client should pay in order
 to receive the service.
 
@@ -102,7 +101,7 @@ Example
 ```haskell
 import Ledger
 
--- Defined explicitily for clarity
+-- Defined explicitly for clarity
 signAccusation :: Ledger.Crypto.PrivateKey -> Ledger.ValidatorHash -> Signature
 signAccusation pk vh = Ledger.Crypto.sign vh pk
 
@@ -147,16 +146,16 @@ he would need to provide his signature token and lock the same amount of trust
 tokens provided by Alice, as well as, the amount of DSET Alice set as her
 service price.
 
-Supposing Alice is rebellious, though, and decide's to write a book with only
+Supposing Alice is rebellious, though, and decides to write a book with only
 100 pages (contrary to the rules she herself defined), Bob could invoke an
 "Accuse" event inside the accusation contract, which would notify the first
-judge in the list (Charlie) and give him a hardcoded fixed deadline (e.g. 24h)
+judge in the list (Charlie) and give him a hard-coded fixed deadline (e.g. 24h)
 to provide answers to the inputs defined by Alice ("Was a book actually...").
 
 If he does, then the logic will be executed according to the inputs provided
 (e.g. `(True, False, True)`) and would distribute the tokens accordingly.
-Because of how the contract was defined, Alice would receive nothing, Bob 57 TT
-and Charlie 3 TT. It is possible, though, that Charlie does not respond within
+Because of how the contract was defined, Alice would receive nothing, Bob 57 DSET
+and Charlie 3 DSET. It is possible, though, that Charlie does not respond within
 the deadline. In this case, the next judge in the list will be notified and the
 cycle repeat.
 
