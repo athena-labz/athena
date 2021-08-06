@@ -2,14 +2,16 @@
 DigiServices is a Cardano-based project that aims to be a trustworthy,
 reward-driven, platform for goods and service exchanges
 
-## Table of Contents
+Table of Contents
 * [Tokenomics](#tokenomics)
   * [Supply](#supply)
 * [Alice and Bob example](#alice-and-bob-example)
 * [White Paper](#white-paper)
   * [Abstract](#abstract)
+
+
 Abstract
-    1. Executive summary
+    *1. Executive summary
     2. The  Challenge and the Solution
     3. DigiServices Platform for Trustworthiness
     4. Protocols Implementation
