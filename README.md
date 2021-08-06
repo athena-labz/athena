@@ -24,7 +24,7 @@ reward-driven, platform for goods and service exchanges
   * [Conflict Event](#conflict-event)
   * [Judges Selection Mechanism and Trustworthiness Assessment](#judges-selection-mechanism-and-trustworthiness-assessment)
   * [CAS (#Credit Assessment System) – Trustworthiness Ground](#cas-credit-assessment-system--trustworthiness-ground)
-  * [Judges Inputs – AI-supported deterministic decisions → for MVP to be done ‘manually’](##judges-inputs--ai-supported-deterministic-decisions--for-mvp-to-be-done-manually’)
+  * [Judges Inputs – AI-supported deterministic decisions → for MVP to be done ‘manually’](#judges-inputs--ai-supported-deterministic-decisions--for-mvp-to-be-done-manually’)
   * [Rewards and Penalty Systems](#rewards-and-penalty-systems)
   * [Timeline](#timeline)
   * [Sources](#sources)
