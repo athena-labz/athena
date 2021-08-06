@@ -11,11 +11,16 @@ Table of Contents
 
 
 Abstract
-    *1. Executive summary
+    1. Executive summary
+    
     2. The  Challenge and the Solution
+    
     3. DigiServices Platform for Trustworthiness
+    
     4. Protocols Implementation
+    
     5. Timeline
+    
 
 ### Abstract
 The growing need of goods and services exchange require a trustworthy social platform to act as escrow and eliminate non-delivery/non-payment crime, one of the largest and further growing one. Even though physical contracts appear to provide a solution, they are often misinterpreted because of their subjective language and they commonly lack the practicality needed in our digital word. We propose a platform that enables parties to create contracts stored in the Cardano blockchain and builds member trust based on token rewards and penalties, supported by a Credit Assessesment system covering every platform member. An algorithm collects statistics related to the service transactions, credit score, activity and returns the amount of tokens that will be rewarded. 
