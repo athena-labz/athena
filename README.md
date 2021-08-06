@@ -2,76 +2,155 @@
 DigiServices is a Cardano-based project that aims to be a trustworthy,
 reward-driven, platform for goods and service exchanges
 
-## Table of Contents
+Table of Contents
 * [Tokenomics](#tokenomics)
   * [Supply](#supply)
 * [Alice and Bob example](#alice-and-bob-example)
 * [White Paper](#white-paper)
   * [Abstract](#abstract)
-  * [DigiServices Features](#digiservices-features)
-    * [Intuitive](#intuitive)
-    * [Marketplace](#marketplace)
-    * [All In-Platform](#all-in-platform)
-    * [High Customizability](#high-customizability)
-  * [The Problem - Non-Payment and Non-Delivery Crimes](#the-problem---non-payment-and-non-delivery-crimes)
-  * [The DigiServices Solution](#the-digiservices-solution)
-  * [No Anonimity](#no-anonymity)
-  * [Governance](#governance)
-  * [Voting](#voting)
-  * [Utility token DSET](#utility-token-dset)
-  * [Nature and uses of the DSET Token](#nature-and-uses-of-the-dset-token)
-  * [Business Model](#business-model)
-  * [Conflict Event](#conflict-event)
-  * [Judges Selection Mechanism and Trustworthiness Assessment](#judges-selection-mechanism-and-trustworthiness-assessment)
-  * [CAS (#Credit Assessment System) – Trustworthiness Ground](#cas-credit-assessment-system--trustworthiness-ground)
-  * [Judges Inputs – AI-supported deterministic decisions → for MVP to be done ‘manually’](#judges-inputs--ai-supported-deterministic-decisions--for-mvp-to-be-done-manually’)
-  * [Rewards and Penalty Systems](#rewards-and-penalty-systems)
-  * [Timeline](#timeline)
-  * [Sources](#sources)
 
-## Tokenomics
 
-### Supply
+Abstract
 
-Differently from traditional currencies, such as Bitcoin, Litecoin and Ethereum,
-DigiServices tokens (DSET) are not deflationary. This is important in order to
-incentivise cooperative and honest behaviour in the platform.
+    1. Executive summary
+    
+    2. The  Challenge and the Solution
+    
+    3. DigiServices Platform for Trustworthiness
+    
+    4. Protocols Implementation
+    
+    5. Timeline
+    
 
-A fixed amount of DSET tokens is monthly minted and distributed according to a
-Credit Assesment System (CAS). Users receive tokens proportionally to their
-scores, obeying the following function:
+### Abstract
+The growing need of goods and services exchange require a trustworthy social platform to act as escrow and eliminate non-delivery/non-payment crime, one of the largest and further growing one. Even though physical contracts appear to provide a solution, they are often misinterpreted because of their subjective language and they commonly lack the practicality needed in our digital word. We propose a platform that enables parties to create contracts stored in the Cardano blockchain and builds member trust based on token rewards and penalties, supported by a Credit Assessesment system covering every platform member. An algorithm collects statistics related to the service transactions, credit score, activity and returns the amount of tokens that will be rewarded. 
+Furthermore parties that refuse to follow the rules pre-defined in the contract will be penalized by losing tokens proportionally to the severity of their misbehavior.
+Digiservices strive for Trustworthiness implements policies to support just behavior and strongly penalize failures in fulfilling set agreements
 
-```haskell
-type CAS = Integer
+### 1. Executive summary  - DigiServices Features
+Digiservices strive for  Trustworthy Platform  excellence and for this purpose implements strict policies to support just behavior and strongly penalize failures in fulfilling set agreements.
 
--- The total amount of tokens that will be minted every month
-totalAmt :: Integer
-totalAmt = 1000
+# Intuitive
+Create Smart Contracts in a few clicks, assisted also by an advanced interactive drag and drop editor
+# Marketplace
+Cut the cost: relying on available templates
+# All In-Platform
+Creating your smart legal contract, negotiate clauses with your client with an integrated dispute resolution system.
+# High Customization
+Ready made templates, clauses, and logical flows allow users to build flexible and versatile smart legal contracts for any need.
 
-calculateReward :: CAS -> [CAS] -> Integer
-calculateReward score xs = (score `timesInteger` totalAmt) `div` sum xs
+### 2. The  Challenge and the Solution
+## The Problem - Non-Payment and Non-Delivery Crimes
+The internet 2.0 revolution started end of the 90s solved a wide range of problems and vastly increased economic efficiency. But this revolution did very little to modernize our legal systems, which have not kept pace with technological and economic progress. Non-Payment and Non-Delivery Crimes show an exponential grow and accounted in Y2020 for 265 mio. USD losses in the US only (1).  In general cyber crimes are sky-rocketing to level still hard to foresee. 
 
-calculateRewards :: [CAS] -> [Integer]
-calculateRewards xs = foldr (\x acc -> calculateReward x xs : acc) [] xs
-```
+## The Digiservices Solution
+The solution proposed by Digiservices aims to overcome the limits of physical contracts.  Misinterpretation due to subjective language and the innate  lack of easy-handling make them useless to tackle the issue.
+DigiServices is  a platform that enables parties to create contracts stored in the Cardano blockchain and builds members trust based on token rewards and penalties, supported by a Credit Assessment System (CAS) able to address every platform member. Additionally a reward-penalty system is  in place. An algorithm collects statistics related to the service transactions, credit score, activities and returns the amount of tokens that will be rewarded. 
+Parties that refuse to follow the rules already pre-defined in the contract will be penalized by losing tokens proportionally to the severity of their misbehavior. In extreme cases access to the platform will be suspended.
 
-### Token Distribution
+# No anonymity (tbc)
+Holding and transfer of DSET Tokens and use of the DigiServices platform will not be anonymous. Address and such participation will be recorded on a permissionless blockchain. It is possible to match addresses to identities.
+
+# Governance
+DigiServices is a platform that is developed with a community in mind, and as such it is only right that the community has a say over the direction of the platform. As such, Digiservices will implement a governance system using DSET tokens. These tokens will allow users of the platform to vote on proposed changes such as fee changes, safety protocol changes etc.
 
 The token will have a total supply of 100 billion, the distribution of which will be as follows over a period of maximum 4 years:
-   ● 50% - Members, over a period of 4 years
-   ● 20% - Platform Development Fund
-   ● 10% - Core Team
-   ● 10% - Marketing Partner
-   ● 10% - Public Sale
-   
-#### Membership Rewards
-A coefficient determines distribution weight for each member.
-I suggest a weighted average including:
-1 – no. of tx per period 
-2 – no. of acts as judge (judge activity is rewarded twice(
-3- root square of no. of tokens own in wallet → this is also the weight value for voting mechanism 
-Period: 3 months
-   
+ ● 50% - Members, over a period of 4 years
+ ● 20% - Platform Development Fund 
+● 10% - Core Team 
+● 10% - Marketing Partner 
+● 10% - Public Sale 
+
+# Voting
+Voting on the platform will utilize the quadratic voting method (2), whereby voting power of an individual user is proportional to the square root of their investment amount. This method, along with other precautions, prevent so-called 'whale' investors from gaining control of the voting process and denying other users the ability to cast votes.
+
+# Utility token DSET
+Blockchain can be used to create decentralized ecosystems in which a token is issued in order to fund and assist the development of an ecosystem and that can be later used to purchase goods /services or being an integral part of a service itself, benefiting from the advantages of a decentralized structure, eliminating or reducing the presence of a central intermediary body, thus
+allowing the value shift from the center to the ends.
+DigiServices’ vision encompasses this model where the blockchain is used to create a truly decentralized self-sustaining ecosystem. DigiServices strongly believes that the future of the internet lies in services powered by utility tokens, improving existing services with new paradigms that cannot be achieved in the absence of a distributed ledger.
+
+# Nature and uses of the DSET Token
+DSET token is a hybrid token that has both utility token characteristics and payment token characteristics. The DSET token is the token on which the ecosystem is based. 
+Parties to a contractual relationship and members need DSET tokens for:
+● Service transactions payments (depositing escrows(
+● Trust Token Deposit
+purchasing Smart Legal Contracts templates (both purchase fees paid to
+creators and commissions on revenue paid by creators to Jur);
+● Conflict fees payments
+● Penalties payments
+● Rewards accruals
+
+
+### Business model
+DigiServices believes that a decentralized economy must provide mechanisms for sustaining the platform that supports this trustworthy system
+
+# Business Development Road Map
+A basic one-time membership fee is requested to assure commitment and at the same time a membership low-barrier entry. Income generation is provided for the platform through transaction fees, for members acting as judge or as service provider being rewarded through spendable native token DSET .
+Business development will occur at two levels:
+1 - Development of own service/goods exchange platform with service offering and demand
+2 - Affiliation with already existing or newly established service providers, focusing on enforcing unbiased Credit Assessment of all memberships accessing the platform
+
+## Fees and Platform Income
+DigiService’s choice is to adopt a flexible mechanism, which can be expanded or reduced according to the needs of the project and feedback from the members community.
+DigiService therefore anticipates the use of fees and reserves the right to reduce or increase them on the basis of the progress of the project and the value of the DSET Token.
+The following fees payable to DigiServices  apply at the moment:
+● one-time membership fees
+● accusation contract fees
+● transaction fees for escrow 
+● gas fees
+
+## Dispute Event
+Both parties have the possibility to open a dispute in the event  that the set contract is not executed fully by any of the two parties. The dispute is already integrated into the sealed smart-contract and the system is already set to smoothly settle any pending issues. For this purpose DSET token is deposited as Trust Token in a escrow deposit. A key feature is also that the Trust Token amount is suggested by the service provide and the client accepts it after negotiation, in the same way as service price bidding occurs.
+
+## Judges Selection Mechanism and Trustworthiness Assessment
+to be completed
+
+ 
+Decentralized Selection is applied by DigiServices to select judges (arbitrators)
+The community defines the objective requirements that the judges have to meet. Provided that judge candidate is already a platform member,  anyone interested in acting as a judge will apply for it and   stake a minimum set amount of DSET tokens. 
+
+## CAS (Credit Assessment System) – Trustworthiness Ground
+to be completed
+
+
+Judges Inputs – AI-supported deterministic decisions → for MVP to be done ‘manually’
+Judges are expected to provide ‘Inputs’ on occasion of ‘Conflict Event’.
+Deterministic inputs are a pre-condition to assure a smooth and just conflict settlement. For this purpose trustworthy judges are required as well as pre-made contract clauses selected by DigiServices as those less prone to misunderstanding and misbehavior. The selection occurs through an integrated machine learning process trained through past transaction cases and which keep accumulating knowledge and thus reliability.
+
+## Rewards and Penalty Systems
+Digiservices strive for  Trustworthy Platform  excellence and for this purpose implements strict policies to support just behavior and strongly penalize failures in fulfilling set agreements.
+
+-Rewards
+    • Judges, when called in, will be rewarded for their service through a weighed formula including transaction  value percentage, accumulated experience measured as integrated into CAS score, staked tokens
+    • Members having CAS scores exceeding a set threshold continuously over 12 months shall receive a premium-reward in DSET calculated over a formula weighing members activity-related factors
+    • Aiming at increased participation and activity, members can freely set a  minimum transaction quantity threshold (no. of deals), measured per month. The higher the value set, the higher the premium-reward
+
+-Penalties, P units 
+      Penalties will be accrued for:
+    • -’guilty’ deal : 5x transaction value measured in P units. This penalty adds up to lost Trust Token in case of negative dispute outcome. In case P units achieve a set maximum value during 12 months, the member is commanded to leave the platform and his assets are lost.
+    • members receive yearly a set P goodwill amount, for covering up unexpected and unwilling ‘guilty’ deals
+    • no. of deals per month: if it is below a pre-set threshold freely set by each member , a P units penalty is accrued 
+
+
+### 3. DigiServices Platform for Trustworthiness
+## Supply / Tokenomics
+Differently from traditional currencies, such as Bitcoin, Litecoin and Ethereum, DigiServices tokens (DSET) are not deflationary. This is important in order to incentivise cooperative and honest behaviour in the platform.
+A fixed amount of DSET tokens is monthly minted and distributed according to a Credit Assessment System (CAS). Users receive tokens proportionally to their scores, obeying the following function:
+
+```haskell
+-- The total amount of tokens that will be minted every month
+totalAmt :: Int
+totalAmt = 1000
+
+-- Review is an integer between 0 and 100
+calculateRewards :: [Review] -> [Int]
+calculateRewards [] = []
+calculateRewards (x:xs) = ((x `div` revSum) * totalAmt `div` 100) : calculateRewards xs
+  where
+    revSum :: Integer
+    revSum = sum xs
+```   
 ### Utility
 
 In order to de-incentive dishonest behaviour, DigiServices makes it
@@ -154,10 +233,10 @@ type ClientTokens = Int
 type ProviderTokens = Int
 type JudgeTokens = Int
 
-type Distribution = (ClientTokens, ProviderTokens, JudgeTokens)
+type TTDistribution = (ClientTokens, ProviderTokens, JudgeTokens)
 type TotalAmount = Int
 
-distributeTokens :: Bool -> Bool -> Bool -> TotalAmount -> Distribution
+distributeTokens :: Bool → Bool → Bool -> TotalAmount → Distribution
 distributeTokens inp1 inp2 inp3 totalAmt =
     | (not inp1 || not inp2) && inp3 = ((totalAmt - judgeAmt), 0, judgeAmt)
     | inp1 && inp2 && not inp3 = (0, (totalAmt - judgeAmt), judgeAmt)
@@ -195,100 +274,74 @@ outcomes. This is achieved eliminating ambiguity normally attached to natural
 language contracts and providing the ease of use extremely valubale and necessary
 in our current society.
 
-## White Paper
-
-### Abstract
-Abstract
-The growing need of goods and services exchange require a trustworthy social platform to act as escrow. Even though physical contracts appear to provide a solution, they are often misinterpreted because of their subjective language and they commonly lack the practicality needed in our digital word. We propose a platform that enables parties to create contracts stored in the Cardano blockchain and builds member trust based on token rewards calculated through an algorithm that collects statistics related to the service transactions and returns the amount of tokens per hour that will be rewarded. Parties that refuse to follow the rules pre-defined in the contract will be penalized by losing tokens proportionally to the severity of their misbehavior.
-
-
-### DigiServices Features
-#### Intuitive
-Create Smart Contracts in a few clicks, assisted also by an advanced interactive drag and drop editor
-#### Marketplace
-Cut the cost: relying on available templates
-#### All In-Platform
-Creating your smart legal contract, negotiate clauses with your client with an integrated dispute resolution system.
-#### High Customizability
-Ready made templates, clauses, and logical flows allow users to build flexible and versatile smart legal contracts for any need.
-
-### The Problem - Non-Payment and Non-Delivery Crimes
-The internet 2.0 revolution started end of the 90s solved a wide range of problems and vastly increased economic efficiency. But this revolution did very little to modernize our legal systems, which have not kept pace with technological and economic progress. Non-Payment and Non-Delivery Crimes show an exponential grow and accounted in Y2020 for 265 mio. USD losses in the US only (1). In general cyber crimes are sky-rocketing to level still hard to foresee. 
-
-### The Digiservices Solution
-The solution proposed by Digiservices aims to overcome the limits of physical contracts.  Misinterpretation due to subjective language and the innate  lack of easy-handling make them useless to tackle the issue.
-TdigiSerivces is  a platform that enables parties to create contracts stored in the Cardano blockchain and builds member trust based on token rewards and penalties, supported by a Credit Assessesment System (CAS) able to address every platform member. An algorithm collects statistics related to the service transactions, credit score, activity and returns the amount of tokens that will be rewarded. 
-Furthermore parties that refuse to follow the rules pre-defined in the contract will be penalized by losing tokens proportionally to the severity of their misbehavior.
-
-
-### No anonymity
-Holding and transfer of DSET Tokens and use of the DigiServices platform ( will not be anonymous. Your address and such participation will be
-recorded on a permissionless blockchain. It is possible to match addresses to
-identities.
-
-### Governance
-Digiservices is a platform that is developed with a community in mind, and as such it is only right that the community has a say over the direction of the platform. As such, Digiservices will implement a governance system using DSET tokens. These tokens will allow users of the platform to vote on proposed changes such as fee changes, safety protocol changes etc.
-
-The token will have a total supply of 100 million, the distribution of which will be as follows:
-   ● 50% - Users
-   ● 20% - Development Fund
-   ● 10% - Team
-   ● 10% - Delegators
-   ● 10% - Public Sale
-
-
-### Voting
-Voting on the platform will utilize the quadratic voting method, whereby voting power of an individual user is proportional to the square root of their investment amount. This method, along with other precautions, prevent so-called 'whale' investors from gaining control of the voting process and denying other users the ability to cast votes.
-
-
-### Utility token DSET
-Blockchain can be used to create decentralized ecosystems in which a token is issued in order to fund and assist the development of an ecosystem and that can be later used to purchase goods /services or being an integral part of a service itself, benefiting from the advantages of a decentralized structure, eliminating or reducing the presence of a central intermediary body, thus
-allowing the value shift from the center to the ends.
-DigiServices’ vision encompasses this model where the blockchain is used to create a truly decentralized self-sustaining ecosystem. DigiServices strongly believes that the future of the internet lies in services powered by utility tokens, improving existing services with new paradigms that cannot be achieved in the absence of a distributed ledger.
-
-### Nature and uses of the DSET Token
-DSET token is a hybrid token that has both utility token characteristics and payment token characteristics. The DSET token is the token on which the ecosystem is based. 
-Parties to a contractual relationship and members need DSET tokens for:
-● Service transactions payments (depositing escrows(
-● Trust Token Deposit
-purchasing Smart Legal Contracts templates (both purchase fees paid to
-creators and commissions on revenue paid by creators to Jur);
-● Conflict fees payments
-● Penalties payments
-● Rewards accruals
-
-
-### Business model
-DigiServices believes that a decentralized economy must provide mechanisms for sustaining the platform that supports this trustworthy system
-
-DigiService’s choice is to adopt a flexible mechanism, which can be expanded or reduced according to the needs of the project and feedback from the members community.
-DigiService therefore anticipates the use of fees and reserves the right to reduce or increase them on the basis of the progress of the project and the value of the DSET Token.
-The following fees payable to DigiServices  apply at the moment:
-● one-time membership fees
-● accusation contract fees
-● transaction fees for escrow 
-● gas fees
-
-### Conflict Event
+### 4 . Protocols Implementation
+## CAS Calculation,  Protocol Implementation
 to be completed
 
-### Judges Selection Mechanism and Trustworthiness Assessment
+
+## Membership Rewards, Protocol Implementation
+
+Period: 3 months
+TxNind: Transaction no. over the period of the specific member
+TxN : Total transactions no. over the period
+CASind: individual CAS (1 - 100 range)
+StDSET: staked tokens average over 12 months  
+fm DSET : set minimum amount of StDSET to be staked to get higher reward (freely set by each member)
+AcJ: no. activity as judge over the period
+Mrew: Membership  reward per period in DSET
+
+If StDSET >= fm DSET
+
+Mrew = TxN * A  + 10, if Mrew < 5   # min reward is 5 DSET
+
+where
+A = TxN TxNind + CASind * 5/100 + B * 5 + AcJ * 5
+
+B= 1
+If StDSET > fm DSET then
+B = StDSET/fm DSET * 10%
+
+
+## Penalties,  Protocol Implementation
 to be completed
 
-### CAS (Credit Assessment System) – Trustworthiness Ground
+## Judges Selection Mechanism, Protocol Implementation
 to be completed
+
 
 
 ### Judges Inputs – AI-supported deterministic decisions → for MVP to be done ‘manually’
 Judges are expected to provide ‘Inputs’ on occasion of ‘Conflict Event’.
 Deterministic inputs are a pre-condition to assure a smooth and just conflict settlement. For this purpose trustworthy judges are required as well as pre-made contract clauses selected by DigiServices as those less prone to misunderstanding and misbehavior. The selection occurs through an integrated machine learning process trained through past transaction cases and which keep accumulating knowledge and thus reliability.
 
-### Rewards and Penalty Systems
+
+## Judges rewards, Protocol Implementation
+TxValue: Transaction Value
+CASind: individual CAS (1 - 100 range)
+StDSET: staked tokens average over 12 months  
+fDSET : set minimum amount of StDSET to be staked to become judge
+Jrew: Judge reward per transaction in DSET
+
+If StDSET > fDSET then
+	Jrew = TxValue * A + 10, if Jrew < 10   # min reward is 10 DSET
+
+where 
+A = 0.3% + (CASind * B%)/100 
+B = 6 if StDSET = fDSET * 3
+B = 3  if StDSET = fDSET * 3
+
+
+Membership and Judge rewards are cumulative to encourage activity
+
+## Conflict Event, Protocol Implementation
 to be completed
 
-### Timeline
+
+
+### 5. Timeline
 DigiServices aims to launch an early version of the platform in Dec. 2021. leveraging smart contracts availability on the Cardano blockchain mainnet. 
 
 
 ### Sources
 (1) Statista 2021
+(2) https://en.wikipedia.org/wiki/Quadratic_voting
