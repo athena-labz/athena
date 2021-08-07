@@ -49,9 +49,6 @@ The solution proposed by Digiservices aims to overcome the limits of physical co
 DigiServices is  a platform that enables parties to create contracts stored in the Cardano blockchain and builds members trust based on token rewards and penalties, supported by a Credit Assessment System (CAS) able to address every platform member. Additionally a reward-penalty system is  in place. An algorithm collects statistics related to the service transactions, credit score, activities and returns the amount of tokens that will be rewarded. 
 Parties that refuse to follow the rules already pre-defined in the contract will be penalized by losing tokens proportionally to the severity of their misbehavior. In extreme cases access to the platform will be suspended.
 
-# No anonymity (tbc)
-Holding and transfer of DSET Tokens and use of the DigiServices platform will not be anonymous. Address and such participation will be recorded on a permissionless blockchain. It is possible to match addresses to identities.
-
 # Governance
 DigiServices is a platform that is developed with a community in mind, and as such it is only right that the community has a say over the direction of the platform. As such, Digiservices will implement a governance system using DSET tokens. These tokens will allow users of the platform to vote on proposed changes such as fee changes, safety protocol changes etc.
 
@@ -82,7 +79,7 @@ creators and commissions on revenue paid by creators to Jur);
 ● Rewards accruals
 
 
-### Business model
+## Business model
 DigiServices believes that a decentralized economy must provide mechanisms for sustaining the platform that supports this trustworthy system
 
 # Business Development Road Map
@@ -103,37 +100,8 @@ The following fees payable to DigiServices  apply at the moment:
 ## Dispute Event
 Both parties have the possibility to open a dispute in the event  that the set contract is not executed fully by any of the two parties. The dispute is already integrated into the sealed smart-contract and the system is already set to smoothly settle any pending issues. For this purpose DSET token is deposited as Trust Token in a escrow deposit. A key feature is also that the Trust Token amount is suggested by the service provide and the client accepts it after negotiation, in the same way as service price bidding occurs.
 
-## Judges Selection Mechanism and Trustworthiness Assessment
-to be completed
-
- 
-Decentralized Selection is applied by DigiServices to select judges (arbitrators)
-The community defines the objective requirements that the judges have to meet. Provided that judge candidate is already a platform member,  anyone interested in acting as a judge will apply for it and   stake a minimum set amount of DSET tokens. 
-
-## CAS (Credit Assessment System) – Trustworthiness Ground
-to be completed
-
-
-Judges Inputs – AI-supported deterministic decisions → for MVP to be done ‘manually’
-Judges are expected to provide ‘Inputs’ on occasion of ‘Conflict Event’.
-Deterministic inputs are a pre-condition to assure a smooth and just conflict settlement. For this purpose trustworthy judges are required as well as pre-made contract clauses selected by DigiServices as those less prone to misunderstanding and misbehavior. The selection occurs through an integrated machine learning process trained through past transaction cases and which keep accumulating knowledge and thus reliability.
-
-## Rewards and Penalty Systems
-Digiservices strive for  Trustworthy Platform  excellence and for this purpose implements strict policies to support just behavior and strongly penalize failures in fulfilling set agreements.
-
--Rewards
-    • Judges, when called in, will be rewarded for their service through a weighed formula including transaction  value percentage, accumulated experience measured as integrated into CAS score, staked tokens
-    • Members having CAS scores exceeding a set threshold continuously over 12 months shall receive a premium-reward in DSET calculated over a formula weighing members activity-related factors
-    • Aiming at increased participation and activity, members can freely set a  minimum transaction quantity threshold (no. of deals), measured per month. The higher the value set, the higher the premium-reward
-
--Penalties, P units 
-      Penalties will be accrued for:
-    • -’guilty’ deal : 5x transaction value measured in P units. This penalty adds up to lost Trust Token in case of negative dispute outcome. In case P units achieve a set maximum value during 12 months, the member is commanded to leave the platform and his assets are lost.
-    • members receive yearly a set P goodwill amount, for covering up unexpected and unwilling ‘guilty’ deals
-    • no. of deals per month: if it is below a pre-set threshold freely set by each member , a P units penalty is accrued 
-
-
 ### 3. DigiServices Platform for Trustworthiness
+
 ## Supply / Tokenomics
 Differently from traditional currencies, such as Bitcoin, Litecoin and Ethereum, DigiServices tokens (DSET) are not deflationary. This is important in order to incentivise cooperative and honest behaviour in the platform.
 A fixed amount of DSET tokens is monthly minted and distributed according to a Credit Assessment System (CAS). Users receive tokens proportionally to their scores, obeying the following function:
@@ -274,36 +242,85 @@ outcomes. This is achieved eliminating ambiguity normally attached to natural
 language contracts and providing the ease of use extremely valubale and necessary
 in our current society.
 
-### 4 . Protocols Implementation
-## CAS Calculation,  Protocol Implementation
-to be completed
+## Judges Selection Mechanism and Trustworthiness Assessment
+Decentralized Selection is applied by DigiServices to select judges (arbitrators)
+The community defines the objective requirements that the judges have to meet. Provided that judge candidate is already a platform member,  anyone interested in acting as a judge will apply for it and   stake a minimum set amount of DSET tokens. 
 
+# Rewards and Penalty Systems
+Digiservices strive for  Trustworthy Platform  excellence and for this purpose implements strict policies to support just behavior and strongly penalize failures in fulfilling set agreements.
+
+-Rewards, DSET
+    • Judges, when called in, will be rewarded for their service through a weighed formula including transaction  value percentage, accumulated experience measured as integrated into CAS score, staked tokens
+    • Members having CAS scores exceeding a set threshold continuously over 12 months shall receive a premium-reward in DSET calculated over a formula weighing members activity-related factors
+    • Aiming at increased participation and activity, members can freely set a  minimum transaction quantity threshold (no. of deals), measured per month. The higher the value set, the higher the premium-reward
+
+-Penalties, P units 
+    • Penalties, P units 
+      Penalties will be accrued for:
+    • -’guilty’ deal : 10x no of disputes lost in P units. This penalty adds up to lost Trust Token in case of negative dispute outcome. In case P units achieve a set maximum value during 12 months, the member is commanded to leave the platform and his assets are lost.
+    • members receive yearly a set P goodwill amount, for covering up unexpected and unintentional ‘guilty’ disputes
+      no. of deals per period: if it is below a pre-set threshold freely set by each member , a P units penalty is accrued 
+
+### 4 . Protocols Implementation
+
+## Review System
+Each service provider is subjected to reviews in terms of score 1-10 by the client. The score received at every transaction determines an increase of  DSET into the Trust Fund allocated to each service provider. 0.45% of service fees are deposited into this fund and the cumulated value affects the CAS score of the service provider.
+Additionally the Trust Fund serves to provide compensation in case of dispute loss by the service provider in addition to the already allocated Trust Token.
+In case  dispute the client executes a redeemer associated with the service contract to have the full token amount paid back.
+Protocol to be implemented
+
+## CAS (Credit Assessment System) Calculation,  Protocol Implementation
+Each platform member’s trustworthiness is assessed through a CAS score  to assess his/her trustworthiness. The CAS calculation formula relies on scores from transaction review system, Trust Fund value,  number of assessments, registration as judge, accumulated  transaction value over the period (3 months)
+
+Protocol to be implemented
 
 ## Membership Rewards, Protocol Implementation
 
 Period: 3 months
 TxNind: Transaction no. over the period of the specific member
-TxN : Total transactions no. over the period
-CASind: individual CAS (1 - 100 range)
-StDSET: staked tokens average over 12 months  
-fm DSET : set minimum amount of StDSET to be staked to get higher reward (freely set by each member)
-AcJ: no. activity as judge over the period
+TxN : Total platform transactions no. over the period
+CASind: individual CAS (range : 1 - 100)
+StDSET: accumulated transaction value as service provider or client over the period 3 months  
+fmDSET : set minimum amount of StDSET to get higher reward (freely set by each member)
+AcJ: no. of calls  as judge over the period
 Mrew: Membership  reward per period in DSET
 
-If StDSET >= fm DSET
-
+If StDSET >= fm DSET then
 Mrew = TxN * A  + 10, if Mrew < 5   # min reward is 5 DSET
 
 where
-A = TxN TxNind + CASind * 5/100 + B * 5 + AcJ * 5
+	A = TxNind /TxN + CASind * 5/100 + 5* fmDSET +  B * 2 + AcJ * 5
+	B= 1
 
-B= 1
 If StDSET > fm DSET then
-B = StDSET/fm DSET * 10%
+		B = StDSET/fmDSET * 10%
 
 
 ## Penalties,  Protocol Implementation
-to be completed
+
+Penalties, P units 
+      Penalties will be accrued for:
+    • -’guilty’ deal : 10x no of disputes lost in P units. This penalty adds up to lost Trust Token in case of negative dispute outcome. In case P units achieve a set maximum value during 12 months, the member is commanded to leave the platform and his assets are lost.
+    • members receive yearly a set P goodwill amount, for covering up unexpected and unintentional ‘guilty’ disputes
+    • no. of deals per period: if it is below a pre-set threshold freely set by each member , a P units penalty is accrued 
+
+Period: 3 months
+TxDind: Transaction no. over the period causing disputes
+TxDl : Transaction no. over the period causing lost disputes
+CASind: individual CAS (range : 1 - 100)
+StDSET: accumulated transaction value as service provider or client over the period 3 months  
+fm DSET : set minimum amount of StDSET  get higher reward (freely set by each member)
+MP: Membership  Penalties  in the set  period in P unit 
+
+
+If StDSET >= fmDSET
+
+	MP =  (10 * TxDl + TxDind * 0.5) * 60/CASind
+
+If StDSET < fm DSET
+
+	MP =  (10 * TxDl + TxDind * 0.5) * 60/CASind + 30 * fmDSET
+
 
 ## Judges Selection Mechanism, Protocol Implementation
 to be completed
@@ -314,6 +331,7 @@ to be completed
 Judges are expected to provide ‘Inputs’ on occasion of ‘Conflict Event’.
 Deterministic inputs are a pre-condition to assure a smooth and just conflict settlement. For this purpose trustworthy judges are required as well as pre-made contract clauses selected by DigiServices as those less prone to misunderstanding and misbehavior. The selection occurs through an integrated machine learning process trained through past transaction cases and which keep accumulating knowledge and thus reliability.
 
+to be completed
 
 ## Judges rewards, Protocol Implementation
 TxValue: Transaction Value
@@ -329,7 +347,6 @@ where
 A = 0.3% + (CASind * B%)/100 
 B = 6 if StDSET = fDSET * 3
 B = 3  if StDSET = fDSET * 3
-
 
 Membership and Judge rewards are cumulative to encourage activity
 
