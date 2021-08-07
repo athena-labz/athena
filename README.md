@@ -24,9 +24,7 @@ Abstract
     
 
 ### Abstract
-The growing need of goods and services exchange require a trustworthy social platform to act as escrow and eliminate non-delivery/non-payment crime, one of the largest and further growing one. Even though physical contracts appear to provide a solution, they are often misinterpreted because of their subjective language and they commonly lack the practicality needed in our digital word. We propose a platform that enables parties to create contracts stored in the Cardano blockchain and builds member trust based on token rewards and penalties, supported by a Credit Assessesment system covering every platform member. An algorithm collects statistics related to the service transactions, credit score, activity and returns the amount of tokens that will be rewarded. 
-Furthermore parties that refuse to follow the rules pre-defined in the contract will be penalized by losing tokens proportionally to the severity of their misbehavior.
-Digiservices strive for Trustworthiness implements policies to support just behavior and strongly penalize failures in fulfilling set agreements
+Global gig-economy transactions are forecast to grow by 17% a year to around $455 billion by 2023, according to a report from Mastercard (3). There is a growing need for a fast, secure, and reliable way to establish trust between participatnts in the gig economy. We propose a platform that enables parties to create contracts stored in the Cardano blochain to build trust based on token rewards calculated through an algorithm that collects statistics related to the service or good provded and returns the amount of tokens per hour that will be rewarded. Parties that violate the contract will be penalized by losing tokens proportional to the severity of violation.
 
 ### 1. Executive summary  - DigiServices Features
 Digiservices strive for  Trustworthy Platform  excellence and for this purpose implements strict policies to support just behavior and strongly penalize failures in fulfilling set agreements.
@@ -394,3 +392,5 @@ DigiServices aims to launch an early version of the platform in Dec. 2021. lever
 ### Sources
 (1) Statista 2021
 (2) https://en.wikipedia.org/wiki/Quadratic_voting
+[3](https://newsroom.mastercard.com/wp-content/uploads/2019/05/Gig-Economy-White-Paper-May-2019.pdf)
+
