@@ -276,8 +276,8 @@ Protocol to be implemented
 
 ## Membership Rewards, Protocol Implementation
 
-Period: 3 months
-TxNind: Transaction no. over the period of the specific member
+Period: 3 months;
+TxNind: Transaction no. over the period of the specific member;
 TxN : Total platform transactions no. over the period
 CASind: individual CAS (range : 1 - 100)
 StDSET: accumulated transaction value as service provider or client over the period 3 months  
