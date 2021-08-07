@@ -102,6 +102,10 @@ Both parties have the possibility to open a dispute in the event  that the set c
 
 ### 3. DigiServices Platform for Trustworthiness
 
+# Membership and Services
+Members and Service providers are registered in the platform. A initial registration fee in DSET is required also through fiat exchange to assure commitment. 
+The registration allow access to all tools and platform services. The initial CAS score (Credit Assessment Score) will be 60 in a range 0-100, and it will be all parties’ task to increase it to higher levels. At the initial stage the deposited Trust Token will be the most critical factor to appeal the counter-party and build trust. After few transactions the additional CAS assessment elements will enter into play. All members are allowed to link their profile to related sites to show their achievements, skills in the specific field.
+
 ## Supply / Tokenomics
 Differently from traditional currencies, such as Bitcoin, Litecoin and Ethereum, DigiServices tokens (DSET) are not deflationary. This is important in order to incentivise cooperative and honest behaviour in the platform.
 A fixed amount of DSET tokens is monthly minted and distributed according to a Credit Assessment System (CAS). Users receive tokens proportionally to their scores, obeying the following function:
@@ -336,8 +340,19 @@ If StDSET < fm DSET
 
 
 ## Judges Selection Mechanism, Protocol Implementation
-to be completed
 
+Each registered member has the right to apply as a judge. A CAS threshold of 80 is set as per-requisite. The list positioning will be set depending on multiple factors , visible also to all members. In this way transparency enables trustworthiness.
+Factors
+
+    • CAS
+    
+    • No of past disputes judgement
+    
+    • No of lost disputes (not acting as a judge)
+    
+    • No of  disputes (not acting as a judge)
+
+to be completed
 
 
 ### Judges Inputs – AI-supported deterministic decisions → for MVP to be done ‘manually’
