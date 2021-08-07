@@ -276,13 +276,20 @@ Protocol to be implemented
 
 ## Membership Rewards, Protocol Implementation
 
-Period: 3 months;
-TxNind: Transaction no. over the period of the specific member;
+Period: 3 months
+
+TxNind: Transaction no. over the period of the specific member
+
 TxN : Total platform transactions no. over the period
+
 CASind: individual CAS (range : 1 - 100)
+
 StDSET: accumulated transaction value as service provider or client over the period 3 months  
+
 fmDSET : set minimum amount of StDSET to get higher reward (freely set by each member)
+
 AcJ: no. of calls  as judge over the period
+
 Mrew: Membership  reward per period in DSET
 
 If StDSET >= fm DSET then
@@ -305,11 +312,17 @@ Penalties, P units
     • no. of deals per period: if it is below a pre-set threshold freely set by each member , a P units penalty is accrued 
 
 Period: 3 months
+
 TxDind: Transaction no. over the period causing disputes
+
 TxDl : Transaction no. over the period causing lost disputes
+
 CASind: individual CAS (range : 1 - 100)
+
 StDSET: accumulated transaction value as service provider or client over the period 3 months  
+
 fm DSET : set minimum amount of StDSET  get higher reward (freely set by each member)
+
 MP: Membership  Penalties  in the set  period in P unit 
 
 
@@ -335,9 +348,13 @@ to be completed
 
 ## Judges rewards, Protocol Implementation
 TxValue: Transaction Value
+
 CASind: individual CAS (1 - 100 range)
+
 StDSET: staked tokens average over 12 months  
+
 fDSET : set minimum amount of StDSET to be staked to become judge
+
 Jrew: Judge reward per transaction in DSET
 
 If StDSET > fDSET then
