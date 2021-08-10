@@ -51,11 +51,17 @@ Parties that refuse to follow the rules already pre-defined in the contract will
 DigiServices is a platform that is developed with a community in mind, and as such it is only right that the community has a say over the direction of the platform. As such, Digiservices will implement a governance system using DSET tokens. These tokens will allow users of the platform to vote on proposed changes such as fee changes, safety protocol changes etc.
 
 The token will have a total supply of 100 billion, the distribution of which will be as follows over a period of maximum 4 years:
+
  ● 50% - Members, over a period of 4 years
+ 
  ● 20% - Platform Development Fund 
+ 
 ● 10% - Core Team 
+
 ● 10% - Marketing Partner 
+
 ● 10% - Public Sale 
+
 
 # Voting
 Voting on the platform will utilize the quadratic voting method (2), whereby voting power of an individual user is proportional to the square root of their investment amount. This method, along with other precautions, prevent so-called 'whale' investors from gaining control of the voting process and denying other users the ability to cast votes.
@@ -391,6 +397,8 @@ DigiServices aims to launch an early version of the platform in Dec. 2021. lever
 
 ### Sources
 (1) Statista 2021
+
 (2) https://en.wikipedia.org/wiki/Quadratic_voting
+
 [3](https://newsroom.mastercard.com/wp-content/uploads/2019/05/Gig-Economy-White-Paper-May-2019.pdf)
 
