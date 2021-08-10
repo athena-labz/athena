@@ -168,20 +168,19 @@ language contracts and providing the ease of use so valued in our current world.
 ## White Paper
 
 ### White Paper Table of Contents
-1. [Abstract](#abstract)
-2. [Problem Statement](#problem-statement)
-3. [Solution](#soltution)
-4. [Implementation](#implementation)
+1. [Problem Statement](#problem-statement)
+2. [Solution](#soltution)
+3. [Implementation](#implementation)
   * [Membership](#membership)
   * [Service](#service)
   * [Contracts](#contracts)
   * [Accusation](#accusation)
   * [Trials](#trials)
   * [Rewards and Penalties](#rewards-and-penalties)
-5. [Business Plan](#business-plan)
-6. [Tokenomics](#tokenomics)
-7. [Future Direction](#future-direction)
-8. [Conclusion](#conclusion)
+4. [Business Plan](#business-plan)
+5. [Tokenomics](#tokenomics)
+6. [Future Direction](#future-direction)
+7. [Conclusion](#conclusion)
 
 ### Abstract
 Global gig-economy transactions are forecast to grow by 17% a year to around $455 billion by 2023, according to a report from Mastercard [1]. There is a growing need for a fast, secure, and reliable way to establish trust between participatnts in the gig economy. We propose a platform that enables parties to create contracts stored in the Cardano blochain to build trust based on token rewards calculated through an algorithm that collects statistics related to the service or good provded and returns the amount of tokens per hour that will be rewarded. Parties that violate the contract will be penalized by losing tokens proportional to the severity of violation.
