@@ -198,6 +198,12 @@ I think we could add more details to this first section
 
 ### 2. Solution
 
+The solution proposed by DigiServices aims to overcome the limits of physical contracts. Misinterpretation due to subjective language and the innate lack of easy-handling make them useless to tackle the issue. DigiServices is a platform that enables parties to create contracts stored in the Cardano blockchain and builds members trust based on token rewards and penalties, supported by a Credit Assessment System (CAS) able to address every platform member. Additionally a reward-penalty system is in place. An algorithm collects statistics related to the service transactions, credit score, activities and returns the amount of tokens that will be rewarded. Parties that refuse to follow the rules already pre-defined in the contract will be penalized by losing tokens proportionally to the severity of their violation. In extreme cases access to the platform will be suspended.
+
+**Mateus' comment**
+"In extreme cases access to the platform will be suspended."
+Unless we implement an identification mechanism, I don't think this is possible.
+
 By integrating real-world reliable inputs with strict on-chain contracts, DigiServices aims to mitigate the ambiguity so common in natural-language written contracts, while still preserving the flexibility needed to communicate with the real world. Likewise, we propose an easy-to-use platform by making the creation of contract templates possible. In this way, no expensive lawyers will be required in order to write a contract. Further, mediators, service providers and clients trust will be measured based on a review system powered by the use of DSET tokens that represent scores. This system, together with other components, will be used to determine an user's annual reward. Lastly, DigiServices will target freelancers by having a "service marketplace", where users can provide information about the service they offer and attach it to an "accusation contract", which will be used to handle conflicts.
 
 DigiServices strive for Trustworthy Platform excellence and for this purpose implements strict policies to support just behavior and strongly penalize failures in fulfilling set agreements. In order to provide a great user experience as well as offer an affordable, fast and fair mediation platform, we understand that, above all, four components are important.
@@ -212,5 +218,20 @@ Anyone will have access to contract templates. This templates will enable users 
 From the creation of smart legal contracts to the negotiation of clauses and the dispute resolution system, all will be handled through DigiServices using the Cardano platform, making the process much easier and simpler.
 
 #### D. High Customization
-DigiServices will allow users to build flexible and versatile smart legal contracts for any need by making use of ready made templates, clauses and logical flows, as well as, letting them write their own contracts and templates.
+DigiServices will allow users to build flexible and versatile smart legal contracts for any need by making use of ready made templates, clauses and logical flows, as well as, letting the users write their own contracts and templates.
+
+### 3. Implementation
+
+#### A. Membership
+In order to make someone's trustworthiness easily accessible, DigiServices makes use of a "membership" logic. This membership will be necessary in order to offer, request or mediate services. It offers a way of measuring trust by giving each user a CAS score, which can increase or decrease based on multiple factors, such as user reviews and activity.
+
+An initial registration fee in DSET is required to assure commitment. The registration allow access to all tools and platform services. The initial CAS score will be 60 in a range from 0 to 100, and it will be all parties’ task to increase it to higher levels. At the initial stage the deposited Trust Token will be the most critical factor to appeal the counter-party and build trust. After few transactions the additional CAS elements will enter into play. All members are allowed to link their profile to related sites to show their achievements, skills in the specific field. Trust is, therefore, measured by analyzing someone's CAS score, amount of deposited trust tokens and profile information.
+
+![Join Platform Example](images/join-platform.png)
+
+In the underlying protocol, membership will work by combining a "membership market" validator script with a "membership invitation" minting policy. In order to join DigiServices, a user will create an arbitrary non-fungible token to represent his "account", send this NFT to the marketplace together with the one-time entrance fee and provide the initial Datum.
+
+![Membership Invitation Example](images/membership-invitation)
+
+This user will then be able to mint "invite tokens" (IVT), whose names are the user's public key hash, by providing a number as a redeemer (the number of "invitations" that will be minted). These tokens can be used to perform actions, such as publishing a service. Though "Membership Market" UTxOs have the same logic and validator hash, they are identified uniquely for each user (with their NFT) in order to ensure that concurrency is possible. Otherwise user's wouldn't be able to join the platform at the same time, making the protocol susceptible to spam attacks.
 
