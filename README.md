@@ -7,7 +7,6 @@ reward-driven, platform for goods and service exchanges
   * [Supply](#supply)
 * [Alice and Bob example](#alice-and-bob-example)
 * [White Paper](#white-paper)
-  * [Abstract](#abstract)
 
 ## Tokenomics
 
@@ -167,6 +166,22 @@ sure contracts are followed, eliminating ambiguity normally attached to natural
 language contracts and providing the ease of use so valued in our current world.
 
 ## White Paper
+
+## White Paper Table of Contents
+* [Abstract](#abstract)
+* [Problem Statement](#problem-statement)
+* [Solution](#soltution)
+* [Implementation](#implementation)
+  * [Membership](#membership)
+  * [Service](#service)
+  * [Contracts](#contracts)
+  * [Accusation](#accusation)
+  * [Trials](#trials)
+  * [Rewards and Penalties](#rewards-and-penalties)
+* [Business Plan](#business-plan)
+* [Tokenomics](#tokenomics)
+* [Future Direction](#future-direction)
+* [Conclusion](#conclusion)
 
 ### Abstract
 The growing need of goods and services exchange require a trusty social platform to act as escrow. Even though physical contracts appear to provide a solution, they are often misinterpreted because of their subjective language and they commonly lack the practicality needed in our digital word. We propose a platform that enables parties to create contracts stored in the Cardano blockchain and builds member trust based on token rewards calculated through an algorithm that collects statistics related to the service or good provided and returns the amount of tokens per hour that will be rewarded. Parties that refuse to follow the rules pre-defined in the contract will be penalized by losing tokens proportionally to the severity of their misbehavior.
