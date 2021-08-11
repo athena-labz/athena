@@ -283,7 +283,7 @@ To cover this aspects, services are a data type that hold five parameters:
 * Price: What the client will need to pay in case everything goes well (can be 0 in cases which are not exactly a gig)
 * Trust: The amount of DSET tokens that will be hold to act as a guarantee in case one of the parties does not follow the rules
 
-Finally, the contract is only "officiated" if it receives a SIG token from the service provider. This can be done by consuming the user "account" UTxO provided that the data contains the four essential components.
+Finally, the contract is only "officiated" if it receives a SIG token from the service provider. This can be done by consuming the user "account" UTxO provided that the data contains the five essential components.
 
 ![Contract Creation Example](images/contract-creation.png)
 
