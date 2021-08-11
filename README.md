@@ -287,7 +287,7 @@ Finally, the contract is only "officiated" if it receives a SIG token from the s
 
 ![Contract Creation Example](images/contract-creation.png)
 
-The contract validator can receive two redeemers: "Open `Integer`", "Close", "Sign" and "Accuse `PubKeyHash`". The open redeemer signifies that, within the limit provided by the integer, any user can "Sign" this contract and request this service. The close redeemer, in the other hand, signalizes that, from now on, no more clients should be allowed to sign this contract.
+The contract validator can receive four redeemers: "Open `Integer`", "Close", "Sign" and "Accuse `PubKeyHash`". The open redeemer indicates that, within the limit provided by the integer, any user can "Sign" this contract and request this service. The close redeemer, in the other hand, signalizes that, from now on, no more clients should be allowed to sign this contract.
 
 ![Request Service Example](images/request-service.png)
 
