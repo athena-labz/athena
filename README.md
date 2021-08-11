@@ -270,7 +270,7 @@ The logic is another validator script defined by the service provider that shoul
 Nonetheless, it is important to notice that this logic script address may not exist and it is the responsibility of the client to assure that it does and that it has reasonable terms before he signs the contract.
 
 ##### IV. Accusations
-Accusations is a list of pairs corresponding to the accuser and accused public key hash `[(AccuserPKH, AccusedPKH)]`. When this list increases, the responsible judge (the first confirmed mediator from the list) will be notified and will have a deadline to provide the necessary inputs to the logic script.
+Accusations is a list of tuples containing to the accuser and accused public key hash and the mediator deadline `[(AccuserPKH, AccusedPKH, Deadline)]`. When this list increases, the responsible judge (the first confirmed mediator from the list) will be notified and will need to provide the necessary inputs to the logic script before the deadline has passed.
 
 ##### V. Service
 Though the name suggest that only freelancers should be using the platform to offer gigs, service can be understood as a more general term. Another name could be "Information", since it's function is to better formulate what the contract is about and give extra information about the deal as well as define the essential parameters (price and "trust", for example). In this sense, a company that wanted to transfer it's policies to a decentralized system could represent it as a service and create a new contract to handle conflicts between employees or issues related to their overall work. This contracts could have real world implications if the company decided, for instance, to measure their performance by comparing the number of tokens they own. 
