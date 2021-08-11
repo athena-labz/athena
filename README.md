@@ -173,10 +173,9 @@ language contracts and providing the ease of use so valued in our current world.
 3. [Implementation](#3-implementation)
     * [Membership](#a-membership)
     * [Contracts](#b-contracts)
-    * [Service](#c-service)
-    * [Accusation](#d-accusation)
-    * [Trials](#e-trials)
-    * [Rewards and Penalties](#f-rewards-and-penalties)
+    * [Accusation](#c-accusation)
+    * [Trials](#d-trials)
+    * [Rewards and Penalties](#e-rewards-and-penalties)
 4. [Business Plan](#4-business-plan)
 5. [Tokenomics](#5-tokenomics)
 6. [Future Direction](#6-future-direction)
@@ -251,7 +250,41 @@ In the underlying protocol, membership will work by creating an "account" (repre
 ![Join Platform Example](images/join-platform.png)
 
 #### B. Contracts
-So as to achieve objectivity, DigiServices' contracts are represented as a Plutus validator script. It can have multiple states as well as receive multiple redeemers.
+So as to achieve objectivity and decentralization, DigiServices' contracts are represented as a Plutus validator script. These contracts contain four important components.
 
-The "Default" state indicates that the contract has not been created yet, but the logic is already there, since it's defined in the moment of the UTxO creation. The "Waiting Client" state in the other hand, indicates that the service was already provided and the contract was already signed by the service provider, but there is no "client" yet.
+##### I. Judges
+Judges are essential for the dispute resolution mechanism. If unreliable or incompetent mediators are chosen, there is no guarantee of fairness. Because of this, they should be chosen in the moment the contract is created by the service provider, who should analyze carefully the options displayed in the main application and only chose judges that either have a good reputation or are known by them to be honest. The provider is encouraged to make good choices in order to attract more clients, since they will also verify the mediators, and to ensure honesty.
+
+Since it's open to the service provider to chose whoever he prefers and the judges can be any public key hash registered as a member of the platform, DigiServices open's space for new ways of determining good mediators, meaning neural networks could, for example, be trained to identify good options or even act as actual judges in a near future. This abstractness and flexibility creates an incentive for the emergence of new projects and ideas surrounding the ecosystem.
+
+In addition, since judges are rewarded for providing reliable inputs, the platform creates a market around providing trustful data and opens the possibility of the creation of organizations specialized in mediation. This is in contrast to the current system that gives no monetary incentive to judges.
+
+##### II. Inputs
+Differently from the conventional idea that judges should decide who is guilty, DigiServices understand that mediators job should only be to provide factual data, since penalties and rewards can be better handled by a computer, which has no bias and is not subjective to ambiguity.
+
+For this reason, inputs act as "yes or no" questions and it is responsibility of the judges to provide reliable answers in form of a boolean (true or false). This inputs are then passed to the arbitrary logic defined by the service provider, which will decide how the previously locked tokens will be distributed.
+
+##### III. Logic
+The logic is another validator script defined by the service provider that should receive N "inputs" from the judges as a redeemer, consuming the contract UTxO and should, according to the rules formally defined, distribute the consumed tokens which were locked by both the client and the service provider. Because inputs can be any boolean "questions", users can ensure dishonest parties are penalized by creating strictly defined rules connected to real-world inputs in form of Plutus script validators. Therefore, the logic itself acts as a judge, deciding who is guilty (less or no tokens) or innocent (receiving more or all tokens).
+
+##### IV. Service
+Though the name suggest that only freelancers should be using the platform to offer gigs, service can be understood as a more general term. Another name could be "Information", since it's function is to better formulate what the contract is about and give extra information about the deal as well as define the essential parameters (price and "trust", for example). In this sense, a company that wanted to transfer it's policies to a decentralized system could represent it as a service and create a new contract to handle conflicts between employees or issues related to their overall work. This contracts could have real world implications if the company decided, for instance, to measure their performance by comparing the number of tokens they own. 
+
+To cover this aspects, services are a data type that hold five parameters:
+
+* Publisher: A public key hash identifying the person who created this service
+* Title: A string with a brief description about what the contract is about
+* Description: A string with a more in-depth picture about the service
+* Price: What the client will need to pay in case everything goes well (can be 0 in cases which are not exactly a gig)
+* Trust: The amount of DSET tokens that will be hold to act as a guarantee in case one of the parties does not follow the rules
+
+Finally, the contract is only "officiated" if it receives a SIG token from the service provider. This can be done by consuming the user "account" UTxO provided that the data contains the four essential components.
+
+![Contract Creation Example](images/contract-creation.png)
+
+The contract validator can receive two redeemers: "Open `Integer`", "Close" or "Sign". The open redeemer signifies that, within the limit provided by the integer, any user can "Sign" this contract and request this service. The close redeemer, in the other hand, signalizes that, from now on, no more clients should be allowed to sign this contract.
+
+![Request Service Example](images/request-service.png)
+
+At any point in time judges that are inside the list of mediators can "sign" the contract, providing their membership SIG token to signalize that they accept to mediate it. They also need to provide a small amount of tokens that will be given to damaged parties in case they, when requested, don't provide a reliable input within the deadline.
 
