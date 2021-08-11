@@ -229,11 +229,26 @@ In order to make someone's trustworthiness easily accessible, DigiServices makes
 
 An initial registration fee in DSET is required to assure commitment. The registration allow access to all tools and platform services. The initial CAS score will be 60 in a range from 0 to 100, and it will be all parties’ task to increase it to higher levels. At the initial stage the deposited Trust Token will be the most critical factor to appeal the counter-party and build trust. After few transactions the additional CAS elements will enter into play. All members are allowed to link their profile to related sites to show their achievements, skills in the specific field. Trust is, therefore, measured by analyzing someone's CAS score, amount of deposited trust tokens (in the contract) and profile information.
 
+In order to "create an account" in the platform, DigiServices makes use of a "signature policy" script, responsible for minting SIG tokens, which are important for three reasons:
+
+##### I. UTxO Identity
+Because anyone can send tokens to an UTxO and set any arbitrary data, there needs to be a way of "officiating" UTxOs and avoid "ghost accounts" or data manipulation. A naive approach would be to create a single NFT and use that to identify the "official" UTxO, the problem would be that concurrency would be lost since all users would only have access to a single UTxO and, since Cardano doesn't allow double spending, two users wouldn't be able to join the platform at the same time.
+
+![Accounts Filter Example](images/account-filter.png)
+
+To solve that, DigiServices makes use of SIG tokens, which can only be minted when certain conditions are met (including the payment of the entrance fee) and are uniquely matched to each user by making the "Token Name" the user's public key hash. This serves as an UTxO "stamp", which can later be checked in order to create a list of valid "accounts". It also allows concurrency since each user has a unique UTxO even though the logic and address are the same.
+
+##### II. Account Identity
+Since SIG token names are public key hashes, they also serve as a way to identify users. CAS scores inside accounts that have SIG tokens can be recognized as real and other scripts that may require certain credentials can consume this account UTxO in order to verify if conditions are met.
+
+![Prove Compliance Example](images/prove-compliance.png)
+
+##### III. Prove compliance
+Because DigiServices is a mediation platform, it is extremely important to have a way of proving a user agreed with certain rules. SIG tokens can be used for that purpose since they can only be minted by the user whose public key hash is in the token name. In this way, when smart digital contracts are created, the account output is consumed and a SIG token is locked, proving compliance.
+
 ![Join Platform Example](images/join-platform.png)
 
-In the underlying protocol, membership will work by creating an "account" (represented by the Membership Market UTxO) using a "membership signature" minting policy. This minting policy will mint 100 new SIG tokens (with the user's public key hash as it's name) and deposit it in the newly created user "account" (a script validator that handles service offers and requests) provided that it also receives the entrance fee (in the example 1,000 DSET). This tokens are minted in order to create an actual identification mechanism since they will be used inside accusation contracts and there needs to be a way of proving that a user actually agreed with the rules.
-
-Furthermore, they will be used to perform actions, such as publishing a service and are important to "officiate" the UTxO. Though "Membership Market" UTxOs have the same logic and address, they are identified uniquely for each user (with their SIG tokens) in order to ensure that concurrency is possible. If instead they used a single NFT, user's wouldn't be able to join the platform at the same time, making the protocol slow and susceptible to spam attacks.
+In the underlying protocol, membership will work by creating an "account" (represented by the Membership Market UTxO) using a "membership signature" minting policy. This minting policy will mint 100 new SIG tokens and deposit them in the newly created user "account" (a script validator that handles service offers and requests) provided that it also receives the entrance fee (in the example 1,000 DSET).
 
 #### B. Contracts
 So as to achieve objectivity, DigiServices' contracts are represented as a Plutus validator script. It can have multiple states as well as receive multiple redeemers.
