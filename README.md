@@ -262,12 +262,15 @@ In addition, since judges are rewarded for providing reliable inputs, the platfo
 ##### II. Inputs
 Differently from the conventional idea that judges should decide who is guilty, DigiServices understand that mediators job should only be to provide factual data, since penalties and rewards can be better handled by a computer, which has no bias and is not subjective to ambiguity.
 
-For this reason, inputs act as "yes or no" questions and it is responsibility of the judges to provide reliable answers in form of a boolean (true or false). This inputs are then passed to the arbitrary logic defined by the service provider, which will decide how the previously locked tokens will be distributed.
+For this reason, inputs act as "yes / no" questions and it is responsibility of the judges to provide reliable answers in form of a boolean (true or false). This inputs are then passed to the arbitrary logic defined by the service provider, which will decide how the previously locked tokens will be distributed.
 
 ##### III. Logic
 The logic is another validator script defined by the service provider that should receive N "inputs" from the judges as a redeemer, consuming the contract UTxO and should, according to the rules formally defined, distribute the consumed tokens which were locked by both the client and the service provider. Because inputs can be any boolean "questions", users can ensure dishonest parties are penalized by creating strictly defined rules connected to real-world inputs in form of Plutus script validators. Therefore, the logic itself acts as a judge, deciding who is guilty (less or no tokens) or innocent (receiving more or all tokens).
 
-##### IV. Service
+##### IV. Accusations
+Accusations is a list of pairs corresponding to the accuser and accused public key hash `[(AccuserPKH, AccusedPKH)]`. When this list increases, the responsible judge (the first confirmed mediator from the list) will be notified and will have a deadline to provide the necessary inputs to the logic script.
+
+##### V. Service
 Though the name suggest that only freelancers should be using the platform to offer gigs, service can be understood as a more general term. Another name could be "Information", since it's function is to better formulate what the contract is about and give extra information about the deal as well as define the essential parameters (price and "trust", for example). In this sense, a company that wanted to transfer it's policies to a decentralized system could represent it as a service and create a new contract to handle conflicts between employees or issues related to their overall work. This contracts could have real world implications if the company decided, for instance, to measure their performance by comparing the number of tokens they own. 
 
 To cover this aspects, services are a data type that hold five parameters:
@@ -282,9 +285,14 @@ Finally, the contract is only "officiated" if it receives a SIG token from the s
 
 ![Contract Creation Example](images/contract-creation.png)
 
-The contract validator can receive two redeemers: "Open `Integer`", "Close" or "Sign". The open redeemer signifies that, within the limit provided by the integer, any user can "Sign" this contract and request this service. The close redeemer, in the other hand, signalizes that, from now on, no more clients should be allowed to sign this contract.
+The contract validator can receive two redeemers: "Open `Integer`", "Close", "Sign" and "Accuse `PubKeyHash`". The open redeemer signifies that, within the limit provided by the integer, any user can "Sign" this contract and request this service. The close redeemer, in the other hand, signalizes that, from now on, no more clients should be allowed to sign this contract.
 
 ![Request Service Example](images/request-service.png)
 
 At any point in time judges that are inside the list of mediators can "sign" the contract, providing their membership SIG token to signalize that they accept to mediate it. They also need to provide a small amount of tokens that will be given to damaged parties in case they, when requested, don't provide a reliable input within the deadline.
+
+#### C. Accusation
+In order to accuse someone, any user that has already signed a contract can consume the contract UTxO using the accuse redeemer. This will simply increase the accusation list with a pair corresponding to the user's public key hash and the person he is accusing. The main application will notice that and notify the first confirmed judge, which will have a deadline to provide the right inputs.
+
+![Accusation Example](images/accuse.png)
 
