@@ -169,7 +169,7 @@ language contracts and providing the ease of use so valued in our current world.
 
 ### White Paper Table of Contents
 1. [Problem Statement](#1-problem-statement)
-2. [Solution](#2-soltution)
+2. [Solution](#2-solution)
 3. [Implementation](#3-implementation)
     * [Membership](#a-membership)
     * [Contracts](#b-contracts)
