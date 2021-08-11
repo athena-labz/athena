@@ -172,8 +172,8 @@ language contracts and providing the ease of use so valued in our current world.
 2. [Solution](#soltution)
 3. [Implementation](#implementation)
   * [Membership](#membership)
-  * [Service](#service)
   * [Contracts](#contracts)
+  * [Service](#service)
   * [Accusation](#accusation)
   * [Trials](#trials)
   * [Rewards and Penalties](#rewards-and-penalties)
@@ -225,13 +225,12 @@ DigiServices will allow users to build flexible and versatile smart legal contra
 #### A. Membership
 In order to make someone's trustworthiness easily accessible, DigiServices makes use of a "membership" logic. This membership will be necessary in order to offer, request or mediate services. It offers a way of measuring trust by giving each user a CAS score, which can increase or decrease based on multiple factors, such as user reviews and activity.
 
-An initial registration fee in DSET is required to assure commitment. The registration allow access to all tools and platform services. The initial CAS score will be 60 in a range from 0 to 100, and it will be all parties’ task to increase it to higher levels. At the initial stage the deposited Trust Token will be the most critical factor to appeal the counter-party and build trust. After few transactions the additional CAS elements will enter into play. All members are allowed to link their profile to related sites to show their achievements, skills in the specific field. Trust is, therefore, measured by analyzing someone's CAS score, amount of deposited trust tokens and profile information.
+An initial registration fee in DSET is required to assure commitment. The registration allow access to all tools and platform services. The initial CAS score will be 60 in a range from 0 to 100, and it will be all parties’ task to increase it to higher levels. At the initial stage the deposited Trust Token will be the most critical factor to appeal the counter-party and build trust. After few transactions the additional CAS elements will enter into play. All members are allowed to link their profile to related sites to show their achievements, skills in the specific field. Trust is, therefore, measured by analyzing someone's CAS score, amount of deposited trust tokens (in the contract) and profile information.
 
 ![Join Platform Example](images/join-platform.png)
 
-In the underlying protocol, membership will work by combining a "membership market" validator script with a "membership invitation" minting policy. In order to join DigiServices, a user will create an arbitrary non-fungible token to represent his "account", send this NFT to the marketplace together with the one-time entrance fee and provide the initial Datum.
+In the underlying protocol, membership will work by creating an "account" (represented by the Membership Market UTxO) using a "membership signature" minting policy. This minting policy will mint 100 new SIG tokens (with the user's public key hash as it's name) and deposit it in the newly created user "account" (a script validator that handles service offers and requests) provided that it also receives the entrance fee (in the example 1,000 DSET). This tokens are minted in order to create an actual identification mechanism since they will be used inside accusation contracts and there needs to be a way of proving that a user actually agreed with the rules.
 
-![Membership Invitation Example](images/membership-invitation)
+Furthermore, they will be used to perform actions, such as publishing a service and are important to "officiate" the UTxO. Though "Membership Market" UTxOs have the same logic and address, they are identified uniquely for each user (with their SIG tokens) in order to ensure that concurrency is possible. If instead they used a single NFT, user's wouldn't be able to join the platform at the same time, making the protocol slow and susceptible to spam attacks.
 
-This user will then be able to mint "invite tokens" (IVT), whose names are the user's public key hash, by providing a number as a redeemer (the number of "invitations" that will be minted). These tokens can be used to perform actions, such as publishing a service. Though "Membership Market" UTxOs have the same logic and validator hash, they are identified uniquely for each user (with their NFT) in order to ensure that concurrency is possible. Otherwise user's wouldn't be able to join the platform at the same time, making the protocol susceptible to spam attacks.
 
