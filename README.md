@@ -168,19 +168,19 @@ language contracts and providing the ease of use so valued in our current world.
 ## White Paper
 
 ### White Paper Table of Contents
-1. [Problem Statement](#problem-statement)
-2. [Solution](#soltution)
-3. [Implementation](#implementation)
-    * [Membership](#membership)
-    * [Contracts](#contracts)
-    * [Service](#service)
-    * [Accusation](#accusation)
-    * [Trials](#trials)
-    * [Rewards and Penalties](#rewards-and-penalties)
-4. [Business Plan](#business-plan)
-5. [Tokenomics](#tokenomics)
-6. [Future Direction](#future-direction)
-7. [Conclusion](#conclusion)
+1. [Problem Statement](#1-problem-statement)
+2. [Solution](#2-soltution)
+3. [Implementation](#3-implementation)
+    * [Membership](#a-membership)
+    * [Contracts](#b-contracts)
+    * [Service](#c-service)
+    * [Accusation](#d-accusation)
+    * [Trials](#e-trials)
+    * [Rewards and Penalties](#f-rewards-and-penalties)
+4. [Business Plan](#4-business-plan)
+5. [Tokenomics](#5-tokenomics)
+6. [Future Direction](#6-future-direction)
+7. [Conclusion](#7-conclusion)
 
 ### Abstract
 Global gig-economy transactions are forecast to grow by 17% a year to around $455 billion dollars by 2023, according to a report from Mastercard [1]. There is a growing need for a fast, secure, and reliable way to establish trust between participants in the gig economy. We propose a platform that enables parties to create contracts stored in the Cardano blockchain to build trust based on token rewards calculated through an algorithm that collects statistics related to the service or good provided and returns the amount of tokens per hour that will be rewarded. Parties that violate the contract will be penalized by losing tokens proportional to the severity of violation.
@@ -194,6 +194,7 @@ In addition to the unfairness of our legal system, bureaucracy and regulations m
 Additionally, all these options rely on natural language contracts, which inherit a series of problems, such as subjectivity and complexity. The former can result, a lot of times, in unfair decisions and misunderstanding. The latter make's expensive lawyers required for the creation of a contract. Both of which are not desirable in a legal system that aims fairness and openness.
 
 **Mateus' comment**
+
 I think we could add more details to this first section
 
 ### 2. Solution
@@ -201,6 +202,7 @@ I think we could add more details to this first section
 The solution proposed by DigiServices aims to overcome the limits of physical contracts. Misinterpretation due to subjective language and the innate lack of easy-handling make them useless to tackle the issue. DigiServices is a platform that enables parties to create contracts stored in the Cardano blockchain and builds members trust based on token rewards and penalties, supported by a Credit Assessment System (CAS) able to address every platform member. Additionally a reward-penalty system is in place. An algorithm collects statistics related to the service transactions, credit score, activities and returns the amount of tokens that will be rewarded. Parties that refuse to follow the rules already pre-defined in the contract will be penalized by losing tokens proportionally to the severity of their violation. In extreme cases access to the platform will be suspended.
 
 **Mateus' comment**
+
 "In extreme cases access to the platform will be suspended."
 Unless we implement an identification mechanism, I don't think this is possible.
 
