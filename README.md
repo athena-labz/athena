@@ -171,12 +171,12 @@ language contracts and providing the ease of use so valued in our current world.
 1. [Problem Statement](#problem-statement)
 2. [Solution](#soltution)
 3. [Implementation](#implementation)
-  * [Membership](#membership)
-  * [Contracts](#contracts)
-  * [Service](#service)
-  * [Accusation](#accusation)
-  * [Trials](#trials)
-  * [Rewards and Penalties](#rewards-and-penalties)
+  A. [Membership](#membership)
+  B. [Contracts](#contracts)
+  C. [Service](#service)
+  D. [Accusation](#accusation)
+  E. [Trials](#trials)
+  F. [Rewards and Penalties](#rewards-and-penalties)
 4. [Business Plan](#business-plan)
 5. [Tokenomics](#tokenomics)
 6. [Future Direction](#future-direction)
@@ -233,4 +233,8 @@ In the underlying protocol, membership will work by creating an "account" (repre
 
 Furthermore, they will be used to perform actions, such as publishing a service and are important to "officiate" the UTxO. Though "Membership Market" UTxOs have the same logic and address, they are identified uniquely for each user (with their SIG tokens) in order to ensure that concurrency is possible. If instead they used a single NFT, user's wouldn't be able to join the platform at the same time, making the protocol slow and susceptible to spam attacks.
 
+#### B. Contracts
+So as to achieve objectivity, DigiServices' contracts are represented as a Plutus validator script. It can have multiple states as well as receive multiple redeemers.
+
+The "Default" state indicates that the contract has not been created yet, but the logic is already there, since it's defined in the moment of the UTxO creation. The "Waiting Client" state in the other hand, indicates that the service was already provided and the contract was already signed by the service provider, but there is no "client" yet.
 
