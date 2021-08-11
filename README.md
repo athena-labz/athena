@@ -292,7 +292,7 @@ The contract validator can receive two redeemers: "Open `Integer`", "Close", "Si
 At any point in time judges that are inside the list of mediators can "sign" the contract, providing their membership SIG token to signalize that they accept to mediate it. They also need to provide a small amount of tokens that will be given to damaged parties in case they, when requested, don't provide a reliable input within the deadline.
 
 #### C. Accusation
-In order to accuse someone, any user that has already signed a contract can consume the contract UTxO using the accuse redeemer. This will simply increase the accusation list with a pair corresponding to the user's public key hash and the person he is accusing. The main application will notice that and notify the first confirmed judge, which will have a deadline to provide the right inputs.
+In order to accuse someone, any user that has already signed a contract can consume the contract UTxO using the accuse redeemer. This will simply increase the accusation list with a pair corresponding to the user's public key hash and the person he is accusing plus the deadline the mediator has to provide the right inputs. The main application will notice that and notify the first confirmed judge.
 
 ![Accusation Example](images/accuse.png)
 
