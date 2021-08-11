@@ -267,6 +267,8 @@ For this reason, inputs act as "yes / no" questions and it is responsibility of 
 ##### III. Logic
 The logic is another validator script defined by the service provider that should receive N "inputs" from the judges as a redeemer, consuming the contract UTxO and should, according to the rules formally defined, distribute the consumed tokens which were locked by both the client and the service provider. Because inputs can be any boolean "questions", users can ensure dishonest parties are penalized by creating strictly defined rules connected to real-world inputs in form of Plutus script validators. Therefore, the logic itself acts as a judge, deciding who is guilty (less or no tokens) or innocent (receiving more or all tokens).
 
+Nonetheless, it is important to notice that this logic script address may not exist and it is the responsibility of the client to assure that it does and that it has reasonable terms before he signs the contract.
+
 ##### IV. Accusations
 Accusations is a list of pairs corresponding to the accuser and accused public key hash `[(AccuserPKH, AccusedPKH)]`. When this list increases, the responsible judge (the first confirmed mediator from the list) will be notified and will have a deadline to provide the necessary inputs to the logic script.
 
@@ -296,3 +298,9 @@ In order to accuse someone, any user that has already signed a contract can cons
 
 ![Accusation Example](images/accuse.png)
 
+#### D. Trials
+After a judge has been notified, it is his responsibility to discover as many information as possible concerning the case. In this sense, if necessary, he can call both parties to a discussion in which each one will explaining their views. They could even have lawyers like in the traditional legal system if they think is necessary. In most cases, though, it will be sufficient if the judge communicate via email or other digital means with the users and ask them for proofs and defenses, as it is in the best interest of both to collaborate. In this sense, judges not only act as a source of truth, but also as an investigator.
+
+After enough information has been acquired that the mediator feels comfortable with his answers to the inputs, he can consume the "logic" UTxO giving it, as a redeemer, the decided inputs. This Plutus validator will then consume the contract UTxO and distribute the received tokens according to the terms defined (terms should be understood as the logic itself).
+
+![Accusation Example](images/trial.png)
