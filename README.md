@@ -207,7 +207,7 @@ Unless we implement an identification mechanism, I don't think this is possible.
 
 By integrating real-world reliable inputs with strict on-chain contracts, DigiServices aims to mitigate the ambiguity so common in natural-language written contracts, while still preserving the flexibility needed to communicate with the real world. Likewise, we propose an easy-to-use platform by making the creation of contract templates possible. In this way, no expensive lawyers will be required in order to write a contract. Further, mediators, service providers and clients trust will be measured based on a review system powered by the use of DSET tokens that represent scores. This system, together with other components, will be used to determine an user's annual reward. Lastly, DigiServices will target freelancers by having a "service marketplace", where users can provide information about the service they offer and attach it to an "accusation contract", which will be used to handle conflicts.
 
-DigiServices strive for Trustworthy Platform excellence and for this purpose implements strict policies to support just behavior and strongly penalize failures in fulfilling set agreements. In order to provide a great user experience as well as offer an affordable, fast and fair mediation platform, we understand that, above all, four components are important.
+In order to provide a great user experience as well as offer an affordable, fast and fair mediation platform, we understand that, above all, four components are important.
 
 #### A. Ease of Use
 Users should be able to create Smart Contracts in a few clicks, assisted also by an advanced interactive drag and drop editor. Furthermore, contract templates should provide an easy way to offer services that don't require much flexibility.
@@ -226,7 +226,7 @@ DigiServices will allow users to build flexible and versatile smart legal contra
 #### A. Membership
 In order to make someone's trustworthiness easily accessible, DigiServices makes use of a "membership" logic. This membership will be necessary in order to offer, request or mediate services. It offers a way of measuring trust by giving each user a CAS score, which can increase or decrease based on multiple factors, such as user reviews and activity.
 
-An initial registration fee in DSET is required to assure commitment. The registration allow access to all tools and platform services. The initial CAS score will be 60 in a range from 0 to 100, and it will be all parties’ task to increase it to higher levels. At the initial stage the deposited Trust Token will be the most critical factor to appeal the counter-party and build trust. After few transactions the additional CAS elements will enter into play. All members are allowed to link their profile to related sites to show their achievements, skills in the specific field. Trust is, therefore, measured by analyzing someone's CAS score, amount of deposited trust tokens (in the contract) and profile information.
+An initial registration fee in DSET is required to assure commitment. The registration allow access to all tools and platform services. The initial CAS score will be 60 in a range from 0 to 1,000,000, and it will be all parties’ task to increase it to higher levels. At the initial stage the deposited Trust Token will be the most critical factor to appeal the counter-party and build trust. After few transactions the additional CAS elements will enter into play. All members are allowed to link their profile to related sites to show their achievements, skills in the specific field. Trust is, therefore, measured by analyzing someone's CAS score, amount of deposited trust tokens (in the contract) and profile information.
 
 In order to "create an account" in the platform, DigiServices makes use of a "signature policy" script, responsible for minting SIG tokens, which are important for three reasons:
 
@@ -250,7 +250,7 @@ In the underlying protocol, membership will work by creating an "account" (repre
 ![Join Platform Example](images/join-platform.png)
 
 #### B. Contracts
-So as to achieve objectivity and decentralization, DigiServices' contracts are represented as a Plutus validator script. These contracts contain four important components.
+So as to achieve objectivity and decentralization, DigiServices' contracts are represented as a Plutus validator script. These contracts contain five important components.
 
 ##### I. Judges
 Judges are essential for the dispute resolution mechanism. If unreliable or incompetent mediators are chosen, there is no guarantee of fairness. Because of this, they should be chosen in the moment the contract is created by the service provider, who should analyze carefully the options displayed in the main application and only chose judges that either have a good reputation or are known by them to be honest. The provider is encouraged to make good choices in order to attract more clients, since they will also verify the mediators, and to ensure honesty.
@@ -280,8 +280,8 @@ To cover this aspects, services are a data type that hold five parameters:
 * Publisher: A public key hash identifying the person who created this service
 * Title: A string with a brief description about what the contract is about
 * Description: A string with a more in-depth picture about the service
-* Price: What the client will need to pay in case everything goes well (can be 0 in cases which are not exactly a gig)
 * Trust: The amount of DSET tokens that will be hold to act as a guarantee in case one of the parties does not follow the rules
+* ContractType: A data type that will indicate of what type this contract is and the specific parameters. It can be `Constant`, which takes no argument or `OneTime`, which takes a `Value` indicating the price and a `POSIXTime` indicating the deadline. 
 
 Finally, the contract is only "officiated" if it receives a SIG token from the service provider. This can be done by consuming the user "account" UTxO provided that the data contains the five essential components.
 
@@ -304,3 +304,66 @@ After a judge has been notified, it is his responsibility to discover as many in
 After enough information has been acquired that the mediator feels comfortable with his answers to the inputs, he can consume the "logic" UTxO giving it, as a redeemer, the decided inputs. This Plutus validator will then consume the contract UTxO and distribute the received tokens according to the terms defined (terms should be understood as the logic itself).
 
 ![Accusation Example](images/trial.png)
+
+#### E. Rewards and Penalties
+DigiServices strive for Trustworthy Platform excellence and for this purpose implements strict policies to support just behavior and strongly penalize failures in fulfilling set agreements.
+
+In that regard, judges, service providers and clients will be rewarded for their service through a weighed formula that will distribute tokens based on their CAS scores every month. In addition, members having scores exceeding a set threshold continuously over 12 months shall receive a premium-reward in DSET. Aiming at increased participation and activity, members will also be able to freely set a minimum transaction quantity threshold (number of deals), measured per month. The higher the value set, the higher the premium-reward.
+
+Penalties will follow a similar approach. Members with low CAS scores will be forced to pay an amount of tokens in order to maintain their membership and, if for 12 consecutive months, their CAS score is below a set threshold, the user will have an extra penalty.
+
+CAS scores can be found in each user account. The signature policy script, which "officiate" accounts, only allows minting of signature tokens if the account UTxO is initialized with a datum containing the initial CAS score (600,000). This ensures that all users start with the same score and no data is tempered. After an account is officiated, it's UTxO will only be consumed when validated, making it possible for the platform to execute the necessary logic, increasing or decreasing users' scores.
+
+The user score increment is defined as a percentage of the subtraction between the total and the actual score. For instance, if the CAS score increment of a service deal was 10%, a user that has 600,000, would then get a score of 640,000 (+10% of 1,000,000 minus 600,000). Another member with a score of 200,000, in the other hand, would get 280,000. This means that the higher a score is, the harder it is to grow. This ensures balance between users and stimulates members with low scores to try to improve with the additional bonus of creating competitiveness between the top members.
+
+Scores can be increased in the following occasions:
+
+##### I. Service Deals
+In order to incentivize constant use of the platform, DigiServices reward's users for service deals. This is done by increasing the user score proportionally to the platform fees paid in the transaction only if there were no accusations and both parties were satisfied. Using fees to calculate the score increase ensures that there is no manipulation since an attacker would need to spend a larger amount of tokens in fees than he could earn in rewards.
+
+##### II. Conflict Resolutions
+Another important component of DigiServices is the resolution mechanism: a Plutus validator script that redistributes locked tokens from parties based on the input from trusted judges in order to penalize those who did not follow the established rules. Judges are very important for the sustainability of the platform, since they are the ones responsible for providing reliable connections between the natural world and the blockchain world. As for better evaluating the honesty of platform mediators, judges' CAS scores increase whenever their resolution is not challenged. Their increment is proportional to the price of the service mediated.
+
+##### III. Reviews
+After a service is completed or a conflict is resolved, the involved parties must give a review. Because DigiServices intends to preserve users' anonymity (**Mateus' Comment** That's my opinion, what do you guys think?) and review manipulation would be undesirable, reviews are matched to DSET tokens. Whenever a service is completed, the client and the service provider are forced to distribute 0.5% of the service price, either giving it partially or fully to the other. The remaining is burnt.
+
+For instance, a traditional five stars in DigiServices would mean that the total value (0.5%) was given to the other user (nothing would be burnt) and a two stars review would mean that only a part of the value (0.2%) would be "tipped" and the rest burnt. Additionally, users can provide more than five stars by giving extra tips exceeding the required value.
+
+In the conflict resolution, though, things are a little bit different since reviews from favored parties would be almost always positive and reviews from losing parties negative. As for solving this issue, mediators are reviewed by the other judges from their list.
+
+Because reviews are a good indicator of someone's honesty, participation and competence, they are also responsible for increasing or decreasing a member's CAS score. Following the other approaches, the score is incremented (or decremented) proportionally to the value deposited minus half the maximum possible value (0.25%). Users with less than a 2.5 stars review would, therefore, see a decrease in their CAS score.
+
+A fixed amount of DSET tokens is monthly minted and distributed according to the Credit Assessment System (CAS). Users are rewarded or penalized with tokens proportionally to their scores, obeying the following `calculateRewards` function:
+
+```haskell
+-- An alias for Integer that indicates an user CAS score (0 to 100)
+type CAS = Integer
+
+-- The total amount of tokens that will be minted every month (just as an example)
+totalAmt :: Integer
+totalAmt = 1000
+
+initialValue :: Integer
+initialValue = 600000
+
+calculateReward :: CAS -> Integer -> Integer
+calculateReward score scoreSum
+  | scoreSum == 0 = 0 -- Ensure that we are not trying to divide by zero
+  | otherwise = ((score - initialValue) * totalAmt) `div` scoreSum
+
+-- The sum of all rewards should be less or equal the total amount of tokens
+calculateRewards :: [CAS] -> [Integer]
+calculateRewards xs = map (`calculateReward` scoreSum) xs
+  where
+    scoreSum :: Integer
+    scoreSum = foldl (\ acc x -> acc + x - initialValue) 0 xs
+```
+
+```bash
+Prelude> calculateRewards [1_000_000, 1_000_000, 1_000_000]
+[333,333,333]
+Prelude> calculateRewards [357_947, 946_792, 649_063]
+[-1574,2254,319]
+```
+
+As seen, the `calculateRewards` function takes each member CAS score and try to find the proportional amount of tokens to be rewarded or taken. In order to avoid schemes in which users create multiple accounts to receive free rewards, the function subtracts the initial value (600,000) from the user score. This means that it is possible for a member to receive a "negative reward" (or penalty) and be forced to pay the specified amount so that he does not have his membership suspended.       
