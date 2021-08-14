@@ -178,8 +178,9 @@ language contracts and providing the ease of use so valued in our current world.
     * [Rewards and Penalties](#e-rewards-and-penalties)
 4. [Business Plan](#4-business-plan)
 5. [Tokenomics](#5-tokenomics)
-6. [Future Direction](#6-future-direction)
-7. [Conclusion](#7-conclusion)
+6. [Road Map](#6-Road Map)
+7. [Future Direction](#7-future-direction)
+8. [Conclusion](#8-conclusion)
 
 ### Abstract
 Global gig-economy transactions are forecast to grow by 17% a year to around $455 billion dollars by 2023, according to a report from Mastercard [1]. There is a growing need for a fast, secure, and reliable way to establish trust between participants in the gig economy. We propose a platform that enables parties to create contracts stored in the Cardano blockchain to build trust based on token rewards calculated through an algorithm that collects statistics related to the service or good provided and returns the amount of tokens per hour that will be rewarded. Parties that violate the contract will be penalized by losing tokens proportional to the severity of violation.
@@ -384,3 +385,27 @@ Prelude> calculateRewards [357_947, 946_792, 649_063]
 ```
 
 As seen, the `calculateRewards` function takes each member CAS score and try to find the proportional amount of tokens to be rewarded or taken. In order to avoid schemes in which users create multiple accounts to receive free rewards, the function subtracts the initial value (600,000) from the user score. This means that it is possible for a member to receive a "negative reward" (or penalty) and be forced to pay the specified amount so that he does not have his membership suspended.       
+
+
+***6 - Road Map
+
+##Initial Thoughts
+The Cardano blockchain is a new third generation blockchain relying on proof-of-stake for throughput and energy efficiency.
+As this new ecosystem opens up through Alonzo version by end of year 2021, the users and businesses will be able to operate on this new vast ecosystem.
+Digiservices platform draws on Cardano smart contract environment to provide trustworthiness to third parties service providers platform or to services exchanged on the platform itself.
+A suitable and engaged partner will be selected for the marketing activity to show how a blockchain solution can provide a cheaper, trustworthy, convenient platform for them, while providing a capability for customers/members to take advantage of Defi, paying with native tokens DSET while allowing swapping between Ada and other popular tokens all hosted on the Cardano network. 
+
+#Roadmap Stages
+
+#Stage 1  - 3 month  - Overall Proof-of-Concept, Sep.-Nov. 2021
+-Identify technical issues
+-High level concept design
+-Visual design options
+#Stage 2  - 6 months - Solution, Technical Model, Solution Details, Dec.2021-May 2022
+-Concept solution options
+-Test concept, Prototype with potential members through new ‘DigiServices’ platform, on Alonzo Mainnet
+-Development marketing and uptake plan
+#Stage 3 - 2 Months  - Release 1. Version, Jun.2022 – Jul.2022
+First go live and working solution for at least 10’000 registered members
+
+
