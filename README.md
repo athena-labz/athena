@@ -226,7 +226,7 @@ DigiServices will allow users to build flexible and versatile smart legal contra
 #### A. Membership
 In order to make someone's trustworthiness easily accessible, DigiServices makes use of a "membership" logic. This membership will be necessary in order to offer, request or mediate services. It offers a way of measuring trust by giving each user a CAS score, which can increase or decrease based on multiple factors, such as user reviews and activity.
 
-An initial registration fee in DSET is required to assure commitment. The registration allow access to all tools and platform services. The initial CAS score will be 60 in a range from 0 to 1,000,000, and it will be all parties’ task to increase it to higher levels. At the initial stage the deposited Trust Token will be the most critical factor to appeal the counter-party and build trust. After few transactions the additional CAS elements will enter into play. All members are allowed to link their profile to related sites to show their achievements, skills in the specific field. Trust is, therefore, measured by analyzing someone's CAS score, amount of deposited trust tokens (in the contract) and profile information.
+An initial registration fee in DSET is required to assure commitment. The registration allow access to all tools and platform services. The initial CAS score will be 60 in a range from 0 to 100, and it will be all parties’ task to increase it to higher levels. At the initial stage the deposited Trust Token will be the most critical factor to appeal the counter-party and build trust. After few transactions the additional CAS elements will enter into play. All members are allowed to link their profile to related sites to show their achievements, skills in the specific field. Trust is, therefore, measured by analyzing someone's CAS score, amount of deposited trust tokens (in the contract) and profile information.
 
 In order to "create an account" in the platform, DigiServices makes use of a "signature policy" script, responsible for minting SIG tokens, which are important for three reasons:
 
@@ -245,7 +245,7 @@ Because DigiServices is a mediation platform, it is extremely important to have 
 
 ![Prove Compliance Example](images/prove-compliance.png)
 
-In the underlying protocol, membership will work by creating an "account" (represented by the Membership Market UTxO) using a "membership signature" minting policy. This minting policy will mint 100 new SIG tokens and deposit them in the newly created user "account" (a script validator that handles service offers and requests) provided that it also receives the entrance fee (in the example 1,000 DSET).
+In the underlying protocol, membership will work by creating an "account", represented by the Membership Market (MM) UTxO using a "membership signature" minting policy. This minting policy will mint 100 new SIG tokens and deposit them in the newly created user "account" (a script validator that handles service offers and requests) provided that it also receives the entrance fee (in the example 1,000 DSET).
 
 ![Join Platform Example](images/join-platform.png)
 
