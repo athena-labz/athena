@@ -12,13 +12,9 @@ reward-driven, platform for goods and service exchanges
 
 ### Supply
 
-Differently from traditional currencies, such as Bitcoin, Litecoin and Ethereum,
-DigiServices tokens (DSET) are not deflationary. This is important in order to
-incentivise cooperative and honest behaviour in the platform.
+DigitalServices tokens (DSET) are not deflationary. This is important to incentivize cooperative and honest behaviour in the platform.
 
-A fixed amount of DSET tokens is monthly minted and distributed according to a
-Credit Assesment System (CAS). Users receive tokens proportionally to their
-scores, obeying the following function:
+A fixed amount of DSET tokens is minted monthly and distributed according to a *Credit Assessment System* (CAS). Users receive tokens based on their scores obeying the following function:
 
 ```haskell
 -- The total amount of tokens that will be minted every month
@@ -40,62 +36,36 @@ calculateRewards (x:xs) = ((x `div` revSum) * totalAmt `div` 100) : calculateRew
 
 ### Utility
 
-In order to ensure that dishonest parties are penalised, DigiServices makes it
-possible for service providers to lock an arbitrary amount of tokens inside
-their proposal in the marketplace and require that their client do the same. In
-this way, not only both know that each other is sufficiently honest to have this
-amount of tokens, but they can also use it as a pledge in case there is a conflict.
+DSET can be used as utility tokens to enforce honest behavior between parties. Service providers and their clients are able to lock an arbitrary amount of tokens inside their agreement to incentivize honest behavior. In the event of a conflict, one possible resolution is to punish the dishonest party by transferring these locked tokens to the honest party.
 
-In this sense, DSET utility is to provide a good measure of honesty inside the
-platform and ensure parties are not violated, as well as, possibly in the
-future be used as a voting mechanism to ensure decentralisation in the platform.
+In the future, DSET tokens may also be used as a voting mechanism to ensure decentralisation in the platform.
 
 ### Network
 
-Because users receive rewards for being active, inviting new members and
-mantaining a good reputation, the network is benefited as a whole. Not only does
-DSET creates a viable way of classifying someone's honesty, but it also
-incentivises constant use of the platform and good services provion.
+Users receive rewards for being active on the platform. Inviting new members and maintaining a good reputation benefits the network. DSET creates a viable way to classify someone's honesty and are distributed as rewards to users of the platform providing goods and services.
 
 ## Alice and Bob example
 
-Suppose Alice want’s to offer her services as a writer. In normal circunstances
-she could search for a publishing company and sign a contract with them.
-The problem, in this case, is that natural language contracts open doors for
-ambiguity and misinterpretation. Additionally, physical contracts do not fit the
-requirements of practicallaty and quickness.
+Suppose Alice want’s to offer her services as a writer. Traditionally,
+she would search for a publishing company and sign a contract with them.
+The problem with this approach is that natural language contracts open doors for
+ambiguity, misinterpretation, and do not fit the requirements of practicality and quickness.
 
 Another approach, would be for Alice to access an online website focused on
-freelance jobs (e.g. Fiverr or Upwork). In this case, alongside with the
-ambiguity and flexibility problems (as these websites usually make use of
-pre-made natural language contracts), there could be the possibility of Alice
-not delivering the project or even of the client not paying the agreed amount.
+freelance jobs (e.g. Fiverr or Upwork). These sites usually use pre-made natural language contracts. This approach suffers from the same problems of natural language contracts mentioned above and have the additional risk of the project not being delivered or the client not paying the agreed amount.
 
-To solve these issues, we propose DigiServices: a digital platform that, by
-making use of Cardano smart contracts, enables parties to offer their services
-in a trustfull manner avoiding misinterpratation or ambiguity and using a
-reputation system that penalizes dishonest parties and reward honest ones.
+To solve these issues, we propose DigiServices: a digital platform that allows service providers and clients to engage in honest transactions without the parties needing to trust each other. Built on Cardano, it uses smart contracts to enable parties to offer their services without the possibility of misinterpreation or ambiguity. It uses a reputation system to penalize dishonest parties and reward honest parties.
 
-Simmilarly to the second example, with DigiServices Alice would be able to
-access a user-friendly web application and publish her service there. One of the
-key differences, though, would be that this service would not be stored inside a
-centralized database, but, rather, inside the Datum of a Plutus Validator called
-marketplace.
-
-The Datum of the marketplace contains a list of `Service`s. `Service` is a special
-data type that holds four values: A `Title`, a `Description`, a `Price` and a
-`Signature` symbol.
-
-The first value (title) is the service Alice will provide (e.g. "Novel writer").
-The second value (description) can contain a little bit of her background
-and should provide a nice explanation of what she will do (only for marketing
-reasons since it shoudn't affect the judge decision in case of a conflict). The
-third value (price) is the amount of DSET tokens the client should pay in order
-to receive the service.
-
-The last value (signature) is a non-fungible token that is only valid if it
-contains a cryptographic signature resulted from the combination of the owner’s
-private key and the `Accusation Contract` validator hash.
+With DigiServices, when Alice publishes her service online, it will be stored inside the Datum of a Plutus Validator called *marketplace*. The Datum of the contains a list of `Service`s. `Service` is a special
+data type that holds four values: 
+- `Title`
+   - the name of the service Alice will provide (e.g. *Novel Writer*)
+- `Description`
+   - provides context such as Alice's background and allow Alice to market service 
+- `Price`
+   - amount of DSET tokens the client will pay to receive the service
+- `Signature`
+   - a non-fungible token that is only valid if it contains a cryptographic signature created from the combination of the owner's private key and the `Accusation Contract` validator hash.
 
 Example
 ```haskell
@@ -115,12 +85,16 @@ data Sig = Sig { signatory          :: Ledger.PubKeyHash
 This means that the signature can be used to prove someone agreed with a
 determined contract.
 
-In our example, Alice would first create an accusation contract. Let’s suppose
-she uses Charlie, Daniel and Emma public keys as the list of judges.
-Additionally, let’s say the inputs are `“Was a book actually written and
-delivered?”`, `“Did it have more than 200 pages”` and `“Was the
-client collaborative, providing any information needed?”`. Lastly, let’s
-say the logic written was the following:
+In our example, Alice would first create an `Accusation Contract`.
+
+She uses Charlie, Daniel and Emma public keys as the list of judges.
+
+She uses the following inputs to create the contract:
+  - `“Was a book actually written and delivered?”`
+  - `“Did it have more than 200 pages”`
+  - `“Was the client collaborative, providing any information needed?”`
+  
+The logic is codified below.
 
 ```haskell
 type ClientTokens = Int
@@ -140,31 +114,19 @@ distributeTokens inp1 inp2 inp3 totalAmt =
     judgeAmt = totalAmt `div` 20
 ```
 
-Bob could then, agreeing with the contract and seeing that Alice's judges are
-reliable and qualified, decide to actually request her services. For that
-he would need to provide his signature token and lock the same amount of trust
-tokens provided by Alice, as well as, the amount of DSET Alice set as her
-service price.
+Bob could read Alice's contract and if he agrees with Alice's inputs, could also determine if the judges Alice selected are reliable and qualified to fairly handle a conflict before requesting Alice's services.
 
-Supposing Alice is rebellious, though, and decide's to write a book with only
-100 pages (contrary to the rules she herself defined), Bob could invoke an
-"Accuse" event inside the accusation contract, which would notify the first
-judge in the list (Charlie) and give him a hardcoded fixed deadline (e.g. 24h)
-to provide answers to the inputs defined by Alice ("Was a book actually...").
+To request Alice's services, Bob would provide his signature token and lock the same amount of DSET tokens provided by Alice in the `Accusation Contract` plus the amount of DSET tokens to pay Alice for her services.
 
-If he does, then the logic will be executed according to the inputs provided
-(e.g. `(True, False, True)`) and would distribute the tokens accordingly.
-Because of how the contract was defined, Alice would receive nothing, Bob 57 TT
-and Charlie 3 TT. It is possible, though, that Charlie does not respond within
-the deadline. In this case, the next judge in the list will be notified and the
-cycle repeat.
+Lets assume Alice violates the contract and only delivers a book with 100 pages. Bob could invoke an "Accusation" event inside the `Accusation Contract`. This will notify the first judge in the contract (Charlie) and give him a hardcoded fixed deadline (e.g 24 hours) to provide answers to the inputs defined by Alice.
 
-Of course, in our example Bob was the one to invoke the accusation, but nothing
-stops Alice to do the same in case Bob is not cooperative and does not follow
-the agreed rules. DigiServices, therefore proves to be a great way of making
-sure contracts are followed, eliminating ambiguity normally attached to natural
-language contracts and providing the ease of use so valued in our current world.
+If he does, then the logic will be executed according to the inputs provided (e.g. `(True, False, True)`) and would distribute the tokens locked in the `Accusation Contract` accordingly. Because of how the contract was defined Alice would receive nothing. Bob would receive 57 trust tokens (TT) and Charlie would receive 3 TT. It is possible that Charlie does not respond within the deadline. In this case the next judge in the list will be notified and the cycle repeats.
 
+
+In our example Bob was the one to invoke the accusation, but Alice
+could do the same thing if Bob does not follow the agreed upon rules in the contract. 
+
+This example illustrates one possible way that DigiServices can be used to establish trust between two parties who do not know each other by eliminating ambiguity normally attached to natural language contracts and provide a way to resolve conflicts.
 ## White Paper
 
 ### White Paper Table of Contents
