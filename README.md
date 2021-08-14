@@ -234,21 +234,21 @@ An initial registration fee in DSET is required to assure commitment. The regist
 In order to "create an account" in the platform, DigiServices makes use of a "signature policy" script, responsible for minting SIG tokens, which are important for three reasons:
 
 ##### I. UTxO Identity
-Because anyone can send tokens to an UTxO and set any arbitrary data, there needs to be a way of "officiating" UTxOs and avoid "ghost accounts" or data manipulation. A naive approach would be to create a single NFT and use that to identify the "official" UTxO, the problem would be that concurrency would be lost since all users would only have access to a single UTxO and, since Cardano doesn't allow double spending, two users wouldn't be able to join the platform at the same time.
+Because anyone can send tokens to an UTxO and set any arbitrary data, there needs to be a authentication of UTxOs and avoid "ghost accounts" or data manipulation. A naive approach would be to create a single NFT and use that to identify the authentic UTxO; the problem would be that concurrency would be lost since all users would only have access to a single UTxO and, since Cardano doesn't allow double spending, two users wouldn't be able to join the platform at the same time.
 
-To solve that, DigiServices makes use of SIG tokens, which can only be minted when certain conditions are met (including the payment of the entrance fee) and are uniquely matched to each user by making the "Token Name" the user's public key hash. This serves as an UTxO "stamp", which can later be checked in order to create a list of valid "accounts". It also allows concurrency since each user has a unique UTxO even though the logic and address are the same.
+DigiServices makes use of SIG tokens to address this issue. SIG can only be minted when certain conditions are met (including the payment of the entrance fee) and are uniquely matched to each user by making the "Token Name" the user's public key hash. This serves as an UTxO "stamp", which can later be checked in order to create a list of valid "accounts". It also allows concurrency since each user has a unique UTxO even though the logic and address are the same.
 
 ![Accounts Filter Example](images/account-filter.png)
 
 ##### II. Account Identity
-Since SIG token names are public key hashes, they also serve as a way to identify users. CAS scores inside accounts that have SIG tokens can be recognized as real and other scripts that may require certain credentials can consume this account UTxO in order to verify if conditions are met.
+Since SIG token names are public key hashes, they also serve as a way to identify users. Each account linked to a SIG token is provided with a CAS score and can be recognized as real; other scripts requiring credentials can consume this account UTxO in order to verify if conditions are met.
 
 ##### III. Prove compliance
-Because DigiServices is a mediation platform, it is extremely important to have a way of proving a user agreed with certain rules. SIG tokens can be used for that purpose since they can only be minted by the user whose public key hash is in the token name. In this way, when smart digital contracts are created, the account output is consumed and a SIG token is locked, proving compliance.
+Because DigiServices is a inter-mediation platform, it is of fundamental importance to have a way of proving a user's agreemeent with set rules. SIG tokens can be used for this purpose, since they can only be minted by the user whose public key hash is contained into the token name. In this way, when smart digital contracts are created, the account output is consumed and a SIG token is locked, proving compliance.
 
 ![Prove Compliance Example](images/prove-compliance.png)
 
-In the underlying protocol, membership will work by creating an "account", represented by the Membership Market (MM) UTxO using a "membership signature" minting policy. This minting policy will mint 100 new SIG tokens and deposit them in the newly created user "account" (a script validator that handles service offers and requests) provided that it also receives the entrance fee (in the example 1,000 DSET).
+In the underlying protocol, membership will work by creating an "account", represented by the Membership Market (MM) UTxO using a "membership signature" minting policy. This minting policy will mint 100 new SIG tokens and deposit them in the newly created user "account" . This is a script validator that handles service offers and requests, provided that it also receives  in input the entrance fee (in the below example 1,000 DSET).
 
 ![Join Platform Example](images/join-platform.png)
 
@@ -256,55 +256,60 @@ In the underlying protocol, membership will work by creating an "account", repre
 So as to achieve objectivity and decentralization, DigiServices' contracts are represented as a Plutus validator script. These contracts contain five important components.
 
 ##### I. Judges
-Judges are essential for the dispute resolution mechanism. If unreliable or incompetent mediators are chosen, there is no guarantee of fairness. Because of this, they should be chosen in the moment the contract is created by the service provider, who should analyze carefully the options displayed in the main application and only chose judges that either have a good reputation or are known by them to be honest. The provider is encouraged to make good choices in order to attract more clients, since they will also verify the mediators, and to ensure honesty.
+Judges are essential for the dispute resolution mechanism. If unreliable or incompetent mediators are chosen, there is no guarantee of fairness. Because of this, they should be chosen in the moment the contract is created by the service provider, who should analyze carefully the options displayed in the main application and only choose judges that either have a good reputation or are known by them to be honest. The service provider is encouraged to make good selection as well in order to attract more clients who will in turn, verify the mediators reliability and record to ensure a smooth and just deal.
 
-Since it's open to the service provider to chose whoever he prefers and the judges can be any public key hash registered as a member of the platform, DigiServices open's space for new ways of determining good mediators, meaning neural networks could, for example, be trained to identify good options or even act as actual judges in a near future. This abstractness and flexibility creates an incentive for the emergence of new projects and ideas surrounding the ecosystem.
+Since it's open to the service provider to chose whoever he prefers and the judges can be any public key hash registered as a member of the platform, DigiServices opens room for new ways of determining good mediators; for example neural networks could  be trained to identify good options, rank classifications by specialties or even act as actual judges as a next step development. This abstractness and flexibility creates an incentive new projects and ideas to emerge along with  and enriching the ecosystem.
 
-In addition, since judges are rewarded for providing reliable inputs, the platform creates a market around providing trustful data and opens the possibility of the creation of organizations specialized in mediation. This is in contrast to the current system that gives no monetary incentive to judges.
+In addition, since judges are rewarded for providing reliable inputs, the platform creates a market around providing trustful data and opens possibilities for new actors and organizations specialized in mediation and arbitration. This is to overcome the current system that does not provide similar monetary incentive to arbitrary judges.
 
 ##### II. Inputs
-Differently from the conventional idea that judges should decide who is guilty, DigiServices understand that mediators job should only be to provide factual data, since penalties and rewards can be better handled by a computer, which has no bias and is not subjective to ambiguity.
+Differently from the conventional idea that judges should decide who is guilty, DigiServices understands that mediators job should only be to provide factual data, since penalties and rewards can be better handled by a objective, deterministic process, which has no bias and is not subjected to ambiguity.
 
 For this reason, inputs act as "yes / no" questions and it is responsibility of the judges to provide reliable answers in form of a boolean (true or false). This inputs are then passed to the arbitrary logic defined by the service provider, which will decide how the previously locked tokens will be distributed.
 
 ##### III. Logic
-The logic is another validator script defined by the service provider that should receive N "inputs" from the judges as a redeemer, consuming the contract UTxO and should, according to the rules formally defined, distribute the consumed tokens which were locked by both the client and the service provider. Because inputs can be any boolean "questions", users can ensure dishonest parties are penalized by creating strictly defined rules connected to real-world inputs in form of Plutus script validators. Therefore, the logic itself acts as a judge, deciding who is guilty (less or no tokens) or innocent (receiving more or all tokens).
+The logic is another validator script defined by the service provider that should receive N "inputs" from the judges as a redeemer, consuming the contract UTxO and should, according to the rules formally defined, distribute the consumed tokens which were locked by both the client and the service provider. Because inputs can be any boolean "questions", users can make sure that dishonest parties are penalized by creating strictly defined rules connected to real-world inputs in form of Plutus script validators. Therefore, the logic itself acts as a judge, deciding who is guilty (less or no tokens) or innocent (receiving more or all tokens).
 
 Nonetheless, it is important to notice that this logic script address may not exist and it is the responsibility of the client to assure that it does and that it has reasonable terms before he signs the contract.
 
 ##### IV. Accusations
-Accusations is a list of tuples containing to the accuser and accused public key hash and the mediator deadline `[(AccuserPKH, AccusedPKH, Deadline)]`. When this list increases, the responsible judge (the first confirmed mediator from the list) will be notified and will need to provide the necessary inputs to the logic script before the deadline has passed.
+Accusations is a list of 3-elements tuples containing the accuser and accused public key hash and the mediator deadline `[(AccuserPKH, AccusedPKH, Deadline)]`. 
+****Gabriele ->  When this list increases ***(?) 
+
+the responsible judge (the first confirmed mediator from the list) will be notified and is expected to provide the necessary inputs to the logic script before the set deadline.
 
 ##### V. Service
-Though the name suggest that only freelancers should be using the platform to offer gigs, service can be understood as a more general term. Another name could be "Information", since it's function is to better formulate what the contract is about and give extra information about the deal as well as define the essential parameters (price and "trust", for example). In this sense, a company that wanted to transfer it's policies to a decentralized system could represent it as a service and create a new contract to handle conflicts between employees or issues related to their overall work. This contracts could have real world implications if the company decided, for instance, to measure their performance by comparing the number of tokens they own. 
+Service can be understood as a more general term. Another term to define it could be "Information", since its function is to better formulate what the contract is about and give extra information about the deal as well as define the essential parameters (price and "trust", for example). In this sense, a company wishing to transfer its policies to a decentralized system could represent it as a service and create a new contract to handle conflicts between employees or issues related to their overall work. This contracts could have real world implications if the company decided, for instance, to measure their performance by comparing the number of tokens they own. 
 
 To cover this aspects, services are a data type that hold five parameters:
 
 * Publisher: A public key hash identifying the person who created this service
 * Title: A string with a brief description about what the contract is about
 * Description: A string with a more in-depth picture about the service
-* Trust: The amount of DSET tokens that will be hold to act as a guarantee in case one of the parties does not follow the rules
+* Trust: The amount of DSET tokens (Trust Tokens) that will be on-hold to act as a guarantee for the case one of the parties breaks the rules
 * ContractType: A data type that will indicate of what type this contract is and the specific parameters. It can be `Constant`, which takes no argument or `OneTime`, which takes a `Value` indicating the price and a `POSIXTime` indicating the deadline. 
 
-Finally, the contract is only "officiated" if it receives a SIG token from the service provider. This can be done by consuming the user "account" UTxO provided that the data contains the five essential components.
+Finally, the contract is authenticated only if it receives a SIG token as input from the service provider. This is done by consuming the user "account" UTxO provided that the data contains the five essential components.
 
 ![Contract Creation Example](images/contract-creation.png)
 
-The contract validator can receive four redeemers: "Open `Integer`", "Close", "Sign" and "Accuse `PubKeyHash`". The open redeemer indicates that, within the limit provided by the integer, any user can "Sign" this contract and request this service. The close redeemer, in the other hand, signalizes that, from now on, no more clients should be allowed to sign this contract.
+The contract validator can receive four redeemers: "Open `Integer`", "Close", "Sign" and "Accuse `PubKeyHash`". The open redeemer indicates that, within the limit provided by the integer
+***Gabriele -> What is the integer limitation actually ?
+
+, any user can "Sign" this contract and request this service. The close redeemer, in the other hand, signalizes that, from now on, no more clients should be allowed to sign this contract.
 
 ![Request Service Example](images/request-service.png)
 
-At any point in time judges that are inside the list of mediators can "sign" the contract, providing their membership SIG token to signalize that they accept to mediate it. They also need to provide a small amount of tokens that will be given to damaged parties in case they, when requested, don't provide a reliable input within the deadline.
+At any point in time judges that are inside the list of mediators can choose to "sign" the contract, upon request, providing their membership SIG token to show that they accept to mediate it. They also deposit an amount of tokens; this will be transferred to the damaged parties in case they do not provide a reliable input within the deadline.
 
 #### C. Accusation
-In order to accuse someone, any user that has already signed a contract can consume the contract UTxO using the accuse redeemer. This will simply increase the accusation list with a pair corresponding to the user's public key hash and the person he is accusing plus the deadline the mediator has to provide the right inputs. The main application will notice that and notify the first confirmed judge.
+In order to accuse someone, any user that has already signed a contract can anytime consume the contract UTxO using the accuse redeemer. This will have as effect an increase into the running diputes amount, the accusation list. A new triple is generated including the user's public key hash, the accused entity and the set deadline. The main application will generate an event and notify the first confirmed judge. At that point the judge, mediator/arbitrator starts acting and provides the inputs as for set logic code. 
 
 ![Accusation Example](images/accuse.png)
 
 #### D. Trials
-After a judge has been notified, it is his responsibility to discover as many information as possible concerning the case. In this sense, if necessary, he can call both parties to a discussion in which each one will explaining their views. They could even have lawyers like in the traditional legal system if they think is necessary. In most cases, though, it will be sufficient if the judge communicate via email or other digital means with the users and ask them for proofs and defenses, as it is in the best interest of both to collaborate. In this sense, judges not only act as a source of truth, but also as an investigator.
-
-After enough information has been acquired that the mediator feels comfortable with his answers to the inputs, he can consume the "logic" UTxO giving it, as a redeemer, the decided inputs. This Plutus validator will then consume the contract UTxO and distribute the received tokens according to the terms defined (terms should be understood as the logic itself).
+After a judge has been notified, it is his responsibility to discover as many information as possible concerning the case. In this sense, if necessary, he can call both parties to a discussion in which each one will explaining their views. Lawyers like in the traditional legal system may be engaged as well, if they think is necessary. In most cases, though, it will be sufficient if the judge communicates in digital format with the users and ask them for proofs and defenses, as it is in the best interest of both to collaborate. In this way judges finds out the actual facts assisting an activity of investigation.
+After sufficient information has been acquired by the mediator, he can consume the "logic" UTxO providing the set boolean inputs as a redeemer. This Plutus validator will then consume the contract UTxO and distribute the deposited tokens according to the set terms (terms should be understood as the logic itself).
 
 ![Accusation Example](images/trial.png)
 
