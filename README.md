@@ -4,7 +4,7 @@
 
 [Abstract](#Abstract)
 
-[Team and Project Background](#Team-and-Project-Background)
+[Team-and-Project-Background](#Team-and-Project-Background)
 
 1. [Problem Statement](#1-problem-statement)
 2. [Solution](#2-solution)
@@ -420,7 +420,7 @@ A suitable and engaged partner will be selected for the marketing activity to sh
 
 -Development marketing and uptake plan
 
-#Stage 3 - 2 Months  - Release 1. Version, Jun.2022 – Jul.2022
+##### Stage 3 - 2 Months  - Release 1. Version, Jun.2022 – Jul.2022
 
 First go live and working solution for at least 10’000 registered members
 
