@@ -135,7 +135,11 @@ This example illustrates one possible way that DigiServices can be used to estab
 1. [Problem Statement](#1-problem-statement)
 2. [Solution](#2-solution)
 3. [Governance and Tokenomics](#3-governance-and-tokenomics)  
-
+    * [Governance](#a-Governance)
+    * [Tokenomics](#b-Tokenomics)
+    * [Voting](#c-Voting)
+    * [Utility token DSET](#d-Utility token DSET)
+    * [Nature and uses of the DSET Token](#e-Nature and uses of the DSET Token)
 
 4. [Implementation](#4-implementation)
     * [Membership](#a-membership)
@@ -197,10 +201,11 @@ From the creation of smart legal contracts to the negotiation of clauses and the
 DigiServices will allow users to build flexible and versatile smart legal contracts for any need by using ready made templates, clauses and logical flows. Users can also write their own contracts and templates for their specific use case.
 
 ### 3. Governance and Tokenomics
+#### A. Governance
 Digisets governance until the launch stage will be managed by the funding core team. At a later stage, after the membership will have exceeded the 1 million memberships threshold, participants will be able to use their staked DSET to vote on the future direction of the platform.
 Token holders, either through direct staking or a delegation system, will then be able to vote on which proposals the network should implement. Rewarding and burning system balance will assure that the DSET circulating amount will be capped at the maximum set level. 
 
-#### Tokenomics
+#### B.Tokenomics
 The token will have a total supply of 1 billion distributed as follows:
 
 ● 10% - Institutional investors 
@@ -209,15 +214,15 @@ The token will have a total supply of 1 billion distributed as follows:
 
 ● 70% - Public Sale 
 
-#### Voting
+#### C. Voting
 Voting on the platform will utilize the quadratic voting method (2), whereby voting power of an individual user is proportional to the square root of their investment amount. This method, along with other precautions, prevent so-called 'whale' investors from gaining control of the voting process and denying other users the ability to cast votes.
 
-#### Utility token DSET
+#### D. Utility token DSET
 Blockchain can be used to create decentralized ecosystems in which a token is issued in order to fund and assist the development of an ecosystem and that can be later used to purchase goods /services or being an integral part of a service itself, benefiting from the advantages of a decentralized structure, eliminating or reducing the presence of a central intermediary body, thus
 allowing the value shift from the center to the ends.
 DigiServices’ vision encompasses this model where the blockchain is used to create a truly decentralized self-sustaining ecosystem. DigiServices strongly believes that the future of the internet lies in services powered by utility tokens, improving existing services with new paradigms that cannot be achieved in the absence of a distributed ledger.
 
-#### Nature and uses of the DSET Token
+#### E. Nature and uses of the DSET Token
 DSET token is a hybrid token that has both utility token characteristics and payment token characteristics. The DSET token is the token on which the ecosystem is based. 
 Parties to a contractual relationship and members need DSET tokens for:
 ● Service transactions payments (depositing escrows(
@@ -227,9 +232,6 @@ creators and commissions on revenue paid by creators to Jur);
 ● Conflict fees payments
 ● Penalties payments
 ● Rewards accruals
-
-
-
 
 
 ### 4. Implementation
