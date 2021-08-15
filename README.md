@@ -134,17 +134,21 @@ This example illustrates one possible way that DigiServices can be used to estab
 [Abstract](#Abstract)
 1. [Problem Statement](#1-problem-statement)
 2. [Solution](#2-solution)
-3. [Implementation](#3-implementation)
+3. [Governance](#3-governance)
+
+
+
+4. [Implementation](#3-implementation)
     * [Membership](#a-membership)
     * [Contracts](#b-contracts)
     * [Accusation](#c-accusation)
     * [Trials](#d-trials)
     * [Rewards and Penalties](#e-rewards-and-penalties)
-4. [Business Plan](#4-business-plan)
-5. [Tokenomics](#5-tokenomics)
-6. [Road Map](#6-Road Map)
-7. [Future Direction](#7-future-direction)
-8. [Conclusion](#8-conclusion)
+5. [Business Plan](#4-business-plan)
+6. [Tokenomics](#5-tokenomics)
+7. [Road Map](#6-Road Map)
+8. [Future Direction](#7-future-direction)
+9. [Conclusion](#8-conclusion)
 
 ### Abstract
 Global gig-economy transactions are forecast to grow by 17% a year to around $455 billion dollars by 2023, according to a report from Mastercard [1]. There is a growing need for a fast, secure, and reliable way to establish trust between participants in the gig economy. We propose a platform that enables parties to create contracts stored in the Cardano blockchain to build trust based on token rewards calculated through an algorithm that collects statistics related to the service or good provided and returns the amount of tokens per hour that will be rewarded. Parties that violate the contract will be penalized by losing tokens proportional to the severity of violation.
