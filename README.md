@@ -134,7 +134,7 @@ This example illustrates one possible way that DigiServices can be used to estab
 [Abstract](#Abstract)
 1. [Problem Statement](#1-problem-statement)
 2. [Solution](#2-solution)
-3. [Governance and Tokenomics](#3-governance and tokenomics)  
+3. [Governance and Tokenomics](#3-governance-and-tokenomics)  
 
 
 4. [Implementation](#4-implementation)
