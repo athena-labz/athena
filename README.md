@@ -120,6 +120,7 @@ This example illustrates one possible way that DigiServices can be used to estab
 ### White Paper Table of Contents
 
 [Abstract](#Abstract)
+
 [Team and Project Background](#Team-and-Project-Background)
 
 1. [Problem Statement](#1-problem-statement)
@@ -140,7 +141,7 @@ This example illustrates one possible way that DigiServices can be used to estab
     * [Trials](#d-trials)
     * [Rewards and Penalties](#e-rewards-and-penalties)
 
-6. [Road Map](#6-Road Map)
+6. [Road Map](#6-Road-Map)
 7. [Future Work](#7-future-work)
 8. [Conclusion](#8-conclusion)
  [Sources](#Sources)
