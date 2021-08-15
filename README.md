@@ -132,6 +132,7 @@ This example illustrates one possible way that DigiServices can be used to estab
 ### White Paper Table of Contents
 
 [Abstract](#Abstract)
+
 1. [Problem Statement](#1-problem-statement)
 2. [Solution](#2-solution)
 3. [Governance and Tokenomics](#3-governance-and-tokenomics)  
@@ -158,6 +159,11 @@ This example illustrates one possible way that DigiServices can be used to estab
 ### Abstract
 Global gig-economy transactions are forecast to grow by 17% a year to around $455 billion dollars by 2023, according to a report from Mastercard [(1)](#1). There is a growing need for a fast, secure, and reliable way to establish trust between participants in the gig economy. We propose a platform that enables parties to create contracts stored in the Cardano blockchain to build trust based on token rewards calculated through an algorithm that collects statistics related to the service or good provided and returns the amount of tokens per hour that will be rewarded. Parties that violate the contract will be penalized by losing tokens proportional to the severity of violation.
 
+### Team & Project Background
+The core team initiating Digiservices is made up by a pool of young enthusiasts attending the Plutus Pioneer Cohort.  Trustworthiness and Legitimacy building are core values to be built-in the forthcoming Cardano-driven platform. We believe that the Most Important Scarce Resource is Legitimacy, and this brings about giant costs. The Bitcoin and Ethereum blockchain ecosystems both spend far more on network security - the goal of proof of work mining - than they do on everything else combined. The Bitcoin blockchain has paid an average of about $38 million per day in block rewards to miners since the start of the year, plus about $5m/day in transaction fees. The Ethereum blockchain comes in second, at $19.5m/day in block rewards plus $18m/day in tx fees. Meanwhile, the Ethereum Foundation's annual budget, paying for research, protocol development, grants and all sorts of other expenses, is a mere $30 million per year. ( )
+Willingness to challenge the existing barriers and constraints at today’s service exchange platform such as Upwork and overcome the steeply rising Cybercrime on Non-payments/Non-Delivery risk
+The full protocol implementation will require the addition of few developers with advanced Haskell skills as well as a partnership with one or more social platforms to assure visibility and a actual quick proof-of-concept.
+                       
 ### 1. Problem Statement
 
 The Web 2.0 revolution started at the end of the 1990s. It solved a wide range of problems and vastly increased economic efficiency. However, this revolution did little to modernize our legal systems, which have not kept pace with technological and economic progress. Non-Payment and Non-Delivery Crimes show an exponential growth and accounted for $265 million in losses in the United States in 2020 [2]. Cyber crimes continue to rise at an increasing rate.
@@ -462,14 +468,18 @@ There are a number of extensions to the described protocol that we need to furth
 The Cardano blockchain offers remarkable enhancements when compared with present Ethereum solution in terms of throughput, fees, energy efficiency. Along with the new Alonzo generation allowing Smart Contracts generation, a new ecosystem of services is likely to emerge promoting further  activities: a growth in offered services, new requirements in terms of Cybercrime prevention will be in high demand. The outlined  model is designed to meet this demand and relying on Plutus smart contracts environment, provides a easy-handling, scalable solution to meet these  challenge while assuring a continuous development of new protocols and functions to face new future expectations.
 
 ### Sources
+
 (1) Statista 2021
+
 (2) https://en.wikipedia.org/wiki/Quadratic_voting
-(3) Manuel M.T. Chakravarty, James Chapman, Kenneth MacKenzie,
-    Orestis Melkonian, Michael Peyton Jones, and Philip Wadler. The Ex-
-    tended UTXO Model. Technical report, IOHK and University of Edin-
-    burgh, 01 2020.
+
+(3) Manuel M.T. Chakravarty, James Chapman, Kenneth MacKenzie, Orestis Melkonian, Michael Peyton Jones, and Philip Wadler. The Ex-
+    tended UTXO Model. Technical report, IOHK and University of Edinburgh, 01 2020.
+    
 (4) Plutus Pioneers Course, https://github.com/input-output-hk/plutus-pioneer-program
+
 (5) Atala Prism, https://atalaprism.io
+
 (    ) The Most Important Scarce Resource is Legitimacy, Vitalik -   https://vitalik.ca/general/202
 
 
