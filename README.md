@@ -429,7 +429,7 @@ Prelude> calculateRewards [357_947, 946_792, 649_063]
 As seen, the `calculateRewards` function takes each member CAS score and try to find the proportional amount of tokens to be rewarded or taken. In order to avoid schemes in which users create multiple accounts to receive free rewards, the function subtracts the initial value (600,000) from the user score. This means that it is possible for a member to receive a "negative reward" (or penalty) and be forced to pay the specified amount so that he does not have his membership suspended.       
 
 
-***6 - Road Map
+### 6. Road Map
 
 #### Initial Thoughts
 The Cardano blockchain is a new third generation blockchain relying on proof-of-stake for throughput and energy efficiency.
@@ -440,14 +440,23 @@ A suitable and engaged partner will be selected for the marketing activity to sh
 #### Roadmap Stages
 
 #Stage 1  - 3 month  - Overall Proof-of-Concept, Sep.-Nov. 2021
+
 -Identify technical issues
+
 -High level concept design
+
 -Visual design options
+
 #Stage 2  - 6 months - Solution, Technical Model, Solution Details, Dec.2021-May 2022
+
 -Concept solution options
+
 -Test concept, Prototype with potential members through new ‘DigiServices’ platform, on Alonzo Mainnet
+
 -Development marketing and uptake plan
+
 #Stage 3 - 2 Months  - Release 1. Version, Jun.2022 – Jul.2022
+
 First go live and working solution for at least 10’000 registered members
 
 ### 7. Future Work
