@@ -87,7 +87,7 @@ DigiServices will allow users to build flexible and versatile smart legal contra
 Digisets governance until the launch stage will be managed by the funding core team. At a later stage, after the membership will have exceeded the 1 million memberships threshold, participants will be able to use their staked DSET to vote on the future direction of the platform.
 Token holders, either through direct staking or a delegation system, will then be able to vote on which proposals the network should implement. Rewarding and burning system balance will assure that the DSET circulating amount will be capped at the maximum set level. 
 
-#### B.Tokenomics
+#### B. Tokenomics
 The token will have a total supply of 1 billion distributed as follows:
 
 ● 10% - Institutional investors 
