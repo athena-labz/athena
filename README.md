@@ -138,7 +138,7 @@ This example illustrates one possible way that DigiServices can be used to estab
     * [Governance](#a-Governance)
     * [Tokenomics](#b-Tokenomics)
     * [Voting](#c-Voting)
-    * [Utility token DSET](#d-Utility token DSET)
+    * [Utility token DSET](#d-Utility-token-DSET)
     * [Nature and uses of the DSET Token](#e-Nature and uses of the DSET Token)
 
 4. [Implementation](#4-implementation)
