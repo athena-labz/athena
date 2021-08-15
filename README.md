@@ -150,10 +150,10 @@ This example illustrates one possible way that DigiServices can be used to estab
     * [Trials](#d-trials)
     * [Rewards and Penalties](#e-rewards-and-penalties)
 
-
-7. [Road Map](#6-Road Map)
-8. [Future Direction](#7-future-direction)
-9. [Conclusion](#8-conclusion)
+6. [Road Map](#6-Road Map)
+7. [Future Work](#7-future-work)
+8. [Conclusion](#8-conclusion)
+ [Sources](#Sources)
 
 ### Abstract
 Global gig-economy transactions are forecast to grow by 17% a year to around $455 billion dollars by 2023, according to a report from Mastercard [(1)](#1). There is a growing need for a fast, secure, and reliable way to establish trust between participants in the gig economy. We propose a platform that enables parties to create contracts stored in the Cardano blockchain to build trust based on token rewards calculated through an algorithm that collects statistics related to the service or good provided and returns the amount of tokens per hour that will be rewarded. Parties that violate the contract will be penalized by losing tokens proportional to the severity of violation.
@@ -241,14 +241,15 @@ creators and commissions on revenue paid by creators to Jur);
 DigiServices believes that a decentralized economy must provide mechanisms for sustaining the platform that supports this trustworthy system
 Business Development Road Map
 
-A basic one-time membership fee is requested to assure commitment and at the same time a membership low-barrier entry. Income generation is provided for the platform through transaction fees, for members acting as judge or as service provider being rewarded through spendable native token DSET . Business development will occur at two levels: 1 - Development of own service/goods exchange platform with service offering and demand 2 - Affiliation with already existing or newly established service providers, focusing on enforcing unbiased Credit Assessment of all memberships accessing the platform
-Fees and Platform Income
+A basic one-time membership fee is requested to assure commitment and at the same time a membership low-barrier entry. Income generation is provided for the platform through transaction fees, for members acting as judge or as service provider being rewarded through spendable native token DSET . Business development will occur at two levels:
+
+1 - Development of own service/goods exchange platform with service offering and demand 
+
+2 - Affiliation with already existing or newly established service providers, focusing on enforcing unbiased Credit Assessment of all memberships accessing the platform
+
+#### Fees and Platform Income
 
 DigiService’s choice is to adopt a flexible mechanism, which can be expanded or reduced according to the needs of the project and feedback from the members community. DigiService therefore anticipates the use of fees and reserves the right to reduce or increase them on the basis of the progress of the project and the value of the DSET Token. The following fees payable to DigiServices apply at the moment: ● one-time membership fees ● accusation contract fees ● transaction fees for escrow ● gas fees
-
-
-
-
 
 ### 5. Implementation
 
@@ -443,4 +444,33 @@ A suitable and engaged partner will be selected for the marketing activity to sh
 #Stage 3 - 2 Months  - Release 1. Version, Jun.2022 – Jul.2022
 First go live and working solution for at least 10’000 registered members
 
+### 7. Future Work
+There are a number of extensions to the described protocol that we need to further review in details for a flawless implementation and to enlarge the service scope available as well enhance handling and metadata management. A few of them are followings:
 
+    1.  Ensuring anonymity while digitally identifying in  a decentralized way each registered  member. Atala Prism (5) will be the natural reference to cooperate    with
+    
+    2. The role of DSET  token
+    
+    3. A enlarged governance model, to allow token staking and stakeholders to participate at protocol design decisions, development and changes
+    
+    4. Additional incentive method to boost members appeal 
+    
+    5. A mechanism to encompass enterprises management rule into a system run through Neural Network
+        
+    
+### 8. Conclusion
+The Cardano blockchain offers remarkable enhancements when compared with present Ethereum solution in terms of throughput, fees, energy efficiency. Along with the new Alonzo generation allowing Smart Contracts generation, a new ecosystem of services is likely to emerge promoting further  activities: a growth in offered services, new requirements in terms of Cybercrime prevention will be in high demand. The outlined  model is designed to meet this demand and relying on Plutus smart contracts environment, provides a easy-handling, scalable solution to meet these  challenge while assuring a continuous development of new protocols and functions to face new future expectations.
+
+### Sources
+(1) Statista 2021
+(2) https://en.wikipedia.org/wiki/Quadratic_voting
+(3) Manuel M.T. Chakravarty, James Chapman, Kenneth MacKenzie,
+    Orestis Melkonian, Michael Peyton Jones, and Philip Wadler. The Ex-
+    tended UTXO Model. Technical report, IOHK and University of Edin-
+    burgh, 01 2020.
+(4) Plutus Pioneers Course, https://github.com/input-output-hk/plutus-pioneer-program
+(5) Atala Prism, https://atalaprism.io
+(    ) The Most Important Scarce Resource is Legitimacy, Vitalik -   https://vitalik.ca/general/202
+
+
+    
