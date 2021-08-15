@@ -4,7 +4,7 @@
 
 [Abstract](#Abstract)
 
-[Team-and-Project-Background](#Team-and-Project-Background)
+[Team and Project Background](##Team-and-Project-Background)
 
 1. [Problem Statement](#1-problem-statement)
 2. [Solution](#2-solution)
