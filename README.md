@@ -139,16 +139,18 @@ This example illustrates one possible way that DigiServices can be used to estab
     * [Tokenomics](#b-Tokenomics)
     * [Voting](#c-Voting)
     * [Utility token DSET](#d-Utility-token-DSET)
-    * [Nature and uses of the DSET Token](#e-Nature and uses of the DSET Token)
+    * [Nature and uses of the DSET Token](#e-Nature-and-uses-of-the-DSET-Token)
+4. [Business Model](#4-business-model)
 
-4. [Implementation](#4-implementation)
+
+5. [Implementation](#5-implementation)
     * [Membership](#a-membership)
     * [Contracts](#b-contracts)
     * [Accusation](#c-accusation)
     * [Trials](#d-trials)
     * [Rewards and Penalties](#e-rewards-and-penalties)
-5. [Business Plan](#4-business-plan)
-6. [Tokenomics](#5-tokenomics)
+
+
 7. [Road Map](#6-Road Map)
 8. [Future Direction](#7-future-direction)
 9. [Conclusion](#8-conclusion)
@@ -234,7 +236,21 @@ creators and commissions on revenue paid by creators to Jur);
 ● Rewards accruals
 
 
-### 4. Implementation
+### 4. Business model
+
+DigiServices believes that a decentralized economy must provide mechanisms for sustaining the platform that supports this trustworthy system
+Business Development Road Map
+
+A basic one-time membership fee is requested to assure commitment and at the same time a membership low-barrier entry. Income generation is provided for the platform through transaction fees, for members acting as judge or as service provider being rewarded through spendable native token DSET . Business development will occur at two levels: 1 - Development of own service/goods exchange platform with service offering and demand 2 - Affiliation with already existing or newly established service providers, focusing on enforcing unbiased Credit Assessment of all memberships accessing the platform
+Fees and Platform Income
+
+DigiService’s choice is to adopt a flexible mechanism, which can be expanded or reduced according to the needs of the project and feedback from the members community. DigiService therefore anticipates the use of fees and reserves the right to reduce or increase them on the basis of the progress of the project and the value of the DSET Token. The following fees payable to DigiServices apply at the moment: ● one-time membership fees ● accusation contract fees ● transaction fees for escrow ● gas fees
+
+
+
+
+
+### 5. Implementation
 
 #### A. Membership
 
@@ -408,13 +424,13 @@ As seen, the `calculateRewards` function takes each member CAS score and try to 
 
 ***6 - Road Map
 
-##Initial Thoughts
+#### Initial Thoughts
 The Cardano blockchain is a new third generation blockchain relying on proof-of-stake for throughput and energy efficiency.
 As this new ecosystem opens up through Alonzo version by end of year 2021, the users and businesses will be able to operate on this new vast ecosystem.
 Digiservices platform draws on Cardano smart contract environment to provide trustworthiness to third parties service providers platform or to services exchanged on the platform itself.
 A suitable and engaged partner will be selected for the marketing activity to show how a blockchain solution can provide a cheaper, trustworthy, convenient platform for them, while providing a capability for customers/members to take advantage of Defi, paying with native tokens DSET while allowing swapping between Ada and other popular tokens all hosted on the Cardano network. 
 
-#Roadmap Stages
+#### Roadmap Stages
 
 #Stage 1  - 3 month  - Overall Proof-of-Concept, Sep.-Nov. 2021
 -Identify technical issues
