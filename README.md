@@ -56,12 +56,7 @@ DigiServices aims to overcome the limits of physical contracts by providing a pl
 
 The reward-penalty system is an algorithm that collects statistics related to the service transactions, credit score, and activities. It returns the amount of tokens that will be rewarded. Parties that refuse to follow the rules defined in the contract will be penalized by losing tokens proportionate to the severity of their violation. In extreme cases membership access to the platform will be suspended.
 
-**Mateus' comment**
-
-"In extreme cases access to the platform will be suspended."
-Unless we implement an identification mechanism, I don't think this is possible.
-**Gabriele's comment**
-You are right. I changed into 'membership access' . In such as case all membership account own assets, such as DSET are burnt. Of course the member can still register again to the platform. This is one of draw-backs of anonimity, but I think membership access fees can partially prevent abuses.
+In such as case all membership account own assets, such as DSET are burnt. Of course the member can still register again to the platform. This is one of draw-backs of anonimity, but I think membership access fees can partially prevent abuses.
 
 By integrating real-world reliable inputs with strict on-chain contracts, DigiServices aims to mitigate the ambiguity common in natural-language written contracts, while preserving the flexibility needed to communicate with the real world. 
 
