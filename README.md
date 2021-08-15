@@ -15,7 +15,7 @@
     * [Utility token DSET](#d-Utility-token-DSET)
     * [Alice and Bob example](#alice-and-bob-example)
     * [Nature and uses of the DSET Token](#e-Nature-and-uses-of-the-DSET-Token)
-    * 
+    
 4. [Business Model](#4-business-model)
 
 5. [Implementation](#5-implementation)
@@ -361,7 +361,7 @@ Because reviews are a good indicator of someone's honesty, participation and com
 A fixed amount of DSET tokens is minted monthly and distributed according to the Credit Assessment System (CAS). Users are rewarded or penalized with tokens proportionally to their scores, obeying the following `calculateRewards` function:
 
 ```haskell
--- An alias for Integer that indicates an user CAS score (0 to 100)
+-- An alias for Integer that indicates an user CAS score (0 to 1'000'000)
 type CAS = Integer
 
 -- The total amount of tokens that will be minted every month (just as an example)
