@@ -404,7 +404,7 @@ A suitable and engaged partner will be selected for the marketing activity to sh
 
 #### Roadmap Stages
 
-#Stage 1  - 3 month  - Overall Proof-of-Concept, Sep.-Nov. 2021
+##### Stage 1  - 3 month  - Overall Proof-of-Concept, Sep.-Nov. 2021
 
 -Identify technical issues
 
@@ -412,7 +412,7 @@ A suitable and engaged partner will be selected for the marketing activity to sh
 
 -Visual design options
 
-#Stage 2  - 6 months - Solution, Technical Model, Solution Details, Dec.2021-May 2022
+##### Stage 2  - 6 months - Solution, Technical Model, Solution Details, Dec.2021-May 2022
 
 -Concept solution options
 
