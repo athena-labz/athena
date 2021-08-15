@@ -311,7 +311,7 @@ After a judge has been notified, it is his responsibility to discover as much in
 
 After sufficient information has been acquired by the mediator, he can consume the "logic" UTxO providing the set boolean inputs as a redeemer. This Plutus validator will then consume the contract UTxO and distribute the deposited tokens according to the set terms (terms should be understood as the logic itself).
 
-*Figure 7: Example of Bob being declared guilty and losing tokens*
+*Figure 7: Example of Bob being declared guilty and losing 2,000 DSET trust tokens deposited at contract deal-making*
 ![Accusation Example](images/trial.png)
 
 #### E. Rewards and Penalties
