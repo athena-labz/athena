@@ -130,7 +130,7 @@ This example illustrates one possible way that DigiServices can be used to estab
 ## White Paper
 
 ### White Paper Table of Contents
-Abstract
+
 [Abstract](#Abstract)
 1. [Problem Statement](#1-problem-statement)
 2. [Solution](#2-solution)
