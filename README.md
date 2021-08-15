@@ -282,9 +282,6 @@ The judge in charge (the first confirmed mediator from the available list) will 
 Service can be understood as a more general term. Another term to define it could be "Information", since its function is to better formulate what the contract is about and give extra information about the deal as well as define the essential parameters (price and "trust", for example). In this sense, a company wishing to transfer its policies to a decentralized system could represent it as a service and create a new contract to handle conflicts between employees or issues related to their overall work. These contracts could have real world implications if the company decided, for instance, to measure their performance by comparing the number of tokens they own. 
 
 To cover these aspects, services are a data type that hold five parameters: 
-### Gabriele comment to Mateus: is the JSON you sent out yesterday correct ? the ContractType is not there; price was there
-### Mateus' response: The JSON example is incorrect, I will fix it
-
 * Publisher: A public key hash identifying the person who created this service
 * Title: A string with a brief description about what the contract is about
 * Description: A string with a more in-depth picture about the service
