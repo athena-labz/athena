@@ -441,7 +441,7 @@ The Cardano blockchain offers remarkable enhancements when compared with present
 
 (1) https://newsroom.mastercard.com/wp-content/uploads/2019/05/Gig-Economy-White-Paper-May-2019.pdf
 
-(2) Statista 2021
+(2) Statista 2021, https://www.statista.com/
 
 (3) The Most Important Scarce Resource is Legitimacy, Vitalik -   https://vitalik.ca/general/202
 
