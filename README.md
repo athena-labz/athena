@@ -10,7 +10,7 @@ reward-driven, platform for goods and service exchanges
 
 ## Tokenomics
 
-### Supply
+### Supply  ##Gabriele comment: please add under implementation
 
 DigitalServices tokens (DSET) are not inflationary. 
 
@@ -30,19 +30,7 @@ calculateRewards (x:xs) = ((x `div` revSum) * totalAmt `div` 100) : calculateRew
     revSum = sum xs
 ```
 
-### Distribution
 
-**Need development**
-
-### Utility
-
-DSET can be used as utility tokens to enforce honest behavior between parties. Service providers and their clients are able to lock an arbitrary amount of tokens inside their agreement to incentivize honest behavior. In the event of a conflict, one possible resolution is to punish the dishonest party by transferring these locked tokens to the honest party.
-
-In the future, DSET tokens may also be used as a voting mechanism to ensure decentralisation in the platform.
-
-### Network
-
-Users receive rewards for being active on the platform. Inviting new members and maintaining a good reputation benefits the network. DSET creates a viable way to classify someone's honesty and are distributed as rewards to users of the platform providing goods and services.
 
 ## Alice and Bob example
 
@@ -132,6 +120,7 @@ This example illustrates one possible way that DigiServices can be used to estab
 ### White Paper Table of Contents
 
 [Abstract](#Abstract)
+[Team and Project Background](#Team-and-Project-Background)
 
 1. [Problem Statement](#1-problem-statement)
 2. [Solution](#2-solution)
@@ -160,7 +149,7 @@ This example illustrates one possible way that DigiServices can be used to estab
 Global gig-economy transactions are forecast to grow by 17% a year to around $455 billion dollars by 2023, according to a report from Mastercard [(1)](#1). There is a growing need for a fast, secure, and reliable way to establish trust between participants in the gig economy. We propose a platform that enables parties to create contracts stored in the Cardano blockchain to build trust based on token rewards calculated through an algorithm that collects statistics related to the service or good provided and returns the amount of tokens per hour that will be rewarded. Parties that violate the contract will be penalized by losing tokens proportional to the severity of violation.
 
 ### Team & Project Background
-The core team initiating Digiservices is made up by a pool of young enthusiasts attending the Plutus Pioneer Cohort.  Trustworthiness and Legitimacy building are core values to be built-in the forthcoming Cardano-driven platform. We believe that the Most Important Scarce Resource is Legitimacy, and this brings about giant costs. The Bitcoin and Ethereum blockchain ecosystems both spend far more on network security - the goal of proof of work mining - than they do on everything else combined. The Bitcoin blockchain has paid an average of about $38 million per day in block rewards to miners since the start of the year, plus about $5m/day in transaction fees. The Ethereum blockchain comes in second, at $19.5m/day in block rewards plus $18m/day in tx fees. Meanwhile, the Ethereum Foundation's annual budget, paying for research, protocol development, grants and all sorts of other expenses, is a mere $30 million per year. ( )
+The core team initiating Digiservices is made up by a pool of young enthusiasts attending the Plutus Pioneer Cohort.  Trustworthiness and Legitimacy building are core values to be built-in the forthcoming Cardano-driven platform. We believe that the Most Important Scarce Resource is Legitimacy, and this brings about giant costs. The Bitcoin and Ethereum blockchain ecosystems both spend far more on network security - the goal of proof of work mining - than they do on everything else combined. The Bitcoin blockchain has paid an average of about $38 million per day in block rewards to miners since the start of the year, plus about $5m/day in transaction fees. The Ethereum blockchain comes in second, at $19.5m/day in block rewards plus $18m/day in tx fees. Meanwhile, the Ethereum Foundation's annual budget, paying for research, protocol development, grants and all sorts of other expenses, is a mere $30 million per year. (2)
 Willingness to challenge the existing barriers and constraints at today’s service exchange platform such as Upwork and overcome the steeply rising Cybercrime on Non-payments/Non-Delivery risk
 The full protocol implementation will require the addition of few developers with advanced Haskell skills as well as a partnership with one or more social platforms to assure visibility and a actual quick proof-of-concept.
                        
@@ -255,7 +244,15 @@ A basic one-time membership fee is requested to assure commitment and at the sam
 
 #### Fees and Platform Income
 
-DigiService’s choice is to adopt a flexible mechanism, which can be expanded or reduced according to the needs of the project and feedback from the members community. DigiService therefore anticipates the use of fees and reserves the right to reduce or increase them on the basis of the progress of the project and the value of the DSET Token. The following fees payable to DigiServices apply at the moment: ● one-time membership fees ● accusation contract fees ● transaction fees for escrow ● gas fees
+DigiService’s choice is to adopt a flexible mechanism, which can be expanded or reduced according to the needs of the project and feedback from the members community. DigiService therefore anticipates the use of fees and reserves the right to reduce or increase them on the basis of the progress of the project and the value of the DSET Token. The following fees payable to DigiServices apply at the moment: 
+
+● one-time membership fees
+● accusation contract fees
+● transaction fees for escrow ● gas fees
+
+#### Network
+Users receive rewards for being active on the platform. Inviting new members and maintaining a good reputation benefits the network. DSET creates a viable way to classify someone's honesty and are distributed as rewards to users of the platform providing goods and services.
+
 
 ### 5. Implementation
 
@@ -316,14 +313,13 @@ It is important to notice that this logic script address may not exist and it is
 
 ##### IV. Accusations
 Accusations is a list of 3-elements tuples containing the accuser and accused public key hash and the mediator deadline `[(AccuserPKH, AccusedPKH, Deadline)]`. 
-****Gabriele ->  When this list increases ***(?) 
-
-the responsible judge (the first confirmed mediator from the list) will be notified and is expected to provide the necessary inputs to the logic script before the set deadline.
+The judge in charge (the first confirmed mediator from the available list) will be notified and is expected to provide the necessary inputs to the logic script before the set deadline.
 
 ##### V. Service
 Service can be understood as a more general term. Another term to define it could be "Information", since its function is to better formulate what the contract is about and give extra information about the deal as well as define the essential parameters (price and "trust", for example). In this sense, a company wishing to transfer its policies to a decentralized system could represent it as a service and create a new contract to handle conflicts between employees or issues related to their overall work. These contracts could have real world implications if the company decided, for instance, to measure their performance by comparing the number of tokens they own. 
 
-To cover these aspects, services are a data type that hold five parameters:
+To cover these aspects, services are a data type that hold five parameters: 
+### Gabriele comment to Matheus: is the JSON you sent out yesterday correct ? the ContractType is not there; price was there
 
 * Publisher: A public key hash identifying the person who created this service
 * Title: A string with a brief description about what the contract is about
@@ -462,15 +458,16 @@ First go live and working solution for at least 10’000 registered members
 ### 7. Future Work
 There are a number of extensions to the described protocol that we need to further review in details for a flawless implementation and to enlarge the service scope available as well enhance handling and metadata management. A few of them are followings:
 
-    1.  Ensuring anonymity while digitally identifying in  a decentralized way each registered  member. Atala Prism (5) will be the natural reference to cooperate    with
+   -Ensuring anonymity while digitally identifying in  a decentralized way each registered  member. Atala Prism (6) will 
+   be the natural reference to cooperate with
     
-    2. The role of DSET  token
+    -The role of DSET  token
     
-    3. A enlarged governance model, to allow token staking and stakeholders to participate at protocol design decisions, development and changes
+    -A enlarged governance model, to allow token staking and stakeholders to participate at protocol design decisions, development and changes
     
-    4. Additional incentive method to boost members appeal 
+    -Additional incentive method to boost members appeal 
     
-    5. A mechanism to encompass enterprises management rule into a system run through Neural Network
+    -A mechanism to encompass enterprises management rule into a system run through Neural Network
         
     
 ### 8. Conclusion
@@ -480,16 +477,18 @@ The Cardano blockchain offers remarkable enhancements when compared with present
 
 (1) Statista 2021
 
-(2) https://en.wikipedia.org/wiki/Quadratic_voting
+(2) The Most Important Scarce Resource is Legitimacy, Vitalik -   https://vitalik.ca/general/202
 
-(3) Manuel M.T. Chakravarty, James Chapman, Kenneth MacKenzie, Orestis Melkonian, Michael Peyton Jones, and Philip Wadler. The Ex-
+(3) https://en.wikipedia.org/wiki/Quadratic_voting
+
+(4) Manuel M.T. Chakravarty, James Chapman, Kenneth MacKenzie, Orestis Melkonian, Michael Peyton Jones, and Philip Wadler. The Ex-
     tended UTXO Model. Technical report, IOHK and University of Edinburgh, 01 2020.
     
-(4) Plutus Pioneers Course, https://github.com/input-output-hk/plutus-pioneer-program
+(5) Plutus Pioneers Course, https://github.com/input-output-hk/plutus-pioneer-program
 
-(5) Atala Prism, https://atalaprism.io
+(6) Atala Prism, https://atalaprism.io
 
-(    ) The Most Important Scarce Resource is Legitimacy, Vitalik -   https://vitalik.ca/general/202
+
 
 
     
