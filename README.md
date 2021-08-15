@@ -12,7 +12,7 @@ reward-driven, platform for goods and service exchanges
 
 ### Supply
 
-DigitalServices tokens (DSET) are not deflationary. This is important to incentivize cooperative and honest behaviour in the platform.
+DigitalServices tokens (DSET) are not inflationary. 
 
 A fixed amount of DSET tokens is minted monthly and distributed according to a *Credit Assessment System* (CAS). Users receive tokens based on their scores obeying the following function:
 
@@ -56,16 +56,16 @@ freelance jobs (e.g. Fiverr or Upwork). These sites usually use pre-made natural
 
 To solve these issues, we propose DigiServices: a digital platform that allows service providers and clients to engage in honest transactions without the parties needing to trust each other. Built on Cardano, it uses smart contracts to enable parties to offer their services without the possibility of misinterpreation or ambiguity. It uses a reputation system to penalize dishonest parties and reward honest parties.
 
-With DigiServices, when Alice publishes her service online, it will be stored inside the Datum of a Plutus Validator called *marketplace*. The Datum of the contains a list of `Service`s. `Service` is a special
-data type that holds four values: 
+With DigiServices, when Alice publishes her service online, it will be stored inside the Datum of a Plutus Validator called *marketplace*. The Datum of the contains a list of `Service`s. 
+`Service` is a special data type that holds five values: 
 - `Title`
    - the name of the service Alice will provide (e.g. *Novel Writer*)
 - `Description`
    - provides context such as Alice's background and allow Alice to market service 
 - `Price`
    - amount of DSET tokens the client will pay to receive the service
-- `Signature`
-   - a non-fungible token that is only valid if it contains a cryptographic signature created from the combination of the owner's private key and the `Accusation Contract` validator hash.
+- `Trust`  is the Trust Token amount, deposited by the service provider at each service contract deal 
+- `Publisher` is the member public key hash
 
 Example
 ```haskell
