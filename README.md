@@ -429,10 +429,14 @@ There are a number of extensions to the described protocol that we need to furth
 
    -Ensuring anonymity while digitally identifying in  a decentralized way each registered  member. Atala Prism (7) will 
    be the natural reference to cooperate with
+   
    -The role of DSET  token
+   
    -A enlarged governance model, to allow token staking and stakeholders to participate at protocol design decisions, development and changes
-    -Additional incentive method to boost members appeal 
-    -A mechanism to encompass enterprises management rule into a system run through Neural Network
+   
+   -Additional incentive method to boost members appeal 
+   
+   -A mechanism to encompass enterprises management rule into a system run through Neural Network
             
 ### 8. Conclusion
 The Cardano blockchain offers remarkable enhancements when compared with present Ethereum solution in terms of throughput, fees, energy efficiency. Along with the new Alonzo generation allowing Smart Contracts generation, a new ecosystem of services is likely to emerge promoting further  activities: a growth in offered services, new requirements in terms of Cybercrime prevention will be in high demand. The outlined  model is designed to meet this demand and relying on Plutus smart contracts environment, provides a easy-handling, scalable solution to meet these  challenge while assuring a continuous development of new protocols and functions to face new future expectations.
