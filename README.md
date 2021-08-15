@@ -2,9 +2,7 @@
 DigiServices is a Cardano-based project that aims to be a trustworthy,
 reward-driven, platform for goods and service exchanges
 
-## Table of Contents
-* [Tokenomics](#tokenomics)
-  * [Supply](#supply)
+
 * [Alice and Bob example](#alice-and-bob-example)
 * [White Paper](#white-paper)
 
@@ -130,9 +128,10 @@ This example illustrates one possible way that DigiServices can be used to estab
     * [Tokenomics](#b-Tokenomics)
     * [Voting](#c-Voting)
     * [Utility token DSET](#d-Utility-token-DSET)
+    * [Alice and Bob example](#alice-and-bob-example)
     * [Nature and uses of the DSET Token](#e-Nature-and-uses-of-the-DSET-Token)
+    * 
 4. [Business Model](#4-business-model)
-
 
 5. [Implementation](#5-implementation)
     * [Membership](#a-membership)
@@ -220,7 +219,91 @@ Blockchain can be used to create decentralized ecosystems in which a token is is
 allowing the value shift from the center to the ends.
 DigiServices’ vision encompasses this model where the blockchain is used to create a truly decentralized self-sustaining ecosystem. DigiServices strongly believes that the future of the internet lies in services powered by utility tokens, improving existing services with new paradigms that cannot be achieved in the absence of a distributed ledger.
 
-#### E. Nature and uses of the DSET Token
+#### E. Alice and Bob example
+
+Suppose Alice want’s to offer her services as a writer. Traditionally,
+she would search for a publishing company and sign a contract with them.
+The problem with this approach is that natural language contracts open doors for
+ambiguity, misinterpretation, and do not fit the requirements of practicality and quickness.
+
+Another approach, would be for Alice to access an online website focused on
+freelance jobs (e.g. Fiverr or Upwork). These sites usually use pre-made natural language contracts. This approach suffers from the same problems of natural language contracts mentioned above and have the additional risk of the project not being delivered or the client not paying the agreed amount.
+
+To solve these issues, we propose DigiServices: a digital platform that allows service providers and clients to engage in honest transactions without the parties needing to trust each other. Built on Cardano, it uses smart contracts to enable parties to offer their services without the possibility of misinterpreation or ambiguity. It uses a reputation system to penalize dishonest parties and reward honest parties.
+
+With DigiServices, when Alice publishes her service online, it will be stored inside the Datum of a Plutus Validator called *marketplace*. The Datum of the contains a list of `Service`s. 
+`Service` is a special data type that holds five values: 
+- `Title`
+   - the name of the service Alice will provide (e.g. *Novel Writer*)
+- `Description`
+   - provides context such as Alice's background and allow Alice to market service 
+- `Price`
+   - amount of DSET tokens the client will pay to receive the service
+- `Trust`  is the Trust Token amount, deposited by the service provider at each service contract deal 
+- `Publisher` is the member public key hash
+
+Example
+```haskell
+import Ledger
+
+-- Defined explicitily for clarity
+signAccusation :: Ledger.Crypto.PrivateKey -> Ledger.ValidatorHash -> Signature
+signAccusation pk vh = Ledger.Crypto.sign vh pk
+
+-- This will be stored in the Signature NFT metadata
+data Sig = Sig { signatory          :: Ledger.PubKeyHash
+               , accusationContract :: Ledger.ValidatorHash
+               , signature          :: Signature
+               } deriving (Eq, Show)
+```
+
+This means that the signature can be used to prove someone agreed with a
+determined contract.
+
+In our example, Alice would first create an `Accusation Contract`.
+
+She uses Charlie, Daniel and Emma public keys as the list of judges.
+
+She uses the following inputs to create the contract:
+  - `“Was a book actually written and delivered?”`
+  - `“Did it have more than 200 pages”`
+  - `“Was the client collaborative, providing any information needed?”`
+  
+The logic is codified below.
+
+```haskell
+type ClientTokens = Int
+type ProviderTokens = Int
+type JudgeTokens = Int
+
+type TTDistribution = (ClientTokens, ProviderTokens, JudgeTokens)
+type TotalAmount = Int
+
+distributeTokens :: Bool → Bool → Bool -> TotalAmount → Distribution
+distributeTokens inp1 inp2 inp3 totalAmt =
+    | (not inp1 || not inp2) && inp3 = ((totalAmt - judgeAmt), 0, judgeAmt)
+    | inp1 && inp2 && not inp3 = (0, (totalAmt - judgeAmt), judgeAmt)
+    | otherwise = (0, 0, judgeAmt)
+  where
+    judgeAmt :: Int
+    judgeAmt = totalAmt `div` 20
+```
+
+Bob could read Alice's contract and if he agrees with Alice's inputs, could also determine if the judges Alice selected are reliable and qualified to fairly handle a conflict before requesting Alice's services.
+
+To request Alice's services, Bob would provide his signature token and lock the same amount of DSET tokens provided by Alice in the `Accusation Contract` plus the amount of DSET tokens to pay Alice for her services.
+
+Lets assume Alice violates the contract and only delivers a book with 100 pages. Bob could invoke an "Accusation" event inside the `Accusation Contract`. This will notify the first judge in the contract (Charlie) and give him a hardcoded fixed deadline (e.g 24 hours) to provide answers to the inputs defined by Alice.
+
+If he does, then the logic will be executed according to the inputs provided (e.g. `(True, False, True)`) and would distribute the tokens locked in the `Accusation Contract` accordingly. Because of how the contract was defined Alice would receive nothing. Bob would receive 57 trust tokens (TT) and Charlie would receive 3 TT. It is possible that Charlie does not respond within the deadline. In this case the next judge in the list will be notified and the cycle repeats.
+
+
+In our example Bob was the one to invoke the accusation, but Alice
+could do the same thing if Bob does not follow the agreed upon rules in the contract. 
+
+This example illustrates one possible way that DigiServices can be used to establish trust between two parties who do not know each other by eliminating ambiguity normally attached to natural language contracts and provide a way to resolve conflicts.
+
+#### F. Nature and uses of the DSET Token
 DSET token is a hybrid token that has both utility token characteristics and payment token characteristics. The DSET token is the token on which the ecosystem is based. 
 Parties to a contractual relationship and members need DSET tokens for:
 ● Service transactions payments (depositing escrows(
