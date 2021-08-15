@@ -243,18 +243,21 @@ Anyone can send tokens to an UTxO and set any arbitrary data. There needs to be 
 
 DigiServices makes use of SIG tokens to address this issue. SIG can only be minted when certain conditions are met (including the payment of the entrance fee) and are uniquely matched to each user by making the "Token Name" the user's public key hash. This serves as an UTxO "stamp", which can later be checked in order to create a list of valid "accounts". This approach allows concurrency because each user has a unique UTxO even though the logic and address are the same.
 
+*Figure 1: Demonstration of how accounts could be filtered by using SIG tokens*
 ![Accounts Filter Example](images/account-filter.png)
 
 ##### II. Account Identity
 Since SIG token names are public key hashes, they also serve as a way to identify users. Each account linked to a SIG token is provided with a CAS score and can be recognized as real; other scripts requiring credentials can consume this account UTxO in order to verify if conditions are met.
 
 ##### III. Prove compliance
-Because DigiServices is an inter-mediation platform, it is crtitical to have a way of proving a user's agreemeent with set rules. SIG tokens can be used for this purpose because they can only be minted by the user whose public key hash is contained into the token name. Wen smart digital contracts are created, the account output is consumed and a SIG token is locked, proving compliance.
+Because DigiServices is an inter-mediation platform, it is critical to have a way of proving a user's agreement with set rules. SIG tokens can be used for this purpose because they can only be minted by the user whose public key hash is contained into the token name. When smart digital contracts are created, the account output is consumed and a SIG token is locked, proving compliance.
 
+*Figure 2: Example of compliance being proven by SIG token transfer*
 ![Prove Compliance Example](images/prove-compliance.png)
 
 In the DigiServices protocol, membership works by creating an "account", represented by the Membership Market (MM) UTxO using a "membership signature" minting policy. This minting policy will mint 100 new SIG tokens and deposit them in the newly created user "account" . This is a script validator that handles service offers and requests, provided that it also receives  in input the entrance fee (in the below example 1,000 DSET).
 
+*Figure 3: UTxO model representation of account creation*
 ![Join Platform Example](images/join-platform.png)
 
 #### B. Contracts
@@ -288,7 +291,8 @@ The judge in charge (the first confirmed mediator from the available list) will 
 Service can be understood as a more general term. Another term to define it could be "Information", since its function is to better formulate what the contract is about and give extra information about the deal as well as define the essential parameters (price and "trust", for example). In this sense, a company wishing to transfer its policies to a decentralized system could represent it as a service and create a new contract to handle conflicts between employees or issues related to their overall work. These contracts could have real world implications if the company decided, for instance, to measure their performance by comparing the number of tokens they own. 
 
 To cover these aspects, services are a data type that hold five parameters: 
-### Gabriele comment to Matheus: is the JSON you sent out yesterday correct ? the ContractType is not there; price was there
+### Gabriele comment to Mateus: is the JSON you sent out yesterday correct ? the ContractType is not there; price was there
+### Mateus' response: The JSON example is incorrect, I will fix it
 
 * Publisher: A public key hash identifying the person who created this service
 * Title: A string with a brief description about what the contract is about
@@ -298,27 +302,28 @@ To cover these aspects, services are a data type that hold five parameters:
 
 Finally, the contract is authenticated only if it receives a SIG token as input from the service provider. This is done by consuming the user "account" UTxO provided that the data contains the five essential components.
 
+*Figure 4: EUTxO model representation of contract creation*
 ![Contract Creation Example](images/contract-creation.png)
 
-The contract validator can receive four redeemers: "Open `Integer`", "Close", "Sign" and "Accuse `PubKeyHash`". The open redeemer indicates that, within the limit provided by the integer
-***Gabriele -> What is the integer limitation actually ?
+The contract validator can receive four redeemers: *Open `Integer`*, *Close*, *Sign* and *Accuse `PubKeyHash`*. The integer argument from `Open` indicates the maximum number of user that can request this service at the same time. The open redeemer indicates that, within the limit of users provided by the argument, any user can *Sign* this contract and request this service. The close redeemer, in the other hand, signalizes that, from now on, no more clients should be allowed to sign this contract.
 
-, any user can "Sign" this contract and request this service. The close redeemer, in the other hand, signalizes that, from now on, no more clients should be allowed to sign this contract.
-
+*Figure 5: Example of service being requested in the EUTxO model*
 ![Request Service Example](images/request-service.png)
 
 At any point in time judges that are inside the list of mediators can choose to "sign" the contract, upon request, providing their membership SIG token to show that they accept to mediate it. They also deposit an amount of tokens; this will be transferred to the damaged parties in case they do not provide a reliable input within the deadline.
 
 #### C. Accusation
-In order to accuse someone, any user that has already signed a contract can anytime consume the contract UTxO using the accuse redeemer. This will increase the running diputes amount in the accusation list. A new triple is generated including the user's public key hash, the accused entity and the set deadline. The main application will generate an event and notify the first confirmed judge. At that point the judge, mediator/arbitrator starts acting and provides the inputs as for set logic code. 
+In order to accuse someone, any user that has already signed a contract can anytime consume the contract UTxO using the accuse redeemer. This will increase the running disputes amount in the accusation list. A new triple is generated including the user's public key hash, the accused entity and the set deadline. The main application will generate an event and notify the first confirmed judge. At that point the judge, mediator/arbitrator starts acting and provides the inputs as for set logic code. 
 
-![Accusation Example](images/accuse.png)
+*Figure 6: Example of Alice accusing Bob*
+![Accusation Example](images/accusation.png)
 
 #### D. Trials
 After a judge has been notified, it is his responsibility to discover as much information as possible concerning the case. In this sense, if necessary, he can call both parties to a discussion in which each one will explain their views. Lawyers, like in the traditional legal system, may be engaged as well, if they think it is necessary. In most cases, though, it will be sufficient if the judge communicates in digital format with the users and ask them for proofs and defenses, as it is in the best interest of both to collaborate. In this way judges find out the facts assisting an activity of investigation.
 
 After sufficient information has been acquired by the mediator, he can consume the "logic" UTxO providing the set boolean inputs as a redeemer. This Plutus validator will then consume the contract UTxO and distribute the deposited tokens according to the set terms (terms should be understood as the logic itself).
 
+*Figure 7: Example of Bob being declared guilty and losing tokens*
 ![Accusation Example](images/trial.png)
 
 #### E. Rewards and Penalties
