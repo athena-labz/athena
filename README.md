@@ -463,7 +463,7 @@ The Cardano blockchain offers remarkable enhancements when compared with present
 
 (3) Statista 2021, https://www.statista.com/statistics/234987/victim-loss-cyber-crime-type/
 
-(4) Lalley, Steven; Weyl, E. Glen (24 December 2017). "Quadratic Voting: How Mechanism Design Can Radicalize Democracy"
+(4) "What Is Quadratic Voting?", Shaan Ray - https://towardsdatascience.com/what-is-quadratic-voting-4f81805d5a06
 
 (5) Manuel M.T. Chakravarty, James Chapman, Kenneth MacKenzie, Orestis Melkonian, Michael Peyton Jones, and Philip Wadler. The Ex-
     tended UTXO Model. Technical report, IOHK and University of Edinburgh, 01 2020.
