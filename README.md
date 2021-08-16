@@ -87,6 +87,8 @@ The token will have a total supply of 1 billion distributed as follows:
 
 ● 70% - Public Sale 
 
+The membership rewarding fund will be supported by 5% of transaction fees. In this way we assure the totally issued DSET tokens amount will be capped at 1 billion units.
+
 #### C. Voting
 Voting on the platform will utilize the quadratic voting method (3), whereby voting power of an individual user is proportional to the square root of their investment amount. This method, along with other precautions, prevent so-called 'whale' investors from gaining control of the voting process and denying other users the ability to cast votes.
 
@@ -329,7 +331,7 @@ The user score increment is defined as a percentage of the subtraction between t
 
 For instance, if the CAS score increment of a service deal was 10%, a user that has 60,000, would then get a score of 64,000 (+10% of 100,000 minus 60,000). Another member with a score of 20,000, in the other hand, would get 28,000. This means that the higher a score is, the harder it is to grow. This ensures balance between users and stimulates members with low scores to try to improve with the additional bonus of creating competitiveness between the top members.
 
-CAS Score grows in the following occasions:
+CAS score grows in the following occasions:
 
 ##### I. Service Deals
 In order to incentivize constant use of the platform, DigiServices reward's users for service deals. This is done by increasing the user score proportionally to the platform fees paid in the transaction only if there were no accusations and both parties were satisfied. Using fees to calculate the score increase ensures that there is no manipulation since an attacker would need to spend a larger amount of tokens in fees than he could earn in rewards.
