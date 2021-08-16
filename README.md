@@ -327,7 +327,7 @@ CAS scores can be found in each user account. The signature policy script, which
 
 The user score increment is defined as a percentage of the subtraction between the total and the actual score.
 
-*Figure 8: The function to calculate the new CAS score after a transaction, where "s" is the old score, "c" the percentage and "t" the maximum score*
+*Figure 8: The formula to calculate the new CAS score after a transaction, where "s0" is the old score, "c" the percentage and "t" the maximum score*
 
 ![Score Formula](images/score-formula.png)
 
@@ -344,21 +344,27 @@ Another member with a score of 20,000, in the other hand, would get 28,000. This
 CAS score grows in the following occasions:
 
 ##### I. Service Deals
-In order to incentivize constant use of the platform, DigiServices reward's users for service deals. This is done by increasing the user score proportionally to the platform fees paid in the transaction only if there were no accusations and both parties were satisfied. Using fees to calculate the score increase ensures that there is no manipulation since an attacker would need to spend a larger amount of tokens in fees than he could earn in rewards.
+In order to incentivize constant use of the platform, DigiServices reward's users for service deals. This is done by increasing the user score according to the already defined formula only if there were no accusations and both parties were satisfied. The percentage from service deals (the *c* variable in the formula) is 5%, but this value is subject to change.
 
 ##### II. Conflict Resolutions
-Another important component of DigiServices is the resolution mechanism: a Plutus validator script that redistributes locked tokens from parties based on the input from trusted judges in order to penalize those who did not follow the established rules. Judges are very important for the sustainability of the platform, since they are the ones responsible for providing reliable connections between the natural world and the blockchain world. As for better evaluating the honesty of platform mediators, judges' CAS scores increase whenever their resolution is not challenged. Their increment is proportional to the price of the service mediated.
+Another important component of DigiServices is the resolution mechanism: a Plutus validator script that redistributes locked tokens from parties based on the input from trusted judges in order to penalize those who did not follow the established rules. Judges are very important for the sustainability of the platform, since they are the ones responsible for providing reliable connections between the natural world and the blockchain world. As for better evaluating the honesty of platform mediators, judges' CAS scores increase only when their resolution is not challenged. The percentage in this case is 7%.
 
 ##### III. Reviews
 After a service is completed or a conflict is resolved, the involved parties must give a review. Because DigiServices intends to preserve users' anonymity and review manipulation would be undesirable, reviews are matched to DSET tokens. Whenever a service is completed, the client and the service provider are forced to distribute 0.5% of the service price, either giving it partially or fully to the other. The remaining is burnt.
 
-For instance, a traditional five stars in DigiServices would mean that the total value (0.5%) was given to the other user (nothing would be burnt) and a two stars review would mean that only a part of the value (0.2%) would be "tipped" and the rest burnt. Additionally, users can provide more than five stars by giving extra tips exceeding the required value.
+*Figure 10: Review demonstration in the EUTxO model*
+![Review Example](images/review-example.png)
+
+For instance, a traditional five stars in DigiServices would mean that the total value (0.5%) was given to the other user (nothing would be burnt) and a two stars review would mean that only a part of the value (0.2%) would be "tipped" and the rest burnt. So if the total amount of locked tokens in a transaction is 10,000, for example, and a user gives a 4 stars review. 40 tokens would be transferred from the reviewer to the user being reviewed (0.4%) and 10 tokens would be burnt (0.1%). Additionally, users could provide more than five stars by giving tips, exceeding the required value of 0.5%.
 
 In the conflict resolution, though, things are a little bit different since reviews from favored parties would be almost always positive and reviews from losing parties negative. As for solving this issue, mediators are reviewed by the other judges from their list.
 
-Because reviews are a good indicator of someone's honesty, participation and competence, they are also responsible for increasing or decreasing a member's CAS score. Following the other approaches, the score is incremented (or decremented) proportionally to the value deposited minus half the maximum possible value (0.25%). Users with less than a 2.5 stars review would, therefore, see a decrease in their CAS score.
+Because reviews are a good indicator of someone's honesty, participation and competence, they are also responsible for increasing or decreasing a member's CAS score. Following the other approaches, the score is incremented (or decremented) proportionally to the value deposited minus half the maximum possible value (0.25%), all multiplied by ten. Users with less than a 2.5 stars review would, therefore, see a decrease in their CAS score. So *c* (the percentage coefficient in the score formula) would be 2.5% in the case of a five stars review and -0.5% in a 2 stars review. All of which can be observed in the following formula:
 
-A fixed amount of DSET tokens is minted monthly and distributed according to the Credit Assessment System (CAS). Users are rewarded or penalized with tokens proportionally to their scores, obeying the following `calculateRewards` function:
+*Figure 11: The formula to calculate the review CAS score coefficient*
+![Review Formula](images/review-formula.png)
+
+5% of all accumulated fees is distributed monthly according to the Credit Assessment System (CAS). Users are rewarded or penalized with tokens proportionally to their scores, obeying the following `calculateRewards` function:
 
 ```haskell
 -- An alias for Integer that indicates an user CAS score (0 to 1'000'000)
