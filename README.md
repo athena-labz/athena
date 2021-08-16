@@ -327,14 +327,11 @@ Penalties will follow a similar approach. Members with low CAS scores will be fo
 
 CAS scores can be found in each user account. The signature policy script, which authenticate accounts, only allows minting of signature tokens if the account UTxO is initialized with a datum containing the initial CAS score (60,000). This ensures that all users start with the same score and no data is manipulated. After an account is authenticated, its UTxO will only be consumed upon validation, making it possible for the platform to execute the necessary logic, increasing or decreasing users' CAS scores.
 
-The user CAS score increment is defined as a percentage of the difference between the maximum value t (100,000 ) and the current score.
+The user CAS score increment is defined as a percentage of the difference between the maximum value t (100,000 ) and the current score s0.
 
-*Figure 8: The formula to calculate the new CAS score after a transaction, where "s0" is the old score, "c" the percentage and "t" the maximum score*
+*Figure 8: The formula to calculate the new CAS score after a transaction, where s0 is the old score, c the percentage and t the maximum score*
 
 ![Score Formula](images/score-formula.png)
-
-##### Gabriele -> the calculation example is not clear to me, please expand on it
-##### Mateus -> is it clearer now?
 
 For instance, if the CAS score increment of a service deal was 10%, a user that has 60,000, would then get a score of 64,000.
 
