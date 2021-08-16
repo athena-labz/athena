@@ -337,6 +337,7 @@ The user score increment is defined as a percentage of the subtraction between t
 For instance, if the CAS score increment of a service deal was 10%, a user that has 60,000, would then get a score of 64,000.
 
 *Figure 9: An example of the score formula applied with a 60,000 score*
+
 ![Score Formula Example](images/score-formula-example.png)
 
 Another member with a score of 20,000, in the other hand, would get 28,000. This means that the higher a score is, the harder it is to grow. This ensures balance between users and stimulates members with low scores to try to improve with the additional bonus of creating competitiveness between the top members.
@@ -362,6 +363,7 @@ In the conflict resolution, though, things are a little bit different since revi
 Because reviews are a good indicator of someone's honesty, participation and competence, they are also responsible for increasing or decreasing a member's CAS score. Following the other approaches, the score is incremented (or decremented) proportionally to the value deposited minus half the maximum possible value (0.25%), all multiplied by ten. Users with less than a 2.5 stars review would, therefore, see a decrease in their CAS score. So *c* (the percentage coefficient in the score formula) would be 2.5% in the case of a five stars review and -0.5% in a 2 stars review. All of which can be observed in the following formula:
 
 *Figure 11: The formula to calculate the review CAS score coefficient*
+
 ![Review Formula](images/review-formula.png)
 
 5% of all accumulated fees is distributed monthly according to the Credit Assessment System (CAS). Users are rewarded or penalized with tokens proportionally to their scores, obeying the following `calculateRewards` function:
