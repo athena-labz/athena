@@ -392,47 +392,62 @@ As seen, the `calculateRewards` function takes each member CAS score and try to 
 #### Initial Thoughts
 The Cardano blockchain is a new third generation blockchain relying on proof-of-stake for throughput and energy efficiency.
 As this new ecosystem opens up through Alonzo version by end of year 2021, the users and businesses will be able to operate on this new vast ecosystem.
+
 DigiServices platform draws on Cardano smart contract environment to provide trustworthiness to third parties service providers platform or to services exchanged on the platform itself.
+
 A suitable and engaged partner will be selected for the marketing activity to show how a blockchain solution can provide a cheaper, trustworthy, convenient platform for them, while providing a capability for customers/members to take advantage of DeFi, paying with native tokens DSET while allowing swapping between Ada and other popular tokens all hosted on the Cardano network. 
 
 #### Roadmap Stages
 
-##### Stage 1  - 3 month  - Overall Proof-of-Concept, Sep.-Nov. 2021
+##### Stage 1
 
--Identify technical issues
+● 3 months
 
--High level concept design
+● Overall Proof-of-Concept, Sep. 2021 - Nov. 2021
 
--Visual design options
+● Identify technical issues
 
-##### Stage 2  - 6 months - Solution, Technical Model, Solution Details, Dec.2021-May 2022
+● High level concept design
 
--Concept solution options
+● Visual design options
 
--Test concept, Prototype with potential members through new ‘DigiServices’ platform, on Alonzo Mainnet
+##### Stage 2
 
--Development marketing and uptake plan
+● 6 months
 
-##### Stage 3 - 2 Months  - Release 1. Version, Jun.2022 – Jul.2022
+● Solution, Technical Model, Solution Details, Dec. 2021 - May 2022
 
-First go live and working solution for at least 10’000 registered members
+● Concept solution options
+
+● Test concept, Prototype with potential members through new ‘DigiServices’ platform, on Alonzo Mainnet
+
+● Development marketing and uptake plan
+
+##### Stage 3
+
+● 2 Months
+
+● Release of first version, Jun. 2022 – Jul. 2022
+
+● First go live and working solution for at least 10’000 registered members
 
 ### 7. Future Work
+
 There are a number of extensions to the described protocol that we need to further review in details for a flawless implementation and to enlarge the service scope available as well enhance handling and metadata management. A few of them are followings:
 
-   -Ensuring anonymity while digitally identifying in  a decentralized way each registered  member. Atala Prism (7) will 
-   be the natural reference to cooperate with
+● Ensuring anonymity while digitally identifying in  a decentralized way each registered  member. Atala Prism (7) will be the natural reference to cooperate with
    
-   -The role of DSET  token
+● The role of DSET token
    
-   -A enlarged governance model, to allow token staking and stakeholders to participate at protocol design decisions, development and changes
+● A enlarged governance model, to allow token staking and stakeholders to participate at protocol design decisions, development and changes
    
-   -Additional incentive method to boost members appeal 
+● Additional incentive method to boost members appeal 
    
-   -A mechanism to encompass enterprises management rule into a system run through Neural Network
+● A mechanism to encompass enterprises management rule into a system run through Neural Network
             
 ### 8. Conclusion
-The Cardano blockchain offers remarkable enhancements when compared with present Ethereum solution in terms of throughput, fees, energy efficiency. Along with the new Alonzo generation allowing Smart Contracts generation, a new ecosystem of services is likely to emerge promoting further  activities: a growth in offered services, new requirements in terms of Cybercrime prevention will be in high demand. The outlined  model is designed to meet this demand and relying on Plutus smart contracts environment, provides a easy-handling, scalable solution to meet these  challenge while assuring a continuous development of new protocols and functions to face new future expectations.
+
+The Cardano blockchain offers remarkable enhancements when compared with present Ethereum solution in terms of throughput, fees, energy efficiency. Along with the new Alonzo generation allowing Smart Contracts generation, a new ecosystem of services is likely to emerge promoting further  activities: a growth in offered services, new requirements in terms of cyber-crime prevention will be in high demand. The outlined  model is designed to meet this demand and relying on Plutus smart contracts environment, provides a easy-handling, scalable solution to meet these  challenge while assuring a continuous development of new protocols and functions to face new future expectations.
 
 ### Sources
 
