@@ -34,13 +34,14 @@
 Global gig-economy transactions are forecast to grow by 17% a year to around $455 billion dollars by 2023, according to a report from Mastercard (1). There is a growing need for a fast, secure, and reliable way to establish trust between participants in the gig economy. We propose a platform that enables parties to create contracts stored in the Cardano blockchain to build trust based on token rewards calculated through an algorithm that collects statistics related to the service or good provided and returns the amount of tokens per month that will be rewarded. Parties that violate the contract will be penalized by losing tokens proportional to the severity of violation.
 
 ### Team and Project Background
-The core team initiating Digiservices is made up by a pool of young enthusiasts attending the Plutus Pioneer Cohort.  Trustworthiness and Legitimacy building are core values to be built-in the forthcoming Cardano-driven platform. We believe that the Most Important Scarce Resource is Legitimacy, and this brings about giant costs. The Bitcoin and Ethereum blockchain ecosystems both spend far more on network security - the goal of proof of work mining - than they do on everything else combined. The Bitcoin blockchain has paid an average of about $38 million per day in block rewards to miners since the start of the year, plus about $5m/day in transaction fees. The Ethereum blockchain comes in second, at $19.5m/day in block rewards plus $18m/day in tx fees. Meanwhile, the Ethereum Foundation's annual budget, paying for research, protocol development, grants and all sorts of other expenses, is a mere $30 million per year. (2)
-Willingness to challenge the existing barriers and constraints at today’s service exchange platform such as Upwork and overcome the steeply rising Cybercrime on Non-payments/Non-Delivery risk
+The core team initiating DigiServices is made up by a pool of young enthusiasts attending the Plutus Pioneer Cohort (2).  Trustworthiness and Legitimacy building are core values to be built-in the forthcoming Cardano-driven platform. We believe that the Most Important Scarce Resource is Legitimacy, and this brings about giant costs. The Bitcoin and Ethereum blockchain ecosystems both spend far more on network security - the goal of proof of work mining - than they do on everything else combined. The Bitcoin blockchain has paid an average of about $38 million per day in block rewards to miners since the start of the year, plus about $5m/day in transaction fees. The Ethereum blockchain comes in second, at $19.5m/day in block rewards plus $18m/day in tx fees. Meanwhile, the Ethereum Foundation's annual budget, paying for research, protocol development, grants and all sorts of other expenses, is a mere $30 million per year. (3)
+
+Willingness to challenge the existing barriers and constraints at today’s service exchange platform such as Upwork and overcome the steeply rising cyber-crime on Non-payments/Non-Delivery risk
 The full protocol implementation will require the addition of few developers with advanced Haskell skills as well as a partnership with one or more social platforms to assure visibility and a actual quick proof-of-concept.
                        
 ### 1. Problem Statement
 
-The Web 2.0 revolution started at the end of the 1990s. It solved a wide range of problems and vastly increased economic efficiency. However, this revolution did little to modernize our legal systems, which have not kept pace with technological and economic progress. Non-Payment and Non-Delivery Crimes show an exponential growth and accounted for $265 million in losses in the United States in 2020 (3). Cyber crimes continue to rise at an increasing rate.
+The Web 2.0 revolution started at the end of the 1990s. It solved a wide range of problems and vastly increased economic efficiency. However, this revolution did little to modernize our legal systems, which have not kept pace with technological and economic progress. Non-Payment and Non-Delivery Crimes show an exponential growth and accounted for $265 million in losses in the United States in 2020 (4). Cyber crimes continue to rise at an increasing rate.
 
 Bureaucracy and regulation make the current legal system slow and expensive. In some cases, people prefer not to invoke any lawsuits even when they are wronged. Private mediators appear to provide a solution, but they are often expensive and unsuitable for simple services.
 
@@ -52,7 +53,7 @@ DigiServices aims to overcome the limits of physical contracts by providing a pl
 
 The reward-penalty system is an algorithm that collects statistics related to the service transactions, credit score, and activities. It returns the amount of tokens that will be rewarded. Parties that refuse to follow the rules defined in the contract will be penalized by losing tokens proportionate to the severity of their violation. In extreme cases membership access to the platform will be suspended.
 
-In such as case all membership account own assets, such as DSET are burnt. Of course the member can still register again to the platform. This is one of draw-backs of anonimity, but I think membership access fees can partially prevent abuses.
+In such as case all membership account own assets, such as DSET are burnt. Of course the member can still register again to the platform. This is one of draw-backs of anonymity, but membership access fees can partially prevent abuses.
 
 By integrating real-world reliable inputs with strict on-chain contracts, DigiServices aims to mitigate the ambiguity common in natural-language written contracts, while preserving the flexibility needed to communicate with the real world. 
 
@@ -90,11 +91,12 @@ The token will have a total supply of 1 billion distributed as follows:
 The membership rewarding fund will be supported by 5% of transaction fees. In this way we assure the totally issued DSET tokens amount will be capped at 1 billion units.
 
 #### C. Voting
-Voting on the platform will utilize the quadratic voting method (3), whereby voting power of an individual user is proportional to the square root of their investment amount. This method, along with other precautions, prevent so-called 'whale' investors from gaining control of the voting process and denying other users the ability to cast votes.
+Voting on the platform will utilize the quadratic voting method (5), whereby voting power of an individual user is proportional to the square root of their investment amount. This method, along with other precautions, prevent so-called 'whale' investors from gaining control of the voting process and denying other users the ability to cast votes.
 
 #### D. Utility token DSET
 Blockchain can be used to create decentralized ecosystems in which a token is issued in order to fund and assist the development of an ecosystem and that can be later used to purchase goods /services or being an integral part of a service itself, benefiting from the advantages of a decentralized structure, eliminating or reducing the presence of a central intermediary body, thus
 allowing the value shift from the center to the ends.
+
 DigiServices’ vision encompasses this model where the blockchain is used to create a truly decentralized self-sustaining ecosystem. DigiServices strongly believes that the future of the internet lies in services powered by utility tokens, improving existing services with new paradigms that cannot be achieved in the absence of a distributed ledger.
 
 #### E. Alice and Bob example
@@ -105,7 +107,7 @@ Another approach, would be for Alice to access an online website focused on free
 
 To solve these issues, we propose DigiServices: a digital platform that allows service providers and clients to engage in honest transactions without the parties needing to trust each other. Built on Cardano, it uses smart contracts to enable parties to offer their services without the possibility of misinterpretation or ambiguity. It uses a reputation system to penalize dishonest parties and reward honest parties.
 
-With DigiServices, when Alice publishes her service online, it will be stored inside the Datum of a Plutus Validator called *contract*. The Datum contains a list of `Service`. In addition, DigiServices makes use of a *Signature Minting Policy* that mint's signature tokens (SIG), transferring them to a special *Membership Marketplace Account*, a script that handles platform transactions and holds the platform funds. This minting is only allowed if the entrance fee is paid and the script Datum is set to the platform initial values (CAS score of 60 and "Trust Insurance" of 0).
+With DigiServices, when Alice publishes her service online, it will be stored inside the Datum of a Plutus Validator called *contract*. The Datum contains a list of `Service`. In addition, DigiServices makes use of a *Signature Minting Policy* that mint's signature tokens (SIG), transferring them to a special *Membership Marketplace Account*, a script that handles platform transactions and holds the platform funds. This minting is only allowed if the entrance fee is paid and the script Datum is set to the platform initial values (CAS score of 60,000 and "Trust Insurance" of 0).
 
 In our example, Alice would first create a *contract*.
 
@@ -157,7 +159,7 @@ Charlie, Daniel and Emma would also need to agree with Alice's contract and the 
 
 Lets assume Alice violates the contract and only delivers a book with 100 pages. Bob could invoke an *accusation* event inside the *contract*. This will notify the first judge in the contract (Charlie) and give him a deadline (e.g 24 hours) to provide answers to the inputs defined by Alice.
 
-If he does, then the logic will be executed according to the inputs provided (e.g. `(True, False, True)`) and would distribute the tokens locked in the `Accusation Contract` accordingly. Because of how the contract was defined Alice would receive nothing. Bob would receive 950 DSET and Charlie would receive 50 DSET. It is possible that Charlie does not respond within the deadline. In this case the next judge in the list will be notified (Daniel) and the cycle repeats.
+If he does, then the logic will be executed according to the inputs provided (e.g. `(True, False, True)`) and would distribute the tokens locked in the *contract* accordingly. Because of how the contract was defined Alice would receive nothing. Bob would receive 950 DSET and Charlie would receive 50 DSET. It is possible that Charlie does not respond within the deadline. In this case the next judge in the list will be notified (Daniel) and the cycle repeats.
 
 In our example Bob was the one to invoke the accusation, but Alice could do the same thing if Bob does not follow the agreed upon rules in the contract. 
 
@@ -180,7 +182,7 @@ Parties to a contractual relationship and members need DSET tokens for:
 
 ● Rewards accruals
 
-Additionally, DSET tokens are used for paying a membership entrance fee. Because Cardano requires that users pay GAS fees in ADA every time they try to consume a script UTxO and DigiService's require DSET fees from users in every transaction, all transactions that involve DigiServices will require the user's "wallet" in addition to the involved scripts. In other words, every transaction will consume an UTxO that belongs to the user.
+Additionally, DSET tokens are used for paying a membership entrance fee. Because Cardano requires that users pay GAS fees in ADA every time they try to consume a script UTxO and DigiService's require DSET fees from users in every transaction, all transactions that involve DigiServices will require the user's "wallet" in addition to the involved scripts. In other words, every transaction will consume an unspent transaction output (UTxO) that belongs to the user (6).
 
 In addition, in DigiServices' there will be a script (the Membership Marketplace) that will be responsible for collecting fees, increase or decrease CAS scores (since the UTxO Datum can be validated) and allow or not the transference of signature tokens (SIG). DigiService's scripts are only considered official (or authenticated) when they have SIG tokens.
 
@@ -216,7 +218,7 @@ Users receive rewards for being active on the platform. Inviting new members and
 
 Membership logic is used to transparently facilitate trust on the network. Trust is measured by analyzing someone's CAS score, the amount of deposited DSET in the contract, and profile information.
 
-To sign up for a membership, a user is required to pay an initial registration fee in DSET. This will grant them access to all of the tools and services available on the platform. 
+To sign up for a membership, a user is required to pay an initial registration fee in DSET (the already mentioned entrance fee). This will grant them access to all of the tools and services available on the platform. 
 
 CAS scores have a range between 0 and 100,000. The initial CAS score for a new member wil be 60,000. Every member will be responsible to increase their trustworthiness on the platform by raising their CAS score through positive reviews and other activities.
 
@@ -467,16 +469,16 @@ The Cardano blockchain offers remarkable enhancements when compared with present
 
 (1) https://newsroom.mastercard.com/wp-content/uploads/2019/05/Gig-Economy-White-Paper-May-2019.pdf
 
-(2) The Most Important Scarce Resource is Legitimacy, Vitalik - https://vitalik.ca/general/2021/03/23/legitimacy.html
+(2) Plutus Pioneers Course, https://github.com/input-output-hk/plutus-pioneer-program
 
-(3) Statista 2021, https://www.statista.com/statistics/234987/victim-loss-cyber-crime-type/
+(3) The Most Important Scarce Resource is Legitimacy, Vitalik - https://vitalik.ca/general/2021/03/23/legitimacy.html
 
-(4) "What Is Quadratic Voting?", Shaan Ray - https://towardsdatascience.com/what-is-quadratic-voting-4f81805d5a06
+(4) Statista 2021, https://www.statista.com/statistics/234987/victim-loss-cyber-crime-type/
 
-(5) Manuel M.T. Chakravarty, James Chapman, Kenneth MacKenzie, Orestis Melkonian, Michael Peyton Jones, and Philip Wadler. The Ex-
+(5) "What Is Quadratic Voting?", Shaan Ray - https://towardsdatascience.com/what-is-quadratic-voting-4f81805d5a06
+
+(6) Manuel M.T. Chakravarty, James Chapman, Kenneth MacKenzie, Orestis Melkonian, Michael Peyton Jones, and Philip Wadler. The Ex-
     tended UTXO Model. Technical report, IOHK and University of Edinburgh, 01 2020.
-    
-(6) Plutus Pioneers Course, https://github.com/input-output-hk/plutus-pioneer-program
 
 (7) Atala Prism, https://atalaprism.io
 
