@@ -164,7 +164,7 @@ In our example Bob was the one to invoke the accusation, but Alice could do the 
 This example illustrates one possible way that DigiServices can be used to establish trust between two parties who do not know each other by eliminating ambiguity normally attached to natural language contracts and provide a way to resolve conflicts.
 
 #### F. Nature and uses of the DSET Token
-DSET token is a hybrid token that has both utility token characteristics and payment token characteristics. The DSET token is the token on which the ecosystem is based.
+DSET is a hybrid token that has both utility and payment token characteristics. DSET is the token on which the ecosystem is based.
 
 Parties to a contractual relationship and members need DSET tokens for:
 
@@ -180,6 +180,11 @@ Parties to a contractual relationship and members need DSET tokens for:
 
 ● Rewards accruals
 
+Additionally, DSET tokens are used for paying a membership entrance fee. Because Cardano requires that users pay GAS fees in ADA every time they try to consume a script UTxO and DigiService's require DSET fees from users in every transaction, all transactions that involve DigiServices will require the user's "wallet" in addition to the involved scripts. In other words, every transaction will consume an UTxO that belongs to the user.
+
+In addition, in DigiServices' there will be a script (the Membership Marketplace) that will be responsible for collecting fees, increase or decrease CAS scores (since the UTxO Datum can be validated) and allow or not the transference of signature tokens (SIG). DigiService's scripts are only considered official (or authenticated) when they have SIG tokens.
+
+SIG tokens can only be minted by making a "request" to *Signature Policy Script*, which will verify that the Membership Marketplace collected the entrance fee and has the right Datum (CAS of 60,000 and Trust Insurance of 0). If that was verified, the policy will allow the minting of 100 SIG tokens that will be transferred directly to the Membership Marketplace and not the user's Cardano wallet.
 
 ### 4. Business model
 
@@ -326,7 +331,8 @@ The user score increment is defined as a percentage of the subtraction between t
 
 ![Score Formula](images/score-formula.png)
 
-###### Gabriele -> the calculation example is not clear to me, please expand on it
+##### Gabriele -> the calculation example is not clear to me, please expand on it
+##### Mateus -> is it clearer now?
 
 For instance, if the CAS score increment of a service deal was 10%, a user that has 60,000, would then get a score of 64,000.
 
