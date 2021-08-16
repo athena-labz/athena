@@ -164,15 +164,15 @@ In our example Bob was the one to invoke the accusation, but Alice could do the 
 This example illustrates one possible way that DigiServices can be used to establish trust between two parties who do not know each other by eliminating ambiguity normally attached to natural language contracts and provide a way to resolve conflicts.
 
 #### F. Nature and uses of the DSET Token
-DSET token is a hybrid token that has both utility token characteristics and payment token characteristics. The DSET token is the token on which the ecosystem is based. 
+DSET token is a hybrid token that has both utility token characteristics and payment token characteristics. The DSET token is the token on which the ecosystem is based.
+
 Parties to a contractual relationship and members need DSET tokens for:
 
 ● Service transactions payments (depositing escrows)
 
 ● Trust Token Deposit
 
-purchasing Smart Legal Contracts templates (both purchase fees paid to
-creators and commissions on revenue paid by creators to Jur)
+● Purchasing Smart Legal Contracts templates
 
 ● Conflict fees payments
 
@@ -183,14 +183,12 @@ creators and commissions on revenue paid by creators to Jur)
 
 ### 4. Business model
 
-DigiServices believes that a decentralized economy must provide mechanisms for sustaining the platform that supports this trustworthy system
-Business Development Road Map
+DigiServices believes that a decentralized economy must provide mechanisms for sustaining the platform that supports this trustworthy system.
 
-A basic one-time membership fee is requested to assure commitment and at the same time a membership low-barrier entry. Income generation is provided for the platform through transaction fees, for members acting as judge or as service provider being rewarded through spendable native token DSET . Business development will occur at two levels:
+A basic one-time membership fee is requested to assure commitment and at the same time a membership low-barrier entry. Income generation is provided for the platform through transaction fees, for members acting as judge or as service provider being rewarded through spendable native token DSET. Business development will occur at two levels:
 
-1 - Development of own service/goods exchange platform with service offering and demand 
-
-2 - Affiliation with already existing or newly established service providers, focusing on enforcing unbiased Credit Assessment of all memberships accessing the platform
+1. Development of own service/goods exchange platform with service offering and demand 
+2. Affiliation with already existing or newly established service providers, focusing on enforcing unbiased Credit Assessment of all memberships accessing the platform
 
 #### Fees and Platform Income
 
@@ -215,9 +213,9 @@ Membership logic is used to transparently facilitate trust on the network. Trust
 
 To sign up for a membership, a user is required to pay an initial registration fee in DSET. This will grant them access to all of the tools and services available on the platform. 
 
-CAS scores have a range between 0 and 100,000. The initial CAS score for a new member wil be 60,000. Every member will be responsbile to increase their trustyworthiness on the platform by raising their CAS score through positive reviews and other activities.
+CAS scores have a range between 0 and 100,000. The initial CAS score for a new member wil be 60,000. Every member will be responsible to increase their trustworthiness on the platform by raising their CAS score through positive reviews and other activities.
 
-An active membership is required to request, offer, or mediate services on the platform. When a member first signs up, the deposited DSET that they lock in the contract will be important to estabolish trust on the platform. The more successful transactions a member completes, the higher their CAS score will become, and they will not need to lock up as many DSET tokens for each contract to estabolish trust with other members.
+An active membership is required to request, offer, or mediate services on the platform. When a member first signs up, the deposited DSET that they lock in the contract will be important to establish trust on the platform. The more successful transactions a member completes, the higher their CAS score will become, and they will not need to lock up as many DSET tokens for each contract to establish trust with other members.
 
 In order to "create an account" in the platform, DigiServices makes use of a "signature policy" script, responsible for minting SIG tokens, which are important for three reasons:
 
@@ -263,23 +261,29 @@ For this reason, inputs act as "yes / no" questions and it is responsibility of 
 
 ##### III. Logic
 
-The logic is another validator script defined by the service provider that should receive N "inputs" from the judges as a redeemer, consuming the contract UTxO and should, according to the rules formally defined, distribute the consumed tokens which were locked by both the client and the service provider. Because inputs can be any boolean "questions", users can make sure that dishonest parties are penalized by creating strictly defined rules connected to real-world inputs in  the form of Plutus script validators. Therefore, the logic itself acts as a judge, deciding who is guilty (less or no tokens) or innocent (receiving more or all tokens).
+The logic is another validator script defined by the service provider that should receive N "inputs" from the judges as a redeemer, consuming the contract UTxO and should, according to the rules formally defined, distribute the consumed tokens which were locked by both the client and the service provider. Because inputs can be any boolean "questions", users can make sure that dishonest parties are penalized by creating strictly defined rules connected to real-world inputs in the form of Plutus script validators. Therefore, the logic itself acts as a judge, deciding who is guilty (less or no tokens) or innocent (receiving more or all tokens).
 
 It is important to notice that this logic script address may not exist and it is the responsibility of the client to ensure that it does and that it has reasonable terms before he signs the contract.
 
 ##### IV. Accusations
-Accusations is a list of 3-elements tuples containing the accuser and accused public key hash and the mediator deadline `[(AccuserPKH, AccusedPKH, Deadline)]`. 
+Accusations is a list of 3-elements tuples containing the accuser and accused public key hash and the mediator deadline `[(AccuserPKH, AccusedPKH, Deadline)]`.
+
 The judge in charge (the first confirmed mediator from the available list) will be notified and is expected to provide the necessary inputs to the logic script before the set deadline.
 
 ##### V. Service
 Service can be understood as a more general term. Another term to define it could be "Information", since its function is to better formulate what the contract is about and give extra information about the deal as well as define the essential parameters (price and "trust", for example). In this sense, a company wishing to transfer its policies to a decentralized system could represent it as a service and create a new contract to handle conflicts between employees or issues related to their overall work and performance vs target assessment. 
 
 To cover these aspects, services are a data type that hold five parameters: 
-* Publisher: A public key hash identifying the person who created this service
-* Title: A string with a brief description about what the contract is about
-* Description: A string with a more in-depth picture about the service
-* Trust: The amount of DSET tokens (Trust Tokens) that will be on-hold to act as a guarantee for the case one of the parties breaks the rules
-* ContractType: A data type that will indicate of what type this contract is and the specific parameters. It can be `Constant`, which takes no argument or `OneTime`, which takes a `Value` indicating the price and a `POSIXTime` indicating the deadline. 
+
+● Publisher: A public key hash identifying the person who created this service
+
+● Title: A string with a brief description about what the contract is about
+
+● Description: A string with a more in-depth picture about the service
+
+● Trust: The amount of DSET tokens (Trust Tokens) that will be on-hold to act as a guarantee for the case one of the parties breaks the rules
+
+● ContractType: A data type that will indicate of what type this contract is and the specific parameters. It can be `Constant`, which takes no argument or `OneTime`, which takes a `Value` indicating the price and a `POSIXTime` indicating the deadline. 
 
 Finally, the contract is authenticated only if it receives a SIG token as input from the service provider. This is done by consuming the user "account" UTxO provided that the data contains the five essential components.
 
@@ -316,11 +320,19 @@ Penalties will follow a similar approach. Members with low CAS scores will be fo
 
 CAS scores can be found in each user account. The signature policy script, which "officiate" accounts, only allows minting of signature tokens if the account UTxO is initialized with a datum containing the initial CAS score (60,000). This ensures that all users start with the same score and no data is tempered. After an account is officiated, it's UTxO will only be consumed when validated, making it possible for the platform to execute the necessary logic, increasing or decreasing users' scores.
 
-The user score increment is defined as a percentage of the subtraction between the total and the actual score. 
+The user score increment is defined as a percentage of the subtraction between the total and the actual score.
 
-***Gabriele -> the calculation example is not clear to me, please expand on it
+*Figure 8: The function to calculate the new CAS score after a transaction, where "s" is the old score, "c" the percentage and "t" the maximum score*
+![Score Formula](images/score-formula)
 
-For instance, if the CAS score increment of a service deal was 10%, a user that has 60,000, would then get a score of 64,000 (+10% of 100,000 minus 60,000). Another member with a score of 20,000, in the other hand, would get 28,000. This means that the higher a score is, the harder it is to grow. This ensures balance between users and stimulates members with low scores to try to improve with the additional bonus of creating competitiveness between the top members.
+###### Gabriele -> the calculation example is not clear to me, please expand on it
+
+For instance, if the CAS score increment of a service deal was 10%, a user that has 60,000, would then get a score of 64,000.
+
+*Figure 9: An example of the score formula applied with a 60,000 score*
+![Score Formula Example](images/score-formula-example)
+
+Another member with a score of 20,000, in the other hand, would get 28,000. This means that the higher a score is, the harder it is to grow. This ensures balance between users and stimulates members with low scores to try to improve with the additional bonus of creating competitiveness between the top members.
 
 CAS score grows in the following occasions:
 
@@ -365,23 +377,22 @@ calculateRewards xs = map (`calculateReward` scoreSum) xs
     scoreSum = foldl (\ acc x -> acc + x - initialValue) 0 xs
 ```
 
-```bash
+```
 Prelude> calculateRewards [1_000_000, 1_000_000, 1_000_000]
 [333,333,333]
 Prelude> calculateRewards [357_947, 946_792, 649_063]
 [-1574,2254,319]
 ```
 
-As seen, the `calculateRewards` function takes each member CAS score and try to find the proportional amount of tokens to be rewarded or taken. In order to avoid schemes in which users create multiple accounts to receive free rewards, the function subtracts the initial value (600,000) from the user score. This means that it is possible for a member to receive a "negative reward" (or penalty) and be forced to pay the specified amount so that he does not have his membership suspended.       
-
+As seen, the `calculateRewards` function takes each member CAS score and try to find the proportional amount of tokens to be rewarded or taken. In order to avoid schemes in which users create multiple accounts to receive free rewards, the function subtracts the initial value (60,000) from the user score. This means that it is possible for a member to receive a "negative reward" (or penalty) and be forced to pay the specified amount so that he does not have his membership suspended.       
 
 ### 6. Road Map
 
 #### Initial Thoughts
 The Cardano blockchain is a new third generation blockchain relying on proof-of-stake for throughput and energy efficiency.
 As this new ecosystem opens up through Alonzo version by end of year 2021, the users and businesses will be able to operate on this new vast ecosystem.
-Digiservices platform draws on Cardano smart contract environment to provide trustworthiness to third parties service providers platform or to services exchanged on the platform itself.
-A suitable and engaged partner will be selected for the marketing activity to show how a blockchain solution can provide a cheaper, trustworthy, convenient platform for them, while providing a capability for customers/members to take advantage of Defi, paying with native tokens DSET while allowing swapping between Ada and other popular tokens all hosted on the Cardano network. 
+DigiServices platform draws on Cardano smart contract environment to provide trustworthiness to third parties service providers platform or to services exchanged on the platform itself.
+A suitable and engaged partner will be selected for the marketing activity to show how a blockchain solution can provide a cheaper, trustworthy, convenient platform for them, while providing a capability for customers/members to take advantage of DeFi, paying with native tokens DSET while allowing swapping between Ada and other popular tokens all hosted on the Cardano network. 
 
 #### Roadmap Stages
 
