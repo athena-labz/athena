@@ -75,7 +75,7 @@ DigiServices will allow users to build flexible and versatile smart legal contra
 
 ### 3. Governance and Tokenomics
 #### A. Governance
-Digisets governance until the launch stage will be managed by the funding core team. At a later stage, after the membership will have exceeded the 1 million memberships threshold, participants will be able to use their staked DSET to vote on the future direction of the platform.
+DigiServices governance until the launch stage will be managed by the funding core team. At a later stage, after the membership will have exceeded the 1 million memberships threshold, participants will be able to use their staked DSET to vote on the future direction of the platform.
 Token holders, either through direct staking or a delegation system, will then be able to vote on which proposals the network should implement. Rewarding and burning system balance will assure that the DSET circulating amount will be capped at the maximum set level. 
 
 #### B. Tokenomics
@@ -99,37 +99,15 @@ DigiServices’ vision encompasses this model where the blockchain is used to cr
 
 #### E. Alice and Bob example
 
-Suppose Alice want’s to offer her services as a writer. Traditionally,
-she would search for a publishing company and sign a contract with them.
-The problem with this approach is that natural language contracts open doors for
-ambiguity, misinterpretation, and do not fit the requirements of practicality and quickness.
+Suppose Alice want’s to offer her services as a writer. Traditionally, she would search for a publishing company and sign a contract with them. The problem with this approach is that natural language contracts open doors for ambiguity, misinterpretation, and do not fit the requirements of practicality and quickness.
 
-Another approach, would be for Alice to access an online website focused on
-freelance jobs (e.g. Fiverr or Upwork). These sites usually use pre-made natural language contracts. This approach suffers from the same problems of natural language contracts mentioned above and have the additional risk of the project not being delivered or the client not paying the agreed amount.
+Another approach, would be for Alice to access an online website focused on freelance jobs (e.g. Fiverr or Upwork). These sites usually use pre-made natural language contracts. This approach suffers from the same problems of natural language contracts mentioned above and have the additional risk of the project not being delivered or the client not paying the agreed amount.
 
-To solve these issues, we propose DigiServices: a digital platform that allows service providers and clients to engage in honest transactions without the parties needing to trust each other. Built on Cardano, it uses smart contracts to enable parties to offer their services without the possibility of misinterpreation or ambiguity. It uses a reputation system to penalize dishonest parties and reward honest parties.
+To solve these issues, we propose DigiServices: a digital platform that allows service providers and clients to engage in honest transactions without the parties needing to trust each other. Built on Cardano, it uses smart contracts to enable parties to offer their services without the possibility of misinterpretation or ambiguity. It uses a reputation system to penalize dishonest parties and reward honest parties.
 
-With DigiServices, when Alice publishes her service online, it will be stored inside the Datum of a Plutus Validator called *marketplace*. The Datum contains a list of `Service` 
+With DigiServices, when Alice publishes her service online, it will be stored inside the Datum of a Plutus Validator called *contract*. The Datum contains a list of `Service`. In addition, DigiServices makes use of a *Signature Minting Policy* that mint's signature tokens (SIG), transferring them to a special *Membership Marketplace Account*, a script that handles platform transactions and holds the platform funds. This minting is only allowed if the entrance fee is paid and the script Datum is set to the platform initial values (CAS score of 60 and "Trust Insurance" of 0).
 
-Example
-```haskell
-import Ledger
-
--- Defined explicitily for clarity
-signAccusation :: Ledger.Crypto.PrivateKey -> Ledger.ValidatorHash -> Signature
-signAccusation pk vh = Ledger.Crypto.sign vh pk
-
--- This will be stored in the Signature NFT metadata
-data Sig = Sig { signatory          :: Ledger.PubKeyHash
-               , accusationContract :: Ledger.ValidatorHash
-               , signature          :: Signature
-               } deriving (Eq, Show)
-```
-
-This means that the signature can be used to prove someone agreed with a
-determined contract.
-
-In our example, Alice would first create an `Accusation Contract`.
+In our example, Alice would first create a *contract*.
 
 She uses Charlie, Daniel and Emma public keys as the list of judges.
 
@@ -141,34 +119,47 @@ She uses the following inputs to create the contract:
 The logic is codified below.
 
 ```haskell
-type ClientTokens = Int
-type ProviderTokens = Int
-type JudgeTokens = Int
+type ClientTokens = Integer
+type ProviderTokens = Integer
+type MediatorTokens = Integer
 
-type TTDistribution = (ClientTokens, ProviderTokens, JudgeTokens)
-type TotalAmount = Int
+type Distribution = (ClientTokens, ProviderTokens, MediatorTokens)
+type TotalAmount = Integer
 
-distributeTokens :: Bool → Bool → Bool -> TotalAmount → Distribution
-distributeTokens inp1 inp2 inp3 totalAmt =
+distributeTokens :: Bool -> Bool -> Bool -> TotalAmount -> Distribution
+distributeTokens inp1 inp2 inp3 totalAmt
     | (not inp1 || not inp2) && inp3 = ((totalAmt - judgeAmt), 0, judgeAmt)
     | inp1 && inp2 && not inp3 = (0, (totalAmt - judgeAmt), judgeAmt)
-    | otherwise = (0, 0, judgeAmt)
+    | otherwise = (halfTokens, halfTokens, judgeAmt)
   where
-    judgeAmt :: Int
+    halfTokens :: Integer
+    halfTokens = (totalAmt - judgeAmt) `div` 2
+
+    judgeAmt :: Integer
     judgeAmt = totalAmt `div` 20
+```
+
+Example
+```
+Prelude> distributeTokens True False True 1000
+(950,0,50)
+Prelude> distributeTokens True False False 1000
+(475,475,50)
+Prelude> distributeTokens True True False 1000
+(0,950,50)
 ```
 
 Bob could read Alice's contract and if he agrees with Alice's inputs, could also determine if the judges Alice selected are reliable and qualified to fairly handle a conflict before requesting Alice's services.
 
-To request Alice's services, Bob would provide his signature token and lock the same amount of DSET tokens provided by Alice in the `Accusation Contract` plus the amount of DSET tokens to pay Alice for her services.
+To request Alice's services, Bob would provide his signature token and lock the same amount of DSET tokens provided by Alice in the *contract* plus the amount of DSET tokens to pay Alice for her services.
 
-Lets assume Alice violates the contract and only delivers a book with 100 pages. Bob could invoke an "Accusation" event inside the `Accusation Contract`. This will notify the first judge in the contract (Charlie) and give him a hardcoded fixed deadline (e.g 24 hours) to provide answers to the inputs defined by Alice.
+Charlie, Daniel and Emma would also need to agree with Alice's contract and the amount of tokens they will receive. If they accepted, they should also provide their signature tokens.
 
-If he does, then the logic will be executed according to the inputs provided (e.g. `(True, False, True)`) and would distribute the tokens locked in the `Accusation Contract` accordingly. Because of how the contract was defined Alice would receive nothing. Bob would receive 57 trust tokens (TT) and Charlie would receive 3 TT. It is possible that Charlie does not respond within the deadline. In this case the next judge in the list will be notified and the cycle repeats.
+Lets assume Alice violates the contract and only delivers a book with 100 pages. Bob could invoke an *accusation* event inside the *contract*. This will notify the first judge in the contract (Charlie) and give him a deadline (e.g 24 hours) to provide answers to the inputs defined by Alice.
 
+If he does, then the logic will be executed according to the inputs provided (e.g. `(True, False, True)`) and would distribute the tokens locked in the `Accusation Contract` accordingly. Because of how the contract was defined Alice would receive nothing. Bob would receive 950 DSET and Charlie would receive 50 DSET. It is possible that Charlie does not respond within the deadline. In this case the next judge in the list will be notified (Daniel) and the cycle repeats.
 
-In our example Bob was the one to invoke the accusation, but Alice
-could do the same thing if Bob does not follow the agreed upon rules in the contract. 
+In our example Bob was the one to invoke the accusation, but Alice could do the same thing if Bob does not follow the agreed upon rules in the contract. 
 
 This example illustrates one possible way that DigiServices can be used to establish trust between two parties who do not know each other by eliminating ambiguity normally attached to natural language contracts and provide a way to resolve conflicts.
 
@@ -435,11 +426,11 @@ The Cardano blockchain offers remarkable enhancements when compared with present
 
 (1) https://newsroom.mastercard.com/wp-content/uploads/2019/05/Gig-Economy-White-Paper-May-2019.pdf
 
-(2) The Most Important Scarce Resource is Legitimacy, Vitalik -   https://vitalik.ca/general/202
+(2) The Most Important Scarce Resource is Legitimacy, Vitalik - https://vitalik.ca/general/2021/03/23/legitimacy.html
 
-(3) Statista 2021, https://www.statista.com/
+(3) Statista 2021, https://www.statista.com/statistics/234987/victim-loss-cyber-crime-type/
 
-(4) https://en.wikipedia.org/wiki/Quadratic_voting
+(4) Lalley, Steven; Weyl, E. Glen (24 December 2017). "Quadratic Voting: How Mechanism Design Can Radicalize Democracy"
 
 (5) Manuel M.T. Chakravarty, James Chapman, Kenneth MacKenzie, Orestis Melkonian, Michael Peyton Jones, and Philip Wadler. The Ex-
     tended UTXO Model. Technical report, IOHK and University of Edinburgh, 01 2020.
