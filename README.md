@@ -325,9 +325,9 @@ Judges, service providers and clients will be rewarded for their service through
 
 Penalties will follow a similar approach. Members with low CAS scores will be forced to pay an amount of tokens in order to maintain their membership and, if for 12 consecutive months, their CAS score is below a set threshold, the user will have an extra penalty.
 
-CAS scores can be found in each user account. The signature policy script, which "officiate" accounts, only allows minting of signature tokens if the account UTxO is initialized with a datum containing the initial CAS score (60,000). This ensures that all users start with the same score and no data is tempered. After an account is officiated, it's UTxO will only be consumed when validated, making it possible for the platform to execute the necessary logic, increasing or decreasing users' scores.
+CAS scores can be found in each user account. The signature policy script, which authenticate accounts, only allows minting of signature tokens if the account UTxO is initialized with a datum containing the initial CAS score (60,000). This ensures that all users start with the same score and no data is manipulated. After an account is authenticated, its UTxO will only be consumed upon validation, making it possible for the platform to execute the necessary logic, increasing or decreasing users' CAS scores.
 
-The user score increment is defined as a percentage of the subtraction between the total and the actual score.
+The user CAS score increment is defined as a percentage of the difference between the maximum value t (100,000 ) and the current score.
 
 *Figure 8: The formula to calculate the new CAS score after a transaction, where "s0" is the old score, "c" the percentage and "t" the maximum score*
 
