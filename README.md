@@ -279,7 +279,7 @@ Accusations is a list of 3-elements tuples containing the accuser and accused pu
 The judge in charge (the first confirmed mediator from the available list) will be notified and is expected to provide the necessary inputs to the logic script before the set deadline.
 
 ##### V. Service
-Service can be understood as a more general term. Another term to define it could be "Information", since its function is to better formulate what the contract is about and give extra information about the deal as well as define the essential parameters (price and "trust", for example). In this sense, a company wishing to transfer its policies to a decentralized system could represent it as a service and create a new contract to handle conflicts between employees or issues related to their overall work. These contracts could have real world implications if the company decided, for instance, to measure their performance by comparing the number of tokens they own. 
+Service can be understood as a more general term. Another term to define it could be "Information", since its function is to better formulate what the contract is about and give extra information about the deal as well as define the essential parameters (price and "trust", for example). In this sense, a company wishing to transfer its policies to a decentralized system could represent it as a service and create a new contract to handle conflicts between employees or issues related to their overall work and performance vs target assessment. 
 
 To cover these aspects, services are a data type that hold five parameters: 
 * Publisher: A public key hash identifying the person who created this service
