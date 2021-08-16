@@ -323,14 +323,14 @@ CAS scores can be found in each user account. The signature policy script, which
 The user score increment is defined as a percentage of the subtraction between the total and the actual score.
 
 *Figure 8: The function to calculate the new CAS score after a transaction, where "s" is the old score, "c" the percentage and "t" the maximum score*
-![Score Formula](images/score-formula)
+![Score Formula](images/score-formula.png)
 
 ###### Gabriele -> the calculation example is not clear to me, please expand on it
 
 For instance, if the CAS score increment of a service deal was 10%, a user that has 60,000, would then get a score of 64,000.
 
 *Figure 9: An example of the score formula applied with a 60,000 score*
-![Score Formula Example](images/score-formula-example)
+![Score Formula Example](images/score-formula-example.png)
 
 Another member with a score of 20,000, in the other hand, would get 28,000. This means that the higher a score is, the harder it is to grow. This ensures balance between users and stimulates members with low scores to try to improve with the additional bonus of creating competitiveness between the top members.
 
