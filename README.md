@@ -46,10 +46,6 @@ Bureaucracy and regulation make the current legal system slow and expensive. In 
 
 Natural language contracts also cause a series of problems. Subjectivity can result in unfair decisions and misunderstanding. Complexity requires expensive lawyers to create contracts. Neither of these attributes are desirable in a legal system that aims for fairness and openness.
 
-**Mateus' comment**
-
-I think we could add more details to this first section
-
 ### 2. Solution
 
 DigiServices aims to overcome the limits of physical contracts by providing a platform that enables parties to create contracts stored in the Cardano blockchain. The platform builds members trust based on token rewards and penalties, supported by a Credit Assessment System (CAS) able to address every platform member. 
@@ -111,7 +107,7 @@ freelance jobs (e.g. Fiverr or Upwork). These sites usually use pre-made natural
 
 To solve these issues, we propose DigiServices: a digital platform that allows service providers and clients to engage in honest transactions without the parties needing to trust each other. Built on Cardano, it uses smart contracts to enable parties to offer their services without the possibility of misinterpreation or ambiguity. It uses a reputation system to penalize dishonest parties and reward honest parties.
 
-With DigiServices, when Alice publishes her service online, it will be stored inside the Datum of a Plutus Validator called *marketplace*. The Datum contains a list of `Service`s. 
+With DigiServices, when Alice publishes her service online, it will be stored inside the Datum of a Plutus Validator called *marketplace*. The Datum contains a list of `Service` 
 
 Example
 ```haskell
@@ -177,12 +173,18 @@ This example illustrates one possible way that DigiServices can be used to estab
 #### F. Nature and uses of the DSET Token
 DSET token is a hybrid token that has both utility token characteristics and payment token characteristics. The DSET token is the token on which the ecosystem is based. 
 Parties to a contractual relationship and members need DSET tokens for:
-● Service transactions payments (depositing escrows(
+
+● Service transactions payments (depositing escrows)
+
 ● Trust Token Deposit
+
 purchasing Smart Legal Contracts templates (both purchase fees paid to
-creators and commissions on revenue paid by creators to Jur);
+creators and commissions on revenue paid by creators to Jur)
+
 ● Conflict fees payments
+
 ● Penalties payments
+
 ● Rewards accruals
 
 
@@ -202,12 +204,15 @@ A basic one-time membership fee is requested to assure commitment and at the sam
 DigiService’s choice is to adopt a flexible mechanism, which can be expanded or reduced according to the needs of the project and feedback from the members community. DigiService therefore anticipates the use of fees and reserves the right to reduce or increase them on the basis of the progress of the project and the value of the DSET Token. The following fees payable to DigiServices apply at the moment: 
 
 ● one-time membership fees
+
 ● accusation contract fees
-● transaction fees for escrow ● gas fees
+
+● transaction fees for escrow
+
+● gas fees
 
 #### Network
 Users receive rewards for being active on the platform. Inviting new members and maintaining a good reputation benefits the network. DSET creates a viable way to classify someone's honesty and are distributed as rewards to users of the platform providing goods and services.
-
 
 ### 5. Implementation
 
@@ -322,18 +327,15 @@ The user score increment is defined as a percentage of the subtraction between t
 
 ***Gabriele -> the calculation example is not clear to me, please expand on it
 
-For instance, if the CAS score increment of a service deal was 10%, a user that has 600,000, would then get a score of 640,000 (+10% of 1,000,000 minus 600,000). Another member with a score of 200,000, in the other hand, would get 280,000. This means that the higher a score is, the harder it is to grow. This ensures balance between users and stimulates members with low scores to try to improve with the additional bonus of creating competitiveness between the top members.
+For instance, if the CAS score increment of a service deal was 10%, a user that has 60,000, would then get a score of 64,000 (+10% of 100,000 minus 60,000). Another member with a score of 20,000, in the other hand, would get 28,000. This means that the higher a score is, the harder it is to grow. This ensures balance between users and stimulates members with low scores to try to improve with the additional bonus of creating competitiveness between the top members.
 
-Scores can be increased in the following occasions:
+CAS Score grows in the following occasions:
 
 ##### I. Service Deals
 In order to incentivize constant use of the platform, DigiServices reward's users for service deals. This is done by increasing the user score proportionally to the platform fees paid in the transaction only if there were no accusations and both parties were satisfied. Using fees to calculate the score increase ensures that there is no manipulation since an attacker would need to spend a larger amount of tokens in fees than he could earn in rewards.
 
 ##### II. Conflict Resolutions
 Another important component of DigiServices is the resolution mechanism: a Plutus validator script that redistributes locked tokens from parties based on the input from trusted judges in order to penalize those who did not follow the established rules. Judges are very important for the sustainability of the platform, since they are the ones responsible for providing reliable connections between the natural world and the blockchain world. As for better evaluating the honesty of platform mediators, judges' CAS scores increase whenever their resolution is not challenged. Their increment is proportional to the price of the service mediated.
-
-***Gabriele ->  please make a numeric example to make the explanation crystal clear
-
 
 ##### III. Reviews
 After a service is completed or a conflict is resolved, the involved parties must give a review. Because DigiServices intends to preserve users' anonymity and review manipulation would be undesirable, reviews are matched to DSET tokens. Whenever a service is completed, the client and the service provider are forced to distribute 0.5% of the service price, either giving it partially or fully to the other. The remaining is burnt.
