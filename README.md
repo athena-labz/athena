@@ -3,9 +3,7 @@
 ### White Paper Table of Contents
 
 [Abstract](#Abstract)
-
 [Team and Project Background](##Team-and-Project-Background)
-
 1. [Problem Statement](#1-problem-statement)
 2. [Solution](#2-solution)
 3. [Governance and Tokenomics](#3-governance-and-tokenomics)  
@@ -15,19 +13,17 @@
     * [Utility token DSET](#d-Utility-token-DSET)
     * [Alice and Bob example](#alice-and-bob-example)
     * [Nature and uses of the DSET Token](#e-Nature-and-uses-of-the-DSET-Token)
-    
 4. [Business Model](#4-business-model)
-
 5. [Implementation](#5-implementation)
     * [Membership](#a-membership)
     * [Contracts](#b-contracts)
     * [Accusation](#c-accusation)
     * [Trials](#d-trials)
     * [Rewards and Penalties](#e-rewards-and-penalties)
-
-6. [Road Map](#6-Road-Map)
-7. [Future Work](#7-future-work)
-8. [Conclusion](#8-conclusion)
+6. [Scalability](#6-scalability)
+7. [Road Map](#7-Road-Map)
+8. [Future Work](#8-future-work)
+9. [Conclusion](#9-conclusion)
  [Sources](#Sources)
 
 ### Abstract
@@ -400,7 +396,17 @@ Prelude> calculateRewards [357_947, 946_792, 649_063]
 
 As seen, the `calculateRewards` function takes each member CAS score and try to find the proportional amount of tokens to be rewarded or taken. In order to avoid schemes in which users create multiple accounts to receive free rewards, the function subtracts the initial value (60,000) from the user score. This means that it is possible for a member to receive a "negative reward" (or penalty) and be forced to pay the specified amount so that he does not have his membership suspended.       
 
-### 6. Road Map
+### 6. Scalability
+
+Differently from the Ethereum's account model, the EUTxO model used by Cardano may appear to create some data integrity problems. For instance, anyone can send tokens to a script address and set an arbitrary Datum. To solve this, an approach would be to use a non-fungible token to identify authentic UTxOs. The problem with this approach is that concurrency would be lost since double spending is not allowed and two or more users wouldn't be able to consume the transaction output at the same slot.
+
+To solve this issue, DigiServices takes the concept of "UTxO authentication", but with a new approach. Instead of having the developers minting a NFT and storing all accounts in the same UTxO, users will have unique accounts that will be "stamped" and authenticated by a signature token. This signature token can only be minted by requesting it from a specific minting policy script, which can execute arbitrary logic in order to allow it. Concurrency will be preserved since there is no UTxO being consumed. Additionally, no arbitrary data outside the platform constraints will be authenticated by the minting policy script.
+
+For this reason, DigiService's can be considered highly scalable. The rapid grow in the number of users would not lead to any congestion in the platform, nor would the Datum size limit be achieved.
+
+In addition, since the application is "hosted" on Cardano and "GAS" fees are paid by the users, platform infrastructure won't see any additional difficulties with more users entering the platform. Therefore, a growing number of users would only have a positive effect, leveraging the platform funds with transaction fees and benefiting it with new ideas and proposals.
+
+### 7. Road Map
 
 #### Initial Thoughts
 The Cardano blockchain is a new third generation blockchain relying on proof-of-stake for throughput and energy efficiency.
@@ -444,7 +450,7 @@ A suitable and engaged partner will be selected for the marketing activity to sh
 
 ● First go live and working solution for at least 10’000 registered members
 
-### 7. Future Work
+### 8. Future Work
 
 There are a number of extensions to the described protocol that we need to further review in details for a flawless implementation and to enlarge the service scope available as well enhance handling and metadata management. A few of them are followings:
 
@@ -458,7 +464,7 @@ There are a number of extensions to the described protocol that we need to furth
    
 ● A mechanism to encompass enterprises management rule into a system run through Neural Network
             
-### 8. Conclusion
+### 9. Conclusion
 
 The Cardano blockchain offers remarkable enhancements when compared with present Ethereum solution in terms of throughput, fees, energy efficiency. Along with the new Alonzo generation allowing Smart Contracts generation, a new ecosystem of services is likely to emerge promoting further  activities: a growth in offered services, new requirements in terms of cyber-crime prevention will be in high demand. The outlined  model is designed to meet this demand and relying on Plutus smart contracts environment, provides a easy-handling, scalable solution to meet these  challenge while assuring a continuous development of new protocols and functions to face new future expectations.
 
