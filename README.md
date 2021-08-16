@@ -323,6 +323,7 @@ CAS scores can be found in each user account. The signature policy script, which
 The user score increment is defined as a percentage of the subtraction between the total and the actual score.
 
 *Figure 8: The function to calculate the new CAS score after a transaction, where "s" is the old score, "c" the percentage and "t" the maximum score*
+
 ![Score Formula](images/score-formula.png)
 
 ###### Gabriele -> the calculation example is not clear to me, please expand on it
