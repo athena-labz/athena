@@ -1,5 +1,10 @@
 # DigiServices White Paper
 
+Samuel Santos Araujo,
+Gabriele Castaldi,
+Frank Delpidio,
+Mateus Oliveira Santos
+
 ### White Paper Table of Contents
 
 [Abstract](#Abstract)
