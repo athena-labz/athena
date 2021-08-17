@@ -230,7 +230,7 @@ To sign up for a membership, a user is required to pay an initial registration f
 
 CAS scores have a range between 0 and 100,000. The initial CAS score for a new member wil be 60,000. Every member will be responsible to increase their trustworthiness on the platform by raising their CAS score through positive reviews and other activities.
 
-An active membership is required to request, offer, or mediate services on the platform. When a member first signs up, the deposited DSET that they lock in the contract will be important to establish trust on the platform. The more successful transactions a member completes, the higher their CAS score will become, and they will not need to lock up as many DSET tokens for each contract to establish trust with other members.
+An active membership is required to request, offer, or mediate services on the platform. After a member signs up, the DSET locked in the contract will reinforce  his trustworthiness in the platform. The more successful transactions a member completes, the higher his CAS score becomes. 
 
 In order to "create an account" in the platform, DigiServices makes use of a "signature policy" script, responsible for minting SIG tokens, which are important for three reasons:
 
