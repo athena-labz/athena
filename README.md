@@ -421,7 +421,7 @@ To solve this issue, DigiServices adopts the concept of "UTxO authentication", b
 
 Relying on this feature, DigiServices is highly scalable. The rapid grow in the number of users will not lead neither to any congestion or constraints in the platform, nor will the Datum size limit be achieved.
 
-In addition, since the application is operating into the Cardano blockchain and "GAS" fees are paid by the users, platform infrastructure will not undergo any additional issue as more users will be accessing the platform. Therefore a growing number of users would only have a positive effect, leveraging the platform funds with transaction fees and benefiting it with new ideas and proposals.
+In addition, since the application is operating into the Cardano blockchain and GAS fees are paid by the users, platform infrastructure will not undergo any additional issue as more users will be accessing the platform. Therefore a growing number of users would only have a positive effect, leveraging the platform funds with transaction fees and benefiting it with new ideas and proposals.
 
 ### 7. Road Map
 
