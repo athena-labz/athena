@@ -176,9 +176,9 @@ This example illustrates one possible way that DigiServices can be used to estab
 #### F. Nature and uses of the DSET Token
 DSET is a hybrid token that has both utility and payment token characteristics. DSET is the token on which the ecosystem is based.
 
-Parties to a contractual relationship and members need DSET tokens for:
+All members need DSET tokens for following purposes:
 
-● Service transactions payments (depositing escrows)
+● Service transactions payments 
 
 ● Trust Token Deposit
 
@@ -192,9 +192,9 @@ Parties to a contractual relationship and members need DSET tokens for:
 
 Additionally, DSET tokens are used for paying a membership entrance fee. Because Cardano requires that users pay GAS fees in ADA every time they try to consume a script UTxO and DigiService's require DSET fees from users in every transaction, all transactions that involve DigiServices will require the user's "wallet" in addition to the involved scripts. In other words, every transaction will consume an unspent transaction output (UTxO) that belongs to the user (6).
 
-In addition, in DigiServices' there will be a script (the Membership Marketplace) that will be responsible for collecting fees, increase or decrease CAS scores (since the UTxO Datum can be validated) and allow or not the transference of signature tokens (SIG). DigiService's scripts are only considered official (or authenticated) when they have SIG tokens.
+In addition, in DigiServices' there will be a script (the Membership Marketplace) that will be responsible for collecting fees, increase or decrease CAS scores (since the UTxO Datum can be validated). DigiService's scripts are authenticated only if they carry a SIG token.
 
-SIG tokens can only be minted by making a "request" to *Signature Policy Script*, which will verify that the Membership Marketplace collected the entrance fee and has the right Datum (CAS of 60,000 and Trust Insurance of 0). If that was verified, the policy will allow the minting of 100 SIG tokens that will be transferred directly to the Membership Marketplace and not the user's Cardano wallet.
+SIG tokens can only be minted by making a "request" to *Signature Policy Script*, which will verify that the Membership Marketplace collected the entrance fee and has the right Datum (CAS of 60,000 and Trust Insurance of 0). If the verification is positive the policy will allow the minting of 100 SIG tokens that will be transferred directly to the Membership Marketplace Account, not to the member's Cardano wallet.
 
 ### 4. Business model
 
