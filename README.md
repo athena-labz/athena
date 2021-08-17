@@ -191,8 +191,7 @@ All members need DSET tokens for following purposes:
 ● Rewards accruals
 
 Additionally, DSET tokens are used for paying a membership entrance fee. Because Cardano requires that users pay GAS fees in ADA every time they try to consume a script UTxO and DigiService's require DSET fees from users in every transaction, all transactions that involve DigiServices will require the user's "wallet" in addition to the involved scripts. In other words, every transaction will consume an unspent transaction output (UTxO) that belongs to the user (6).
-
-UTxO Datum has following records: CAS and Review Credit. 
+Membership Marketplace UTxO Datum has following records: CAS and Review Credit. 
 Additionally UtxO holds two values: 
 
 #DSET token used for transactions fees, review credit  (the mechanism involving rewards and penalties as explained below in Section 5.)
