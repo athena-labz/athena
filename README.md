@@ -195,7 +195,7 @@ Additionally, DSET tokens are used for paying a membership entrance fee. Because
 UTxO Datum has following records: CAS and Review Credit. 
 Additionally UtxO holds two values: 
 
-#DSET token used for transactions fees, trust fund, review credit  (the mechanism involving rewards and penalties as explained below in Section 5.
+#DSET token used for transactions fees, trust fund (trust token), review credit  (the mechanism involving rewards and penalties as explained below in Section 5.
 
 #SIG token, holding unique public key hash to identify each member, while keeping anonymity
 
