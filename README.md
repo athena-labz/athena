@@ -276,7 +276,7 @@ For this reason, inputs act as "yes / no" answers to questions and it is respons
 
 ##### III. Logic
 
-The logic is another validator script defined by the service provider that should receive N "inputs" from the judges as a redeemer, consuming the contract UTxO and should, according to the rules formally defined, distribute the consumed tokens which were locked by both the client and the service provider. Because inputs can be any boolean "questions", users can make sure that dishonest parties are penalized by creating strictly defined rules connected to real-world inputs in the form of Plutus script validators. Therefore, the logic itself acts as a judge, deciding who is guilty (less or no tokens) or innocent (receiving more or all tokens).
+The logic is another validator script defined by the service provider that should receive N "inputs" from the judges as a redeemer, consuming the contract UTxO and should, according to the rules formally defined, distribute the consumed tokens which were locked by both the client and the service provider. Because inputs can be any boolean answer to questions, users' skill is to prevent any misunderstanding, by creating strictly defined rules connected to real-world inputs in the form of Plutus script validators. Therefore, the logic itself acts as a judge, deciding who is wrong (less or no tokens) or right. The judgement result will also determine who will get the token deposited as trust in the contract.
 
 It is important to notice that this logic script address may not exist and it is the responsibility of the client to ensure that it does and that it has reasonable terms before he signs the contract.
 
