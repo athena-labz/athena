@@ -68,7 +68,7 @@ By integrating real-world reliable inputs with strict on-chain contracts, DigiSe
 
 DigiServices proposes an easy-to-use platform to create contract templates. This will eliminate the current need for expensive lawyers to write contracts. Trust between mediators, service providers, and clients will me measured by a review system that is powered by DSET tokens which represent a "trust score". This system, when combined with other components, will be used to determine a user's periodical reward.
 
-Along with gig-economy existing platform, DigiServices will target freelancers with a *service marketplace*, where users can market their service and attach it to an *accusation contract*, which is used to handle conflicts.
+Along with gig-economy existing platform, DigiServices targets freelancers with a *service marketplace*, where users can market their service and attach it to an *accusation contract*, which is used to handle conflicts.
 
 DigiServices has identified four core components to provide a mediation platform that is affordable, fast, fair, and provides a great user experience:
 #### A. Ease of Use
