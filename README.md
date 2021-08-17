@@ -375,7 +375,7 @@ Because reviews are a good indicator of someone's honesty, participation and com
 
 ![Review Formula](images/review-formula.png)
 
-Considering assessment values in range 1-10 stars, and taking the equivalence of 1 star equal to 0.1, for example a users receiving a review value lower than a 2.5 stars review wouldsee a decrease in his CAS score. So *c* (the percentage coefficient in the above CAS score formula) would  -0.5% in a 2 stars review due to 10 x (0.2 - 0.25).
+Considering assessment values in range 1- 5 stars, and taking the equivalence of 1 star equal to 0.1, for example a users receiving a review value lower than a 2.5 stars review wouldsee a decrease in his CAS score. So *c* (the percentage coefficient in the above CAS score formula) would be -0.5% in a 2 stars review, being 10 x (0.20 - 0.25).
 
 Finally 5% of all accumulated transaction fees is distributed monthly according to the Credit Assessment System (CAS). Users are rewarded or penalized with tokens proportionally to their scores, obeying the following `calculateRewards` function:
 
