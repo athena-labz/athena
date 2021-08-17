@@ -353,10 +353,10 @@ Another member with a score of 20,000, in the other hand, would get 28,000. This
 CAS score grows in the following occasions:
 
 ##### I. Service Deals
-In order to incentivize constant use of the platform, DigiServices reward's users for service deals. This is done by increasing the user score according to the already defined formula only if there were no accusations and both parties were satisfied. The percentage from service deals (the *c* variable in the formula) is 5%, but this value is subject to change.
+In order to promote active and increasing use of the platform, DigiServices rewards users for service deals. This is done by increasing the user score according to the already defined formula only if there were no accusations and both parties ended up satisfied. The percentage from service deals (the *c* variable in the formula) is currently 5%, but with reserve to change.
 
 ##### II. Conflict Resolutions
-Another important component of DigiServices is the resolution mechanism: a Plutus validator script that redistributes locked tokens from parties based on the input from trusted judges in order to penalize those who did not follow the established rules. Judges are very important for the sustainability of the platform, since they are the ones responsible for providing reliable connections between the natural world and the blockchain world. As for better evaluating the honesty of platform mediators, judges' CAS scores increase only when their resolution is not challenged. The percentage in this case is 7%.
+Another important component of DigiServices is the resolution mechanism: a Plutus validator script that redistributes locked tokens from parties based on the input from trusted judges in order to penalize those who broke the rules. Judges are important for the sustainability of the platform, since they are the ones responsible for providing reliable connections between the natural world and the blockchain world. In order to reinforce the evaluation mechanism of judges, their CAS scores increase only when their resolution is not challenged. The percentage in this case is 7%.
 
 ##### III. Reviews
 After a service is completed or a conflict is resolved, the involved parties must give a review. Because DigiServices intends to preserve users' anonymity and review manipulation would be undesirable, reviews are matched to DSET tokens. Whenever a service is completed, the client and the service provider are forced to distribute 0.5% of the service price, either giving it partially or fully to the other. The remaining is burnt.
