@@ -359,11 +359,13 @@ In the example above, we can see that after a service is completed, Alice and Bo
 
 In the conflict resolution, though, things are a little bit different since reviews from favored parties would be almost always positive and reviews from losing parties negative. As for solving this issue, mediators are reviewed by the other judges from their list.
 
-Because reviews are a good indicator of someone's honesty, participation and competence, they are also responsible for increasing or decreasing a member's CAS score. Following the other approaches, the score is incremented (or decremented) proportionally to the value deposited minus half the maximum possible value (0.25%), all multiplied by ten. Users with less than a 2.5 stars review would, therefore, see a decrease in their CAS score. So *c* (the percentage coefficient in the score formula) would be 2.5% in the case of a five stars review and -0.5% in a 2 stars review. All of which can be observed in the following formula:
+Because reviews are a good indicator of someone's honesty, participation and competence, they are also responsible for increasing or decreasing a member's CAS score. Following the other approaches, the score is incremented (or decremented) proportionally to the value deposited minus half the maximum possible value (0.25%), all multiplied by ten, as described by the following formula:
 
-*Figure 11: The formula to calculate the review CAS score coefficient*
+*Figure 11: The formula to calculate the review CAS score coefficient, where r is the user review and c is the score formula coefficient*
 
 ![Review Formula](images/review-formula.png)
+
+Users with less than a 2.5 stars review would, therefore, see a decrease in their CAS score. So *c* (the percentage coefficient in the score formula) would be 2.5% in the case of a five stars review and -0.5% in a 2 stars review.
 
 5% of all accumulated fees is distributed monthly according to the Credit Assessment System (CAS). Users are rewarded or penalized with tokens proportionally to their scores, obeying the following `calculateRewards` function:
 
