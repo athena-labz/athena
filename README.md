@@ -337,7 +337,7 @@ CAS scores can be found in each user account. The signature policy script, which
 
 The user CAS score increment is defined as a percentage of the difference between the maximum value t (100,000 ) and the current score s0.
 
-*Figure 8: The formula to calculate the new CAS score after a transaction, where s0 is the old score, c the percentage and t the maximum score*
+*Figure 8: The formula to calculate the new CAS score after a transaction, where s0 is the old score, c the percentage and t the maximum value 100,000*
 
 ![Score Formula](images/score-formula.png)
 
@@ -371,13 +371,13 @@ In the conflict resolution, though, things are a little bit different since revi
 
 Because reviews are a good indicator of someone's honesty, participation and competence, they also influence increasing or decreasing of a member's CAS score. Following the other approaches, the score is incremented (or decremented) proportionally to the value deposited minus half the maximum possible value (0.25%), all multiplied by ten, as described by the following formula:
 
-*Figure 11: The formula to calculate the review CAS score coefficient, where r is the user review and c is the score formula coefficient*
+*Figure 11: The formula to calculate the review CAS score coefficient, where r is the user review in range 0 - 1 and c is the score formula coefficient*
 
 ![Review Formula](images/review-formula.png)
 
-Users with less than a 2.5 stars review would, therefore, see a decrease in their CAS score. So *c* (the percentage coefficient in the score formula) would be 2.5% in the case of a five stars review and -0.5% in a 2 stars review.
+Considering assessment values in range 1-10 stars, and taking the equivalence of 1 star equal to 0.1, for example a users receiving a review value lower than a 2.5 stars review wouldsee a decrease in his CAS score. So *c* (the percentage coefficient in the above CAS score formula) would  -0.5% in a 2 stars review due to 10 x (0.2 - 0.25).
 
-5% of all accumulated fees is distributed monthly according to the Credit Assessment System (CAS). Users are rewarded or penalized with tokens proportionally to their scores, obeying the following `calculateRewards` function:
+Finally 5% of all accumulated transaction fees is distributed monthly according to the Credit Assessment System (CAS). Users are rewarded or penalized with tokens proportionally to their scores, obeying the following `calculateRewards` function:
 
 ```haskell
 -- An alias for Integer that indicates an user CAS score (0 to 100,000)
