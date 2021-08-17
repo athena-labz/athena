@@ -305,15 +305,15 @@ Finally, the contract is authenticated only if it receives a SIG token as input 
 *Figure 4: EUTxO model representation of contract creation*
 ![Contract Creation Example](images/contract-creation.png)
 
-The contract validator can receive four redeemers: *Open `Integer`*, *Close*, *Sign* and *Accuse `PubKeyHash`*. The integer argument from `Open` indicates the maximum number of users that can request this service at the same time. The open redeemer indicates that, within the limit of users provided by the argument, any user can *Sign* this contract and request this service. The close redeemer, in the other hand, signalizes that, from now on, no more clients should be allowed to sign this contract.
+The contract validator can receive four redeemers: *Open `Integer`*, *Close*, *Sign* and *Accuse `PubKeyHash`*. The integer argument from `Open` indicates the maximum number of users that can request this service at the same time. The open redeemer indicates that, within the limit of users provided by the argument, any user can *Sign* this contract and request this service. The close redeemer finally shows that from this time onwards no more clients shall be allowed to sign this contract.
 
 *Figure 5: Example of service being requested in the EUTxO model*
 ![Request Service Example](images/request-service.png)
 
-At any point in time judges that are inside the list of mediators can choose to "sign" the contract, upon request, providing their membership SIG token to show that they accept to mediate it. They also deposit an amount of tokens; this will be transferred to the damaged parties in case they do not provide a reliable input within the deadline.
+At any point in time judges that are inside the available list can , upon request, freely choose to "sign" the contract, providing their membership SIG token to show that they accept to mediate the dispute. They also deposit an amount of tokens; this will be transferred to the damaged parties in case they do not provide a reliable input within the set deadline.
 
 #### C. Accusation
-In order to accuse someone, any user that has already signed a contract can anytime consume the contract UTxO using the accuse redeemer. This will increase the running disputes amount in the accusation list. A new triple is generated including the user's public key hash, the accused entity and the set deadline. The main application will generate an event and notify the first confirmed judge. At that point the judge starts acting and provides the inputs as for set logic code. 
+In order to accuse someone, any user that has already signed a contract can anytime consume the contract UTxO using the accuse redeemer. This will increase the number of on-going disputes in the accusation list. A new triple is generated including the user's public key hash, the accused entity and the set deadline. The main application will generate an event and notify the first confirmed judge. At that point the judge starts acting and provides the inputs as for set logic code. 
 
 *Figure 6: Example of Alice accusing Bob*
 ![Accusation Example](images/accusation.png)
