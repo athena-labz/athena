@@ -236,9 +236,9 @@ In order to "create an account" in the platform, DigiServices makes use of a "si
 
 ##### I. UTxO Identity
 
-Anyone can send tokens to an UTxO and set any arbitrary data. There needs to be an authentication of UTxOs to prevent "ghost accounts" and data manipulation. A naive approach would be to create a single NFT and use that to identify the authentic UTxO. The problem with this approach is that concurrency is lost because all users would only have access to a single UTxO and, since Cardano doesn't allow double spending, two users wouldn't be able to join the platform at the same time.
+Anyone can send tokens to an UTxO and set any arbitrary data. There needs to be an authentication of UTxOs to prevent "ghost accounts" and data manipulation. A naive approach would be to create a single NFT and use it to identify the authentic UTxO. The problem with this approach is that concurrency is lost because all users would only have access to a single UTxO and, since Cardano doesn't allow double spending. As result two users would not be able to join the platform at the same time.
 
-DigiServices makes use of SIG tokens to address this issue. SIG can only be minted when certain conditions are met (including the payment of the entrance fee) and are uniquely matched to each user by making the "Token Name" the user's public key hash. This serves as an UTxO "stamp", which can later be checked in order to create a list of valid "accounts". This approach allows concurrency because each user has a unique UTxO even though the logic and address are the same.
+DigiServices makes use of SIG tokens to address this issue. SIG can only be minted if certain conditions are met (including the payment of the entrance fee) and are uniquely matched to each user by making the "Token Name" the user's public key hash. This serves as an UTxO "stamp", which can later be checked in order to create a list of valid "accounts". This approach allows concurrency because each user has a unique UTxO even though the logic and address are the same.
 
 *Figure 1: Demonstration of how accounts could be filtered by using SIG tokens*
 ![Accounts Filter Example](images/account-filter.png)
@@ -247,7 +247,7 @@ DigiServices makes use of SIG tokens to address this issue. SIG can only be mint
 Since SIG token names are public key hashes, they also serve as a way to identify users. Each account linked to a SIG token is provided with a CAS score and can be recognized as real; other scripts requiring credentials can consume this account UTxO in order to verify if conditions are met.
 
 ##### III. Prove compliance
-Because DigiServices is an inter-mediation platform, it is critical to have a way of proving a user's agreement with set rules. SIG tokens can be used for this purpose because they can only be minted by the user whose public key hash is contained into the token name. When smart digital contracts are created, the account output is consumed and a SIG token is locked, proving compliance.
+Because DigiServices is an inter-mediation platform, it is critical to have a way of proving a user's agreement acceptance. SIG tokens can be used for this purpose because they can only be minted by the user whose public key hash is contained into the token name. When smart digital contracts are created, the account output is consumed and a SIG token is locked, proving compliance.
 
 *Figure 2: Example of compliance being proven by SIG token transfer*
 ![Prove Compliance Example](images/prove-compliance.png)
@@ -270,9 +270,9 @@ Judges are rewarded for providing reliable inputs. The platform creates a market
 
 ##### II. Inputs
 
-The mediators job should be to provide factual data. Instead of deciding who is guilty, penalties and rewards are based on an objective, deterministic process that has no bias and is not subjected to ambiguity.
+The judge job is to provide factual data. Instead of deciding who is guilty, penalties and rewards are based on an objective, deterministic process that has no bias and is not subjected to ambiguity.
 
-For this reason, inputs act as "yes / no" questions and it is responsibility of the judges to provide reliable answers in form of a boolean (true or false). These inputs are then passed to the arbitrary logic defined by the service provider, which will decide how the previously locked tokens will be distributed.
+For this reason, inputs act as "yes / no" answers to questions and it is responsibility of the judges to provide reliable answers (inputs) in form of a boolean (true or false). These inputs are then passed to the arbitrary logic defined by the service provider, which will decide how the previously locked tokens will be distributed.
 
 ##### III. Logic
 
