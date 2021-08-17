@@ -66,9 +66,9 @@ In such as case all membership account own assets, such as DSET are burnt. Of co
 
 By integrating real-world reliable inputs with strict on-chain contracts, DigiServices aims to mitigate the ambiguity common in natural-language written contracts, while preserving the flexibility needed to communicate with the real world. 
 
-DigiServices proposes an easy-to-use platform to create contract templates. This will eliminate the current need for expensive lawyers to write contracts. Trust between mediators, service providers, and clients will me measured by a review system that is powered by DSET tokens which represent a "trust score". This system, when combined with other components, will be used to determine a user's annual reward.
+DigiServices proposes an easy-to-use platform to create contract templates. This will eliminate the current need for expensive lawyers to write contracts. Trust between mediators, service providers, and clients will me measured by a review system that is powered by DSET tokens which represent a "trust score". This system, when combined with other components, will be used to determine a user's periodical reward.
 
-DigiServices will target freelancers with a *service marketplace*, where users can market their service and attach it to an *accusation contract*, which is used to handle conflicts.
+Along with gig-economy existing platform, DigiServices will target freelancers with a *service marketplace*, where users can market their service and attach it to an *accusation contract*, which is used to handle conflicts.
 
 DigiServices has identified four core components to provide a mediation platform that is affordable, fast, fair, and provides a great user experience:
 #### A. Ease of Use
@@ -103,14 +103,13 @@ The membership rewarding fund will be supported by 5% of transaction fees. In th
 Voting on the platform will utilize the quadratic voting method (5), whereby voting power of an individual user is proportional to the square root of their investment amount. This method, along with other precautions, prevent so-called 'whale' investors from gaining control of the voting process and denying other users the ability to cast votes.
 
 #### D. Utility token DSET
-Blockchain can be used to create decentralized ecosystems in which a token is issued in order to fund and assist the development of an ecosystem and that can be later used to purchase goods /services or being an integral part of a service itself, benefiting from the advantages of a decentralized structure, eliminating or reducing the presence of a central intermediary body, thus
-allowing the value shift from the center to the ends.
+Blockchain can be used to create decentralized ecosystems in which a token is issued in order to fund and assist the development of an ecosystem and that can be later used to purchase goods /services or being an integral part of a service itself, benefiting from the advantages of a decentralized structure, eliminating or reducing the presence of a central intermediary body, thus allowing the value shift from the center to the ends.
 
 DigiServices’ vision encompasses this model where the blockchain is used to create a truly decentralized self-sustaining ecosystem. DigiServices strongly believes that the future of the internet lies in services powered by utility tokens, improving existing services with new paradigms that cannot be achieved in the absence of a distributed ledger.
 
 #### E. Alice and Bob example
 
-Suppose Alice want’s to offer her services as a writer. Traditionally, she would search for a publishing company and sign a contract with them. The problem with this approach is that natural language contracts open doors for ambiguity, misinterpretation, and do not fit the requirements of practicality and quickness.
+Suppose Alice wants to offer her services as a writer. Traditionally, she would search for a publishing company and sign a contract with them. The problem with this approach is that natural language contracts are open to ambiguity, misinterpretation, and do not fit the requirements of practicality and quickness.
 
 Another approach, would be for Alice to access an online website focused on freelance jobs (e.g. Fiverr or Upwork). These sites usually use pre-made natural language contracts. This approach suffers from the same problems of natural language contracts mentioned above and have the additional risk of the project not being delivered or the client not paying the agreed amount.
 
@@ -166,7 +165,7 @@ To request Alice's services, Bob would provide his signature token and lock the 
 
 Charlie, Daniel and Emma would also need to agree with Alice's contract and the amount of tokens they will receive. If they accepted, they should also provide their signature tokens.
 
-Lets assume Alice violates the contract and only delivers a book with 100 pages. Bob could invoke an *accusation* event inside the *contract*. This will notify the first judge in the contract (Charlie) and give him a deadline (e.g 24 hours) to provide answers to the inputs defined by Alice.
+Let us assume Alice violates the contract and only delivers a book with 100 pages. Bob could invoke an *accusation* event inside the *contract*. This will notify the first judge in the contract (Charlie) and give him a deadline (e.g 24 hours) to provide answers to the inputs defined by Alice.
 
 If he does, then the logic will be executed according to the inputs provided (e.g. `(True, False, True)`) and would distribute the tokens locked in the *contract* accordingly. Because of how the contract was defined Alice would receive nothing. Bob would receive 950 DSET and Charlie would receive 50 DSET. It is possible that Charlie does not respond within the deadline. In this case the next judge in the list will be notified (Daniel) and the cycle repeats.
 
