@@ -4,11 +4,11 @@
 
 Samuel Santos Araujo, samuelssan28@gmail.com
 
-Gabriele Castaldi, vareca@live.com
+Gabriele Castaldi, vareca@live.com, masami03ga@gmail.com
 
 Frank Delpidio, frankdelpidio@gmail.com
 
-Mateus Oliveira Santos, santos.mateus@protonmail.com
+
 
 ### White Paper Table of Contents
 
@@ -43,7 +43,7 @@ Global gig-economy transactions are forecast to grow by 17% a year to around $45
 
 ### Team and Project Background
 The core team initiating DigiServices is made up by a pool of young enthusiasts attending the Plutus Pioneer Cohort (2).  The team is equipped with previous experience in programming with imperative languages and is going to open to new developers with blockchain programming experience.
-Trustworthiness and Legitimacy building are core values to be built-in the forthcoming Cardano-driven platform. We believe that the Most Important Scarce Resource is Legitimacy, and this brings about giant costs. The Bitcoin and Ethereum blockchain ecosystems both spend far more on network security - the goal of proof of work mining - than they do on everything else combined. The Bitcoin blockchain has paid an average of about $38 million per day in block rewards to miners since the start of the year, plus about $5m/day in transaction fees. The Ethereum blockchain comes in second, at $19.5m/day in block rewards plus $18m/day in tx fees. Meanwhile, the Ethereum Foundation's annual budget, paying for research, protocol development, grants and all sorts of other expenses, is a mere $30 million per year. (3)
+Trustworthiness and Legitimacy building are core values to be built-in the forthcoming Cardano-driven platform. We believe that the Most Important Scarce Resource is Legitimacy, and this brings about giant costs (Vitalik Buterin) (3). The Bitcoin and Ethereum blockchain ecosystems both spend far more on network security - the goal of proof of work mining - than they do on everything else combined. The Bitcoin blockchain has paid an average of about $38 million per day in block rewards to miners since the start of the year, plus about $5m/day in transaction fees. The Ethereum blockchain comes in second, at $19.5m/day in block rewards plus $18m/day in tx fees. Meanwhile, the Ethereum Foundation's annual budget, paying for research, protocol development, grants and all sorts of other expenses, is a mere $30 million per year (3).
 
 Willingness to challenge the existing barriers and constraints at today’s service exchange platform such as Upwork and overcome the steeply rising cyber-crime on Non-payments/Non-Delivery risk
 The full protocol implementation will require the addition of few developers with advanced Haskell skills as well as a partnership with one or more social platforms to assure visibility and a actual quick proof-of-concept.
