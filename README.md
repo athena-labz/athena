@@ -1,4 +1,14 @@
-# DigiServices White Paper
+#   White Paper
+
+#   DigiServices Fundamentals 
+
+Samuel Santos Araujo, samuelssan28@gmail.com
+
+Gabriele Castaldi,vareca@live.com
+
+Frank Delpidio,frankdelpidio@gmail.com
+
+Mateus Oliveira Santos, santos.mateus@protonmail.com
 
 ### White Paper Table of Contents
 
@@ -32,7 +42,8 @@
 Global gig-economy transactions are forecast to grow by 17% a year to around $455 billion dollars by 2023, according to a report from Mastercard (1). There is a growing need for a fast, secure, and reliable way to establish trust between participants in the gig economy. We propose a platform that enables parties to create contracts stored in the Cardano blockchain to build trust based on token rewards calculated through an algorithm that collects statistics related to the service or good provided and returns the amount of tokens per month that will be rewarded. Parties that violate the contract will be penalized by losing tokens proportional to the severity of violation.
 
 ### Team and Project Background
-The core team initiating DigiServices is made up by a pool of young enthusiasts attending the Plutus Pioneer Cohort (2).  Trustworthiness and Legitimacy building are core values to be built-in the forthcoming Cardano-driven platform. We believe that the Most Important Scarce Resource is Legitimacy, and this brings about giant costs. The Bitcoin and Ethereum blockchain ecosystems both spend far more on network security - the goal of proof of work mining - than they do on everything else combined. The Bitcoin blockchain has paid an average of about $38 million per day in block rewards to miners since the start of the year, plus about $5m/day in transaction fees. The Ethereum blockchain comes in second, at $19.5m/day in block rewards plus $18m/day in tx fees. Meanwhile, the Ethereum Foundation's annual budget, paying for research, protocol development, grants and all sorts of other expenses, is a mere $30 million per year. (3)
+The core team initiating DigiServices is made up by a pool of young enthusiasts attending the Plutus Pioneer Cohort (2).  The team is equipped with previous experience in programming with imperative languages and is going to open to new developers with blockchain programming experience.
+Trustworthiness and Legitimacy building are core values to be built-in the forthcoming Cardano-driven platform. We believe that the Most Important Scarce Resource is Legitimacy, and this brings about giant costs. The Bitcoin and Ethereum blockchain ecosystems both spend far more on network security - the goal of proof of work mining - than they do on everything else combined. The Bitcoin blockchain has paid an average of about $38 million per day in block rewards to miners since the start of the year, plus about $5m/day in transaction fees. The Ethereum blockchain comes in second, at $19.5m/day in block rewards plus $18m/day in tx fees. Meanwhile, the Ethereum Foundation's annual budget, paying for research, protocol development, grants and all sorts of other expenses, is a mere $30 million per year. (3)
 
 Willingness to challenge the existing barriers and constraints at today’s service exchange platform such as Upwork and overcome the steeply rising cyber-crime on Non-payments/Non-Delivery risk
 The full protocol implementation will require the addition of few developers with advanced Haskell skills as well as a partnership with one or more social platforms to assure visibility and a actual quick proof-of-concept.
@@ -303,7 +314,7 @@ The contract validator can receive four redeemers: *Open `Integer`*, *Close*, *S
 At any point in time judges that are inside the list of mediators can choose to "sign" the contract, upon request, providing their membership SIG token to show that they accept to mediate it. They also deposit an amount of tokens; this will be transferred to the damaged parties in case they do not provide a reliable input within the deadline.
 
 #### C. Accusation
-In order to accuse someone, any user that has already signed a contract can anytime consume the contract UTxO using the accuse redeemer. This will increase the running disputes amount in the accusation list. A new triple is generated including the user's public key hash, the accused entity and the set deadline. The main application will generate an event and notify the first confirmed judge. At that point the judge, mediator/arbitrator starts acting and provides the inputs as for set logic code. 
+In order to accuse someone, any user that has already signed a contract can anytime consume the contract UTxO using the accuse redeemer. This will increase the running disputes amount in the accusation list. A new triple is generated including the user's public key hash, the accused entity and the set deadline. The main application will generate an event and notify the first confirmed judge. At that point the judge starts acting and provides the inputs as for set logic code. 
 
 *Figure 6: Example of Alice accusing Bob*
 ![Accusation Example](images/accusation.png)
@@ -311,7 +322,7 @@ In order to accuse someone, any user that has already signed a contract can anyt
 #### D. Trials
 After a judge has been notified, it is his responsibility to discover as much information as possible concerning the case. In this sense, if necessary, he can call both parties to a discussion in which each one will explain their views. Lawyers, like in the traditional legal system, may be engaged as well, if they think it is necessary. In most cases, though, it will be sufficient if the judge communicates in digital format with the users and ask them for proofs and defenses, as it is in the best interest of both to collaborate. In this way judges find out the facts assisting an activity of investigation. The judge gets a reward for his/her activity.
 
-After sufficient information has been acquired by the mediator, he can consume the "logic" UTxO providing the set boolean inputs as a redeemer. This Plutus validator will then consume the contract UTxO and distribute the deposited tokens according to the set terms (terms should be understood as the logic itself).
+After sufficient information has been acquired by the mediator, he can consume the "logic" UTxO providing the set boolean inputs as a redeemer. This Plutus validator will then consume the contract UTxO and distribute the deposited trust tokens according to the set terms (terms should be understood as the logic itself).
 
 *Figure 7: Example of Bob being declared guilty and losing 2,000 DSET trust tokens deposited at contract deal-making*
 ![Accusation Example](images/trial.png)
@@ -342,10 +353,10 @@ Another member with a score of 20,000, in the other hand, would get 28,000. This
 CAS score grows in the following occasions:
 
 ##### I. Service Deals
-In order to incentivize constant use of the platform, DigiServices reward's users for service deals. This is done by increasing the user score according to the already defined formula only if there were no accusations and both parties were satisfied. The percentage from service deals (the *c* variable in the formula) is 5%, but this value is subject to change.
+In order to promote active and increasing use of the platform, DigiServices rewards users for service deals. This is done by increasing the user score according to the already defined formula only if there were no accusations and both parties ended up satisfied. The percentage from service deals (the *c* variable in the formula) is currently 5%, but with reserve to change.
 
 ##### II. Conflict Resolutions
-Another important component of DigiServices is the resolution mechanism: a Plutus validator script that redistributes locked tokens from parties based on the input from trusted judges in order to penalize those who did not follow the established rules. Judges are very important for the sustainability of the platform, since they are the ones responsible for providing reliable connections between the natural world and the blockchain world. As for better evaluating the honesty of platform mediators, judges' CAS scores increase only when their resolution is not challenged. The percentage in this case is 7%.
+Another important component of DigiServices is the resolution mechanism: a Plutus validator script that redistributes locked tokens from parties based on the input from trusted judges in order to penalize those who broke the rules. Judges are important for the sustainability of the platform, since they are the ones responsible for providing reliable connections between the natural world and the blockchain world. In order to reinforce the evaluation mechanism of judges, their CAS scores increase only when their resolution is not challenged. The percentage in this case is 7%.
 
 ##### III. Reviews
 After a service is completed or a conflict is resolved, the involved parties must give a review. Because DigiServices intends to preserve users' anonymity and review manipulation would be undesirable, reviews are matched to DSET tokens. Whenever a service is completed, the client and the service provider are forced to distribute 0.5% of the total amount of tokens held, either giving it partially or fully to the other. The remaining is burnt.
