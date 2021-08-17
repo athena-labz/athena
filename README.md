@@ -410,7 +410,7 @@ Prelude> calculateRewards [35947, 94792, 64063]
 [-1625,2350,274]
 ```
 
-As seen, the `calculateRewards` function takes each member CAS score and try to find the proportional amount of tokens to be rewarded or taken. In order to avoid schemes in which users create multiple accounts to receive free rewards, the function subtracts the initial value (60,000) from the user score. This means that it is possible for a member to receive a "negative reward" (or penalty) and be forced to pay the specified amount so that he does not have his membership suspended.       
+As seen, the `calculateRewards` function takes each member CAS score and try to find the proportional amount of tokens to be rewarded or deducted. In order to avoid schemes in which users create multiple accounts to receive free rewards, the function subtracts the initial value (60,000) from the user score. This means that it is possible for a member to receive a "negative reward" (or penalty) and be forced to pay the specified amount to avoid his membership to be suspended.       
 
 ### 6. Scalability
 
