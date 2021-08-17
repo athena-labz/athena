@@ -60,7 +60,7 @@ Natural language contracts also cause a series of problems. Subjectivity can res
 
 DigiServices aims to overcome the limits of physical contracts by providing a platform that enables parties to create contracts stored in the Cardano blockchain. The platform builds members trust based on token rewards and penalties, supported by a Credit Assessment System (CAS) able to address every platform member. 
 
-The reward-penalty system is an algorithm that collects statistics related to the service transactions, credit score, and activities. It returns the amount of tokens that will be rewarded. Parties that refuse to follow the rules defined in the contract will be penalized by losing tokens proportionate to the severity of their violation. In extreme cases membership access to the platform will be suspended.
+The reward-penalty system is an algorithm that collects statistics related to the service transactions, user reviews, and other activities. It returns the amount of tokens that will be rewarded. Parties that refuse to follow the rules defined in the contract will be penalized by losing tokens proportionate to the severity of their violation. In extreme cases membership access to the platform will be suspended.
 
 In such as case all membership account own assets, such as DSET are burnt. Of course the member can still register again to the platform. This is one of draw-backs of anonymity, but membership access fees can partially prevent abuses.
 
