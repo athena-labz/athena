@@ -253,7 +253,7 @@ Because DigiServices is an inter-mediation platform, it is critical to have a wa
 *Figure 2: Example of compliance being proven by SIG token transfer*
 ![Prove Compliance Example](images/prove-compliance.png)
 
-In the DigiServices protocol, membership works by creating an "account", represented by the Membership Market (MM) UTxO using a "membership signature" minting policy, the Signature Policy. This Signature Policy will mint 100 new SIG tokens and deposit them in the newly created user "account" . This is a script validator that handles service offers and requests, provided that it also receives  in input the entrance fee (in the below example 1,000 DSET). Additionally the system will assure a minimum available 50 SIG tokens for each member.
+In the DigiServices protocol, membership works by creating an "account", represented by the Membership Market (MM) UTxO using a "membership signature" minting policy, the Signature Policy. This Signature Policy will mint 100 new SIG tokens and deposit them in the newly created user "account" . This is a script validator that handles service offers and requests, provided that it also receives  in input the entrance fee (in the below example 1,000 DSET). Additionally the system will assure a minimum available 50 SIG tokens for each member, by minting additional SIG as soon as the value is lower than 50, thus assuring large scope for accessing to or offering services.
 
 *Figure 3: UTxO model representation of account creation*
 ![Join Platform Example](images/join-platform.png)
