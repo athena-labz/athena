@@ -194,14 +194,14 @@ Additionally, DSET tokens are used for paying a membership entrance fee. Because
 
 UTxO Datum has following records: CAS and Review Credit. 
 Additionally UtxO holds two values: 
-#DSET token used for transactions fees, trust fund, review credit  (the mechanism involving rewards and penalties as explained below in Section 5.) 
+
+#DSET token used for transactions fees, trust fund, review credit  (the mechanism involving rewards and penalties as explained below in Section 5.
+
 #SIG token, holding unique public key hash to identify each member, while keeping anonymity
 
+In addition DigiServices platform provides a script (the Membership Marketplace), responsible for collecting fees, increasing or decreasing CAS scores. DigiServices scripts are authenticated only if they carry a SIG token.
 
-
-In addition, in DigiServices' there will be a script (the Membership Marketplace) that will be responsible for collecting fees, increase or decrease CAS scores (since the UTxO Datum can be validated). DigiService's scripts are authenticated only if they carry a SIG token.
-
-SIG tokens can only be minted by making a "request" to *Signature Policy Script*, which will verify that the Membership Marketplace collected the entrance fee and has the right Datum (CAS of 60,000 and Trust Insurance of 0). If the verification is positive the policy will allow the minting of 100 SIG tokens that will be transferred directly to the Membership Marketplace Account, not to the member's Cardano wallet.
+SIG tokens can only be minted by making a "request" to *Signature Policy Script*, which verifies that the Membership Marketplace collected the entrance fee and has the right Datum (CAS is 60,000 and Review Credit is 0). If the verification is positive the policy will allow the minting of 100 SIG tokens that will be transferred directly to the Membership Marketplace Account, not to the member's Cardano wallet.
 
 ### 4. Business model
 
