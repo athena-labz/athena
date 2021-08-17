@@ -364,15 +364,15 @@ In order to promote active and increasing use of the platform, DigiServices rewa
 ##### II. Conflict Resolutions
 Another important component of DigiServices is the resolution mechanism: a Plutus validator script that redistributes locked tokens from parties based on the input from trusted judges in order to penalize those who broke the rules. Judges are important for the sustainability of the platform, since they are the ones responsible for providing reliable connections between the natural world and the blockchain world. In order to reinforce the evaluation mechanism of judges, their CAS scores increase only when their resolution is not challenged. The percentage in this case is 7%.
 
-##### III. Reviews
-After a service is completed or a conflict is resolved, the involved parties must give a review. Because DigiServices intends to preserve users' anonymity and review manipulation would be undesirable, reviews are matched to DSET tokens. Whenever a service is completed, the client and the service provider are forced to distribute 0.5% of the total amount (service price), either giving it partially or fully to the other. The remaining is burnt.
+##### III. Reviews and Reviews Credit
+After a service is completed or a conflict is resolved, the involved parties must give a review. Because DigiServices intends to preserve users' anonymity and review manipulation would be undesirable, reviews are matched to DSET tokens, accounted in Review Credit value into the UTxO. Whenever a service is completed, the client and the service provider are forced to distribute 0.5% of the total amount (service price), either giving it partially or fully to the other. The remaining is burnt.
 
 For instance, a five stars in DigiServices would mean that the total value (0.5%) will be given to that party service provider (no token would be burnt) and a two stars review would mean that only a part of the value (0.2%) would be "tipped" and the rest burnt. So if the total amount of locked tokens in a transaction is 10,000, for example, and a user gives a 4 stars review. 40 tokens would be transferred from the reviewer to the reviewed party (0.4%) and 10 tokens would be burnt (0.1%). Additionally users could provide more than five stars by giving tips, exceeding the required value of 0.5%.
 
 *Figure 10: Review demonstration in the EUTxO model*
 ![Review Example](images/review-example.png)
 
-In the example above, we can see that after a service is completed, Alice and Bob give each other a review. In this case the total amount of tokens held by the contract was 5,000, 0.5% of each should be distributed by both users. Alice gives Bob a 5 stars review, increasing Bob's amount by 25, the full value of 0.5%. Bob in the other hand, wanted to give Alice a 4.5 stars review, resulting in only 22 extra tokens to Alice, the nearest integer to 22.5 (0.45% of 5000). Finally 3 DSET tokens are burnt.
+In the example above, we can see that after a service is completed, Alice and Bob deliver each a review. In the example the total contract value was 5,000 DSET, 1% value (0.5% contributed by each party) has to be distributed between both members. Alice gives Bob a 5 stars review, increasing Bob's amount by 25, the full value of 0.5%. Bob gives Alice a 4.5 stars review, resulting in only 22 extra tokens to Alice, the nearest integer to 22.5 (0.45% of 5000). Finally 3 DSET tokens are burnt.
 
 In the conflict resolution, though, things are a little bit different since reviews from winning parties would be almost always positive and reviews from losing parties negative. To overcome this issue, judges are reviewed by other judges in the list.
 
