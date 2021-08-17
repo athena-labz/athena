@@ -419,7 +419,7 @@ Differently from the Ethereum's account model, the EUTxO model used by Cardano m
 
 To solve this issue, DigiServices adopts the concept of "UTxO authentication", but with a new approach. Instead of having the developers minting a NFT and storing all accounts in the same UTxO, users will have unique accounts that will be "stamped" and authenticated by a signature token, SIG. This signature token can only be minted by requesting it from a specific minting policy script, which can execute arbitrary logic in order to allow it. Concurrency will be preserved since there is no UTxO being consumed. Additionally, no arbitrary data outside the platform constraints will be authenticated by the minting policy script.
 
-Relying on this feature, DigiServices is highly scalable. The rapid grow in the number of users will not lead neither to any congestion or constraints in the platform, nor would the Datum size limit be achieved.
+Relying on this feature, DigiServices is highly scalable. The rapid grow in the number of users will not lead neither to any congestion or constraints in the platform, nor will the Datum size limit be achieved.
 
 In addition, since the application is operating into the Cardano blockchain and "GAS" fees are paid by the users, platform infrastructure will not undergo any additional issue as more users will be accessing the platform. Therefore a growing number of users would only have a positive effect, leveraging the platform funds with transaction fees and benefiting it with new ideas and proposals.
 
