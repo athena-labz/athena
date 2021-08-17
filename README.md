@@ -286,7 +286,7 @@ Accusations is a list of 3-elements tuples containing the accuser and accused pu
 The judge in charge (the first confirmed mediator from the available list) will be notified and is expected to provide the necessary inputs to the logic script before the set deadline.
 
 ##### V. Service
-Service can be understood as a more general term. Another term to define it could be "Information", since its function is to better formulate what the contract is about and give extra information about the deal as well as define the essential parameters (price and "trust", for example). In this sense, a company wishing to transfer its policies to a decentralized system could represent it as a service and create a new contract to handle conflicts between employees or issues related to their overall work and performance vs target assessment. 
+Service can be understood as a more general term. Another term to define it could be "Information", since its function is to better formulate what the contract is about and give extra information about the deal as well as define the essential parameters (price and "trust", for example). In this sense, a company wishing to transfer its policies to a decentralized system could represent it as a service and create a new contract to handle conflicts between employees; also assessment of overall work performance, KPI, compared with set targets. 
 
 To cover these aspects, services are a data type that hold five parameters: 
 
@@ -300,7 +300,7 @@ To cover these aspects, services are a data type that hold five parameters:
 
 ● ContractType: A data type that will indicate of what type this contract is and the specific parameters. It can be `Constant`, which takes no argument or `OneTime`, which takes a `Value` indicating the price and a `POSIXTime` indicating the deadline. 
 
-Finally, the contract is authenticated only if it receives a SIG token as input from the service provider. This is done by consuming the user "account" UTxO provided that the data contains the five essential components.
+Finally, the contract is authenticated only if it receives a SIG token as input from the service provider. This is done by consuming the user "account" UTxO, provided that the data contains the five essential components.
 
 *Figure 4: EUTxO model representation of contract creation*
 ![Contract Creation Example](images/contract-creation.png)
@@ -310,7 +310,7 @@ The contract validator can receive four redeemers: *Open `Integer`*, *Close*, *S
 *Figure 5: Example of service being requested in the EUTxO model*
 ![Request Service Example](images/request-service.png)
 
-At any point in time judges that are inside the available list can , upon request, freely choose to "sign" the contract, providing their membership SIG token to show that they accept to mediate the dispute. They also deposit an amount of tokens; this will be transferred to the damaged parties in case they do not provide a reliable input within the set deadline.
+At any point in time judges that are inside the available list can, upon request, freely choose to "sign" the contract, providing their membership SIG token to show that they accept to mediate the dispute. They also deposit an amount of tokens; this will be transferred to the damaged parties in case they do not provide a reliable input within the set deadline.
 
 #### C. Accusation
 In order to accuse someone, any user that has already signed a contract can anytime consume the contract UTxO using the accuse redeemer. This will increase the number of on-going disputes in the accusation list. A new triple is generated including the user's public key hash, the accused entity and the set deadline. The main application will generate an event and notify the first confirmed judge. At that point the judge starts acting and provides the inputs as for set logic code. 
@@ -319,9 +319,9 @@ In order to accuse someone, any user that has already signed a contract can anyt
 ![Accusation Example](images/accusation.png)
 
 #### D. Trials
-After a judge has been notified, it is his responsibility to discover as much information as possible concerning the case. In this sense, if necessary, he can call both parties to a discussion in which each one will explain their views. Lawyers, like in the traditional legal system, may be engaged as well, if they think it is necessary. In most cases, though, it will be sufficient if the judge communicates in digital format with the users and ask them for proofs and defenses, as it is in the best interest of both to collaborate. In this way judges find out the facts assisting an activity of investigation. The judge gets a reward for his/her activity.
+After a judge has been notified, it is his responsibility to discover as much information as possible concerning the case. In this sense, if necessary, he can call both parties to a discussion in which each one will explain their views. Lawyers, like in the traditional legal system, may be engaged as well, if they think it is necessary. In most cases, though, it will be sufficient if the judge communicates in digital format with the users and ask them for proofs and defenses, as it is in the best interest of both to collaborate. In this way judges find out the facts assisting an activity of investigation. The judge gets a reward for his activity.
 
-After sufficient information has been acquired by the mediator, he can consume the "logic" UTxO providing the set boolean inputs as a redeemer. This Plutus validator will then consume the contract UTxO and distribute the deposited trust tokens according to the set terms (terms should be understood as the logic itself).
+After sufficient information has been acquired by the judge, he can consume the "logic" UTxO providing the set boolean inputs as a redeemer. This Plutus validator will then consume the contract UTxO and distribute the deposited trust tokens according to the set terms (terms should be understood as the logic itself).
 
 *Figure 7: Example of Bob being declared guilty and losing 2,000 DSET trust tokens deposited at contract deal-making*
 ![Accusation Example](images/trial.png)
