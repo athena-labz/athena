@@ -1,9 +1,14 @@
-# DigiServices White Paper
+#   White Paper
 
-Samuel Santos Araujo,
-Gabriele Castaldi,
-Frank Delpidio,
-Mateus Oliveira Santos
+#   DigiServices Fundamentals 
+
+Samuel Santos Araujo, samuelssan28@gmail.com
+
+Gabriele Castaldi,vareca@live.com
+
+Frank Delpidio,frankdelpidio@gmail.com
+
+Mateus Oliveira Santos, santos.mateus@protonmail.com
 
 ### White Paper Table of Contents
 
