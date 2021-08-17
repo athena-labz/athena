@@ -306,7 +306,7 @@ Finally, the contract is authenticated only if it receives a SIG token as input 
 *Figure 4: EUTxO model representation of contract creation*
 ![Contract Creation Example](images/contract-creation.png)
 
-The contract validator can receive four redeemers: *Open `Integer`*, *Close*, *Sign* and *Accuse `PubKeyHash`*. The integer argument from `Open` indicates the maximum number of user that can request this service at the same time. The open redeemer indicates that, within the limit of users provided by the argument, any user can *Sign* this contract and request this service. The close redeemer, in the other hand, signalizes that, from now on, no more clients should be allowed to sign this contract.
+The contract validator can receive four redeemers: *Open `Integer`*, *Close*, *Sign* and *Accuse `PubKeyHash`*. The integer argument from `Open` indicates the maximum number of users that can request this service at the same time. The open redeemer indicates that, within the limit of users provided by the argument, any user can *Sign* this contract and request this service. The close redeemer, in the other hand, signalizes that, from now on, no more clients should be allowed to sign this contract.
 
 *Figure 5: Example of service being requested in the EUTxO model*
 ![Request Service Example](images/request-service.png)
@@ -381,15 +381,15 @@ Users with less than a 2.5 stars review would, therefore, see a decrease in thei
 5% of all accumulated fees is distributed monthly according to the Credit Assessment System (CAS). Users are rewarded or penalized with tokens proportionally to their scores, obeying the following `calculateRewards` function:
 
 ```haskell
--- An alias for Integer that indicates an user CAS score (0 to 1'000'000)
+-- An alias for Integer that indicates an user CAS score (0 to 100,000)
 type CAS = Integer
 
--- The total amount of tokens that will be minted every month (just as an example)
+-- The total amount of tokens that will be distributed every month (just as an example)
 totalAmt :: Integer
 totalAmt = 1000
 
 initialValue :: Integer
-initialValue = 600000
+initialValue = 60000
 
 calculateReward :: CAS -> Integer -> Integer
 calculateReward score scoreSum
@@ -405,10 +405,10 @@ calculateRewards xs = map (`calculateReward` scoreSum) xs
 ```
 
 ```
-Prelude> calculateRewards [1_000_000, 1_000_000, 1_000_000]
+Prelude> calculateRewards [100000, 100000, 100000]
 [333,333,333]
-Prelude> calculateRewards [357_947, 946_792, 649_063]
-[-1574,2254,319]
+Prelude> calculateRewards [35947, 94792, 64063]
+[-1625,2350,274]
 ```
 
 As seen, the `calculateRewards` function takes each member CAS score and try to find the proportional amount of tokens to be rewarded or taken. In order to avoid schemes in which users create multiple accounts to receive free rewards, the function subtracts the initial value (60,000) from the user score. This means that it is possible for a member to receive a "negative reward" (or penalty) and be forced to pay the specified amount so that he does not have his membership suspended.       
