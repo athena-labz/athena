@@ -85,7 +85,7 @@ DigiServices will allow users to build flexible and versatile smart legal contra
 
 ### 3. Governance and Tokenomics
 #### A. Governance
-DigiServices governance until the launch stage will be managed by the funding core team. At a later stage, after the membership will have exceeded the 1 million memberships threshold, participants will be able to use their staked DSET to vote on the future direction of the platform.
+DigiServices governance until the launch stage will be managed by the funding core team. At a later stage, after the membership will have exceeded the 1 million memberships threshold, participants will be able to use their DSET to vote on the future direction of the platform.
 Token holders, either through direct staking or a delegation system, will then be able to vote on which proposals the network should implement. Rewarding and burning system balance will assure that the DSET circulating amount will be capped at the maximum set level. 
 
 #### B. Tokenomics
@@ -191,6 +191,13 @@ All members need DSET tokens for following purposes:
 ● Rewards accruals
 
 Additionally, DSET tokens are used for paying a membership entrance fee. Because Cardano requires that users pay GAS fees in ADA every time they try to consume a script UTxO and DigiService's require DSET fees from users in every transaction, all transactions that involve DigiServices will require the user's "wallet" in addition to the involved scripts. In other words, every transaction will consume an unspent transaction output (UTxO) that belongs to the user (6).
+
+UTxO Datum has following records: CAS and Review Credit. 
+Additionally UtxO holds two values: 
+#DSET token used for transactions fees, trust fund, review credit  (the mechanism involving rewards and penalties as explained below in Section 5.) 
+#SIG token, holding unique public key hash to identify each member, while keeping anonymity
+
+
 
 In addition, in DigiServices' there will be a script (the Membership Marketplace) that will be responsible for collecting fees, increase or decrease CAS scores (since the UTxO Datum can be validated). DigiService's scripts are authenticated only if they carry a SIG token.
 
