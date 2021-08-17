@@ -115,7 +115,7 @@ Another approach, would be for Alice to access an online website focused on free
 
 To solve these issues, we propose DigiServices: a digital platform that allows service providers and clients to engage in honest transactions without the parties needing to trust each other. Built on Cardano, it uses smart contracts to enable parties to offer their services without the possibility of misinterpretation or ambiguity. It uses a reputation system to penalize dishonest parties and reward honest parties.
 
-With DigiServices, when Alice publishes her service online, it will be stored inside the Datum of a Plutus Validator called *contract*. The Datum contains a list of `Service`. In addition, DigiServices makes use of a *Signature Minting Policy* that mint's signature tokens (SIG), transferring them to a special *Membership Marketplace Account*, a script that handles platform transactions and holds the platform funds. This minting is only allowed if the entrance fee is paid and the script Datum is set to the platform initial values (CAS score of 60,000 and "Trust Insurance" of 0).
+With DigiServices, when Alice publishes her service online, it will be stored inside the Datum of a Plutus Validator called *contract*. The Datum contains a list of `Service`. In addition, DigiServices makes use of a *Signature Minting Policy* that mint's signature tokens (SIG), transferring them to a special *Membership Marketplace Account*, a script that handles platform transactions and holds the platform funds. This minting is only allowed if the entrance fee is paid and the script Datum is set to the platform initial values (CAS score is 60,000 and Review Credit is 0).
 
 In our example, Alice would first create a *contract*.
 
@@ -195,7 +195,7 @@ Additionally, DSET tokens are used for paying a membership entrance fee. Because
 UTxO Datum has following records: CAS and Review Credit. 
 Additionally UtxO holds two values: 
 
-#DSET token used for transactions fees, trust fund (trust token), review credit  (the mechanism involving rewards and penalties as explained below in Section 5.
+#DSET token used for transactions fees, review credit  (the mechanism involving rewards and penalties as explained below in Section 5.)
 
 #SIG token, holding unique public key hash to identify each member, while keeping anonymity
 
