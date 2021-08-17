@@ -1,12 +1,12 @@
 #   White Paper
 
-#   DigiServices Fundamentals 
+## DigiServices: A trustworthy platform for signing and mediating formally defined contracts
 
 Samuel Santos Araujo, samuelssan28@gmail.com
 
-Gabriele Castaldi,vareca@live.com
+Gabriele Castaldi, vareca@live.com
 
-Frank Delpidio,frankdelpidio@gmail.com
+Frank Delpidio, frankdelpidio@gmail.com
 
 Mateus Oliveira Santos, santos.mateus@protonmail.com
 
