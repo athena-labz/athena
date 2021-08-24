@@ -24,9 +24,7 @@ import Ledger.Ada as Ada (Ada (getLovelace), fromValue)
 import Ledger.Constraints as Constraints
 import qualified Ledger.Typed.Scripts as Scripts
 import Ledger.Value
-import Membership.AccountDatum
-import Membership.AccountRedeemer (AccountRedeemer (..))
-import Membership.ContractDatum
+import Membership.Account
 import Membership.PlatformSettings (PlatformSettings (..))
 import Membership.Sample as S
 import Membership.Utils
@@ -36,20 +34,7 @@ import qualified PlutusTx
 import PlutusTx.Prelude hiding (ByteString, Semigroup (..), check, unless)
 import Wallet.Emulator.Wallet ()
 import Prelude (Semigroup (..), Show (..), String)
-
-{-# INLINEABLE findContractDatum #-}
-findContractDatum :: TxOut -> (DatumHash -> Maybe Datum) -> Maybe ContractDatum
-findContractDatum o f = do
-  dh <- txOutDatum o
-  Datum d <- f dh
-  PlutusTx.fromBuiltinData d
-
-{-# INLINEABLE findAccountDatum #-}
-findAccountDatum :: TxOut -> (DatumHash -> Maybe Datum) -> Maybe AccountDatum
-findAccountDatum o f = do
-  dh <- txOutDatum o
-  Datum d <- f dh
-  PlutusTx.fromBuiltinData d
+import Membership.Contract
 
 {-# INLINEABLE strictFindOutAndIn #-}
 strictFindOutAndIn :: ScriptContext -> (TxOut, TxOut)

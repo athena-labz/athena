@@ -24,9 +24,7 @@ import Ledger.Ada as Ada (Ada (getLovelace), fromValue)
 import Ledger.Constraints as Constraints
 import qualified Ledger.Typed.Scripts as Scripts
 import Ledger.Value
-import Membership.AccountDatum
-import Membership.AccountRedeemer (AccountRedeemer (..))
-import Membership.ContractDatum
+import Membership.Account
 import Membership.OnChain.Account
 import Membership.PlatformSettings (PlatformSettings (..))
 import Membership.Sample as S
@@ -38,7 +36,10 @@ import qualified PlutusTx
 import PlutusTx.Prelude hiding (Semigroup (..), check, unless)
 import Wallet.Emulator.Wallet ()
 import Prelude (Semigroup (..), Show (..), String, uncurry)
+import Membership.Contract
 
+-- Returns all accounts, their Datum, the Value of fees they hold and their owners
+{-# INLINEABLE findAccounts #-}
 findAccounts :: PlatformSettings -> Contract w s Text [(TxOutRef, TxOutTx, AccountDatum, Value, PubKeyHash)]
 findAccounts ps = do
   utxos <- utxoAt (accountAddress ps)
@@ -74,6 +75,8 @@ findAccounts ps = do
         )
       _ -> traceError "invalid account"
 
+-- Return the UTxO from the account with a PubKeyHash
+{-# INLINEABLE findAccount #-}
 findAccount :: PubKeyHash -> PlatformSettings -> Contract w s Text (Maybe (TxOutRef, TxOutTx))
 findAccount owner ps = do
   utxos <- Map.filter f <$> utxoAt (accountAddress ps)
@@ -83,16 +86,6 @@ findAccount owner ps = do
   where
     f :: TxOutTx -> Bool
     f o = findSignatures (psSignatureSymbol ps) (txOutValue $ txOutTxOut o) == [owner]
-
-findContract :: AssetClass -> PlatformSettings -> Contract w s Text (Maybe (TxOutRef, TxOutTx))
-findContract nft ps = do
-  utxos <- Map.filter f <$> utxoAt (scriptHashAddress (psContractVH ps))
-  return $ case Map.toList utxos of
-    [(oref, o)] -> Just (oref, o)
-    _ -> Nothing
-  where
-    f :: TxOutTx -> Bool
-    f o = assetClassValueOf (txOutValue $ txOutTxOut o) nft == 1
 
 createAccount :: forall s. PlatformSettings -> Contract () s Text ()
 createAccount ps = do

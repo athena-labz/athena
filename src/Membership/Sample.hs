@@ -36,7 +36,7 @@ import Ledger.Value
   ( AssetClass (AssetClass),
     CurrencySymbol (CurrencySymbol),
   )
-import Membership.ContractDatum (ContractDatum (..))
+import Membership.Contract
 import Membership.PlatformSettings (PlatformSettings (..))
 import Membership.Service (Service (..), ServiceType (CConstant))
 import qualified PlutusTx

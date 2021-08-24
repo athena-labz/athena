@@ -84,8 +84,8 @@ import Wallet.Emulator.Wallet (Wallet (Wallet))
 import Prelude (IO, Semigroup (..), Show (..), String)
 
 {-# INLINEABLE mkPolicy #-}
-mkPolicy :: PubKeyHash -> () -> ScriptContext -> Bool
-mkPolicy pkh () ctx =
+mkPolicy :: PubKeyHash -> ScriptContext -> Bool
+mkPolicy pkh ctx =
     traceIfFalse "wrong amount minted" checkMintedAmount
     && traceIfFalse "not signed by pkh" (txSignedBy info pkh)
     && traceIfFalse "minted amount must go to script" checkOutputs
@@ -95,10 +95,10 @@ mkPolicy pkh () ctx =
 
     checkOutputs :: Bool
     checkOutputs = (length txInfoOutputs == 2) &&
-                    all f txInfoInputs
+                    all valid txInfoInputs
       where
-        f :: TxOut -> Bool
-        f (addr, val, dh) = True
+        valid :: TxOut -> Bool
+        valid (addr, val, dh) = True
 
     -- Check script outputs
 

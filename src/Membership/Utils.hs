@@ -21,8 +21,7 @@ import Ledger.Value
     singleton,
     tokenName,
   )
-import Membership.AccountDatum (AccountDatum (..))
-import Membership.ContractDatum (DigiContract, ContractDatum (..))
+import Membership.Contract (DigiContract, ContractDatum (..))
 import Membership.PlatformSettings (PlatformSettings (..))
 import Membership.Service (Service (..))
 import PlutusTx.Prelude
@@ -87,14 +86,6 @@ signatureAssetClass ps pkh = AssetClass (psSignatureSymbol ps, userToSig pkh)
 signatureValue :: PlatformSettings -> PubKeyHash -> Value
 signatureValue ps pkh = singleton (psSignatureSymbol ps) (userToSig pkh) 1
 
-{-# INLINEABLE userReviewCredit #-}
-userReviewCredit :: AssetClass -> AccountDatum -> Value
-userReviewCredit ac ad = assetClassValue ac (adReviewCredit ad)
-
-{-# INLINEABLE platformFees #-}
-platformFees :: AssetClass -> Value -> AccountDatum -> Value
-platformFees ac v ad = v <> negate (userReviewCredit ac ad)
-
 {-# INLINEABLE findInputWithValHash #-}
 findInputWithValHash :: PlatformSettings -> TxInfo -> Maybe TxOut
 findInputWithValHash ps info = find predicate ((map txInInfoResolved . txInfoInputs) info)
@@ -137,11 +128,3 @@ publisherSignedContract ps (d, v) = any (== publisher) sigTokenUsers
 assertTrue :: Bool -> Maybe ()
 assertTrue True = Just ()
 assertTrue False = Nothing
-
-{-# INLINABLE applyCAS #-}
-applyCAS :: AccountDatum -> AccountDatum
-applyCAS (AccountDatum cas rc) = AccountDatum (calculateNewScore cas (5 R.% 100)) rc
-
-{-# INLINABLE reviewCreditValue #-}
-reviewCreditValue :: PlatformSettings -> AccountDatum -> Value
-reviewCreditValue ps ad = assetClassValue (psToken ps) (adReviewCredit ad)

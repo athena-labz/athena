@@ -12,9 +12,8 @@ library
   hs-source-dirs:      src, test
   exposed-modules:     Spec.Trace
                      , Membership.PlatformSettings
-                     , Membership.AccountDatum
-                     , Membership.AccountRedeemer
-                     , Membership.ContractDatum
+                     , Membership.Account
+                     , Membership.Contract
                      , Membership.Service
                      , Membership.Sample
                      , Membership.Utils

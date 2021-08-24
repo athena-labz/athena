@@ -28,8 +28,8 @@ import Ledger
 import Ledger.Ada as Ada
 import Ledger.Value
 import Membership.OffChain.Account
-import Membership.AccountDatum
-import Membership.ContractDatum
+import Membership.Account
+import Membership.Contract
 import Membership.PlatformSettings
 import Membership.Sample
 import Membership.Service
