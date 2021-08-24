@@ -20,13 +20,14 @@ source-repository-package
     plutus-contract
     plutus-ledger
     plutus-ledger-api
+    plutus-pab
     plutus-tx
     plutus-tx-plugin
     plutus-use-cases
     prettyprinter-configurable
     quickcheck-dynamic
     word-array
-  tag: 8a20664f00d8f396920385947903761a9a897fe0
+  tag: 2f11c28bd8f6d630daab582255e16d8408075bd7
 
 -- The following sections are copied from the 'plutus' repository cabal.project at the revision
 -- given above.
@@ -169,7 +170,7 @@ source-repository-package
 source-repository-package
   type: git
   location: https://github.com/input-output-hk/cardano-node.git
-  tag: f3ef4ed72894499160f2330b91572a159005c148
+  tag: f72c6272eb58a43cd1d2ef4f4381f3822b3c60c6
   subdir:
     cardano-api
     cardano-node
@@ -186,8 +187,6 @@ source-repository-package
   location: https://github.com/input-output-hk/hedgehog-extras
   tag: 8bcd3c9dc22cc44f9fcfe161f4638a384fc7a187
 
--- The following dependencies are not mirrored in the
--- stack.yaml file, but they are needed regardless by cabal.
 source-repository-package
   type: git
   location: https://github.com/input-output-hk/goblins

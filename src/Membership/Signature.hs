@@ -83,35 +83,38 @@ import Text.Printf (printf)
 import Wallet.Emulator.Wallet (Wallet (Wallet))
 import Prelude (IO, Semigroup (..), Show (..), String)
 
--- The Asset Name will be a hash combining the user PubKeyHash and the Accusation Contract Validator Hash
 {-# INLINEABLE mkPolicy #-}
-mkPolicy :: TxOutRef -> PubKeyHash -> ByteString -> () -> ScriptContext -> Bool
-mkPolicy oref pkh vhBS () ctx =
-  traceIfFalse "UTxO not consumed" hasUTxO
-    && traceIfFalse "wrong amount minted" checkMintedAmount
+mkPolicy :: PubKeyHash -> () -> ScriptContext -> Bool
+mkPolicy pkh () ctx =
+    traceIfFalse "wrong amount minted" checkMintedAmount
     && traceIfFalse "not signed by pkh" (txSignedBy info pkh)
+    && traceIfFalse "minted amount must go to script" checkOutputs
   where
     info :: TxInfo
     info = scriptContextTxInfo ctx
 
-    hasUTxO :: Bool
-    hasUTxO = any (\i -> txInInfoOutRef i == oref) $ txInfoInputs info
+    checkOutputs :: Bool
+    checkOutputs = (length txInfoOutputs == 2) &&
+                    all f txInfoInputs
+      where
+        f :: TxOut -> Bool
+        f (addr, val, dh) = True
+
+    -- Check script outputs
 
     checkMintedAmount :: Bool
     checkMintedAmount = case flattenValue (txInfoForge info) of
-      [(cs, tn', amt)] -> cs == ownCurrencySymbol ctx && tn' == TokenName vhBS && amt == 1
+      [(cs, tn, _)] -> (cs == ownCurrencySymbol ctx) && (tn == userToSig pkh)
       _ -> False
 
-policy :: TxOutRef -> PubKeyHash -> ByteString -> Scripts.MintingPolicy
-policy oref pkh vh =
+policy :: PubKeyHash -> Scripts.MintingPolicy
+policy pkh =
   mkMintingPolicyScript $
     $$(PlutusTx.compile [||\oref' pkh' vh' -> Scripts.wrapMintingPolicy $ mkPolicy oref' pkh' vh'||])
-      `PlutusTx.applyCode` PlutusTx.liftCode oref
       `PlutusTx.applyCode` PlutusTx.liftCode pkh
-      `PlutusTx.applyCode` PlutusTx.liftCode vh
 
-curSymbol :: TxOutRef -> PubKeyHash -> ByteString -> CurrencySymbol
-curSymbol oref pkh vh = scriptCurrencySymbol $ policy oref pkh vh
+curSymbol :: PubKeyHash -> CurrencySymbol
+curSymbol = scriptCurrencySymbol . policy
 
 type NFTSchema = Endpoint "mint" ValidatorHash
 
