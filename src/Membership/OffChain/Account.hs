@@ -39,10 +39,44 @@ import PlutusTx.Prelude hiding (Semigroup (..), check, unless)
 import Wallet.Emulator.Wallet ()
 import Prelude (Semigroup (..), Show (..), String, uncurry)
 
+findAccounts :: PlatformSettings -> Contract w s Text [(TxOutRef, TxOutTx, AccountDatum, Value, PubKeyHash)]
+findAccounts ps = do
+  utxos <- utxoAt (accountAddress ps)
+  return $ map f (Map.toList utxos)
+  where
+    dsetTokens :: TxOutTx -> Integer
+    dsetTokens o = assetClassValueOf (txOutValue $ txOutTxOut o) (psToken ps)
+
+    sigPubKey :: Value -> PubKeyHash
+    sigPubKey v = case findSignature (psSignatureSymbol ps) v of
+      Just pkh -> pkh
+      _ -> traceError "invalid account"
+
+    f :: (TxOutRef, TxOutTx) -> (TxOutRef, TxOutTx, AccountDatum, Value, PubKeyHash)
+    f (oref, o) = case ( findSignatures (psSignatureSymbol ps) (txOutValue $ txOutTxOut o),
+                         findAccountDatum (txOutTxOut o) (lookupDatum (txOutTxTx o))
+                       ) of
+      ([], Just dat) ->
+        ( oref,
+          o,
+          dat,
+          txOutValue (txOutTxOut o)
+            <> negate (assetClassValue (psToken ps) (dsetTokens o)),
+          sigPubKey $ txOutValue (txOutTxOut o)
+        )
+      (_, Just dat) ->
+        ( oref,
+          o,
+          dat,
+          txOutValue (txOutTxOut o)
+            <> negate (assetClassValue (psToken ps) (dsetTokens o - adReviewCredit dat)),
+          sigPubKey $ txOutValue (txOutTxOut o)
+        )
+      _ -> traceError "invalid account"
+
 findAccount :: PubKeyHash -> PlatformSettings -> Contract w s Text (Maybe (TxOutRef, TxOutTx))
 findAccount owner ps = do
   utxos <- Map.filter f <$> utxoAt (accountAddress ps)
-  logInfo @String $ "utxos: " ++ show (map fst (Map.toList utxos))
   return $ case Map.toList utxos of
     [(oref, o)] -> Just (oref, o)
     _ -> Nothing
@@ -53,7 +87,6 @@ findAccount owner ps = do
 findContract :: AssetClass -> PlatformSettings -> Contract w s Text (Maybe (TxOutRef, TxOutTx))
 findContract nft ps = do
   utxos <- Map.filter f <$> utxoAt (scriptHashAddress (psContractVH ps))
-  logInfo @String $ "utxos: " ++ show (map fst (Map.toList utxos))
   return $ case Map.toList utxos of
     [(oref, o)] -> Just (oref, o)
     _ -> Nothing
@@ -149,10 +182,39 @@ signContract ps ac = do
         _ -> logError @String "account or contract datum not found"
     _ -> logError @String "account or contract not found"
 
+collectFees :: PlatformSettings -> Contract w s Text ()
+collectFees ps = do
+  pkh <- pubKeyHash <$> Contract.ownPubKey
+  xs <- findAccounts ps
+  case xs of
+    [] -> logInfo @String "no accounts found"
+    _ -> do
+      let lookups =
+            Constraints.unspentOutputs (Map.fromList [(oref, o) | (oref, o, _, _, _) <- xs])
+              <> Constraints.otherScript (accountValidator ps)
+          tx =
+            M.mconcat
+              [ Constraints.mustSpendScriptOutput
+                  oref
+                  $ Redeemer $ PlutusTx.toBuiltinData (Collect wPkh)
+                | (oref, _, _, _, wPkh) <- xs
+              ]
+            <> M.mconcat
+              [ Constraints.mustPayToOtherScript
+                  (accountValidatorHash ps)
+                  (Datum $ PlutusTx.toBuiltinData dat)
+                  v
+                | (oref, _, dat, v, _) <- xs
+              ]
+      ledgerTx <- submitTxConstraintsWith @AccountType lookups tx
+      awaitTxConfirmed $ txId ledgerTx
+      logInfo @String $ "collected from " ++ show (length xs) ++ " account(s)"
+
 type AccountSchema =
   Endpoint "start" PlatformSettings
     .\/ Endpoint "create" (PlatformSettings, ContractDatum)
     .\/ Endpoint "sign" (PlatformSettings, AssetClass)
+    .\/ Endpoint "collect" PlatformSettings
 
 startEndpoint :: Contract () AccountSchema Text ()
 startEndpoint = forever $
@@ -173,3 +235,9 @@ signEndpoint =
     handleError logError $
       awaitPromise $
         endpoint @"sign" $ uncurry signContract
+
+collectEndpoint :: Contract () AccountSchema Text ()
+collectEndpoint = forever $
+  handleError logError $
+    awaitPromise $
+      endpoint @"collect" $ \ps -> collectFees ps

@@ -13,12 +13,12 @@
 
 module Membership.AccountRedeemer where
 
-import Ledger ( TxOutRef )
+import Ledger ( TxOutRef, PubKeyHash )
 import qualified Prelude
 import qualified PlutusTx
 import Membership.ContractDatum (ContractDatum (..))
 
-data AccountRedeemer = Create | Sign | Collect
+data AccountRedeemer = Create | Sign | Collect PubKeyHash
     deriving Prelude.Show
 
 PlutusTx.unstableMakeIsData ''AccountRedeemer

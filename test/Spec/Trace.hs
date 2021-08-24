@@ -104,6 +104,12 @@ myTrace = do
       callEndpoint @"sign" hB (ps, ac)
 
       void $ Emulator.waitNSlots 5
+
+      hC <- activateContractWallet (Wallet 2) collectEndpoint
+      callEndpoint @"collect" hC ps
+
+      void $ Emulator.waitNSlots 5
+
     _ -> Extras.logError @String "error creating contract"
 
 -- myTrace :: EmulatorTrace ()

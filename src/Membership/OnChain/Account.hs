@@ -51,9 +51,9 @@ findAccountDatum o f = do
   Datum d <- f dh
   PlutusTx.fromBuiltinData d
 
-{-# INLINEABLE findOutAndIn #-}
-findOutAndIn :: ScriptContext -> (TxOut, TxOut)
-findOutAndIn ctx = (ownInput, ownOutput)
+{-# INLINEABLE strictFindOutAndIn #-}
+strictFindOutAndIn :: ScriptContext -> (TxOut, TxOut)
+strictFindOutAndIn ctx = (ownInput, ownOutput)
   where
     ownInput :: TxOut
     ownInput = case findOwnInput ctx of
@@ -65,13 +65,30 @@ findOutAndIn ctx = (ownInput, ownOutput)
       [o] -> o
       _ -> traceError "expected exactly one account output"
 
+{-# INLINEABLE findOutAndIn #-}
+findOutAndIn :: PubKeyHash -> PlatformSettings -> ScriptContext -> (TxOut, TxOut)
+findOutAndIn pkh ps ctx = (ownInput, ownOutput)
+  where
+    ownInput :: TxOut
+    ownInput = case findOwnInput ctx of
+      Nothing -> traceError "account input missing"
+      Just i -> txInInfoResolved i
+
+    f :: TxOut -> Bool
+    f (TxOut addr val dh) = findSignatures (psSignatureSymbol ps) val == [pkh]
+
+    ownOutput :: TxOut
+    ownOutput = case filter f (getContinuingOutputs ctx) of
+      [o] -> o
+      _ -> traceError "expected exactly one account output"
+
 {-# INLINEABLE sigTokenIn #-}
 sigTokenIn :: AssetClass -> ScriptContext -> Bool
 sigTokenIn sig ctx = inputHasToken && outputHasToken
   where
     ownInput, ownOutput :: TxOut
-    ownInput = fst $ findOutAndIn ctx
-    ownOutput = snd $ findOutAndIn ctx
+    ownInput = fst $ strictFindOutAndIn ctx
+    ownOutput = snd $ strictFindOutAndIn ctx
 
     inputTokens :: Integer
     inputTokens = assetClassValueOf (txOutValue ownInput) sig
@@ -101,8 +118,8 @@ validateCreate ps dat ctx = case owner of
     info = scriptContextTxInfo ctx
 
     ownInput, ownOutput :: TxOut
-    ownInput = fst $ findOutAndIn ctx
-    ownOutput = snd $ findOutAndIn ctx
+    ownInput = fst $ strictFindOutAndIn ctx
+    ownOutput = snd $ strictFindOutAndIn ctx
 
     inputDatum, outputDatum :: Maybe AccountDatum
     inputDatum = findAccountDatum ownInput (`findDatum` info)
@@ -136,7 +153,10 @@ validateCreate ps dat ctx = case owner of
 
     dsetProfit :: Integer
     dsetProfit =
-      assetClassValueOf (txOutValue ownOutput) (psToken ps) - assetClassValueOf (txOutValue ownInput) (psToken ps)
+      assetClassValueOf
+        (txOutValue ownOutput)
+        (psToken ps)
+        - assetClassValueOf (txOutValue ownInput) (psToken ps)
 
     valueMatches :: Bool
     valueMatches = dsetProfit >= psTxFee ps
@@ -167,8 +187,8 @@ validateSign ps dat ctx = case owner of
     info = scriptContextTxInfo ctx
 
     ownInput, ownOutput :: TxOut
-    ownInput = fst $ findOutAndIn ctx
-    ownOutput = snd $ findOutAndIn ctx
+    ownInput = fst $ strictFindOutAndIn ctx
+    ownOutput = snd $ strictFindOutAndIn ctx
 
     inputDatum, outputDatum :: Maybe AccountDatum
     inputDatum = findAccountDatum ownInput (`findDatum` info)
@@ -219,8 +239,8 @@ validateSign ps dat ctx = case owner of
       _ -> False
 
 {-# INLINEABLE validateCollect #-}
-validateCollect :: PlatformSettings -> ScriptContext -> Bool
-validateCollect ps ctx =
+validateCollect :: PlatformSettings -> PubKeyHash -> ScriptContext -> Bool
+validateCollect ps pkh ctx =
   traceIfFalse "user is not allowed to collect fees" signedByCollector
     && traceIfFalse "invalid datum" (inputDatum == outputDatum)
     && traceIfFalse "invalid output" validOutput
@@ -231,16 +251,16 @@ validateCollect ps ctx =
     sigToken :: PubKeyHash -> AssetClass
     sigToken = signatureAssetClass ps
 
-    signedByCollector :: Bool
-    signedByCollector = any (txSignedBy info) (psCollectors ps)
-
     ownInput, ownOutput :: TxOut
-    ownInput = fst $ findOutAndIn ctx
-    ownOutput = snd $ findOutAndIn ctx
+    ownInput = fst $ findOutAndIn pkh ps ctx
+    ownOutput = snd $ findOutAndIn pkh ps ctx
 
     inputDatum, outputDatum :: Maybe AccountDatum
     inputDatum = findAccountDatum ownInput (`findDatum` info)
     outputDatum = findAccountDatum ownOutput (`findDatum` info)
+
+    signedByCollector :: Bool
+    signedByCollector = any (txSignedBy info) (psCollectors ps)
 
     inputValue :: Value
     inputValue = txOutValue ownInput
@@ -251,16 +271,21 @@ validateCollect ps ctx =
     outputValue :: Value
     outputValue = txOutValue ownOutput
 
+    dsetInput :: Integer
+    dsetInput = assetClassValueOf (txOutValue ownInput) (psToken ps)
+
     validOutput :: Bool
     validOutput = case (inputDatum, inputHasToken) of
-      (Just dat, True) -> outputValue `geq` (inputValue <> negate (reviewCreditValue ps dat))
+      (Just dat, True) -> outputValue `geq` (
+        inputValue <> negate (assetClassValue (psToken ps) (dsetInput - adReviewCredit dat)))
+        -- (dsetInput - adReviewCredit dat)
       _ -> False
 
 {-# INLINEABLE mkAccountValidator #-}
 mkAccountValidator :: PlatformSettings -> AccountDatum -> AccountRedeemer -> ScriptContext -> Bool
 mkAccountValidator ps dat Create ctx = validateCreate ps dat ctx
 mkAccountValidator ps dat Sign ctx = validateSign ps dat ctx
-mkAccountValidator ps dat Collect ctx = validateCollect ps ctx
+mkAccountValidator ps dat (Collect pkh) ctx = validateCollect ps pkh ctx
 mkAccountValidator _ _ _ _ = False
 
 data AccountType
