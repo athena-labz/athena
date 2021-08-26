@@ -14,78 +14,64 @@
 
 module Membership.OnChain.Account where
 
-import Control.Monad hiding (fmap)
-import qualified Data.Map as Map
-import Data.Monoid (Last (..), Monoid (mempty))
-import Data.Monoid as M
-import Data.Text (Text, pack)
-import Ledger hiding (singleton)
-import Ledger.Ada as Ada (Ada (getLovelace), fromValue)
-import Ledger.Constraints as Constraints
+import Ledger
+    ( PubKeyHash,
+      ValidatorHash,
+      TxOut(txOutValue),
+      Address,
+      scriptAddress,
+      validatorHash,
+      findDatum,
+      ownHash,
+      txSignedBy,
+      ScriptContext(scriptContextTxInfo),
+      TxInfo,
+      Validator )
 import qualified Ledger.Typed.Scripts as Scripts
 import Ledger.Value
+    ( Value, AssetClass, assetClassValue, assetClassValueOf, geq )
 import Membership.Account
+    ( AccountDatum(adReviewCredit),
+      AccountRedeemer(..),
+      AccountType,
+      applyCAS,
+      findAccountDatum,
+      strictFindOutAndIn,
+      findOutAndIn,
+      sigTokenIn )
 import Membership.PlatformSettings (PlatformSettings (..))
-import Membership.Sample as S
-import Membership.Utils
-import Plutus.Contract as Contract
-import Plutus.Contract.StateMachine
 import qualified PlutusTx
-import PlutusTx.Prelude hiding (ByteString, Semigroup (..), check, unless)
+import PlutusTx.Prelude
+    ( return,
+      Bool(..),
+      Integer,
+      Maybe(..),
+      Eq((==)),
+      (.),
+      (&&),
+      any,
+      length,
+      negate,
+      ($),
+      fst,
+      snd,
+      traceError,
+      traceIfFalse,
+      AdditiveGroup((-)),
+      Ord((>=)) )
 import Wallet.Emulator.Wallet ()
-import Prelude (Semigroup (..), Show (..), String)
+import Prelude (Semigroup (..))
 import Membership.Contract
-
-{-# INLINEABLE strictFindOutAndIn #-}
-strictFindOutAndIn :: ScriptContext -> (TxOut, TxOut)
-strictFindOutAndIn ctx = (ownInput, ownOutput)
-  where
-    ownInput :: TxOut
-    ownInput = case findOwnInput ctx of
-      Nothing -> traceError "account input missing"
-      Just i -> txInInfoResolved i
-
-    ownOutput :: TxOut
-    ownOutput = case getContinuingOutputs ctx of
-      [o] -> o
-      _ -> traceError "expected exactly one account output"
-
-{-# INLINEABLE findOutAndIn #-}
-findOutAndIn :: PubKeyHash -> PlatformSettings -> ScriptContext -> (TxOut, TxOut)
-findOutAndIn pkh ps ctx = (ownInput, ownOutput)
-  where
-    ownInput :: TxOut
-    ownInput = case findOwnInput ctx of
-      Nothing -> traceError "account input missing"
-      Just i -> txInInfoResolved i
-
-    f :: TxOut -> Bool
-    f (TxOut addr val dh) = findSignatures (psSignatureSymbol ps) val == [pkh]
-
-    ownOutput :: TxOut
-    ownOutput = case filter f (getContinuingOutputs ctx) of
-      [o] -> o
-      _ -> traceError "expected exactly one account output"
-
-{-# INLINEABLE sigTokenIn #-}
-sigTokenIn :: AssetClass -> ScriptContext -> Bool
-sigTokenIn sig ctx = inputHasToken && outputHasToken
-  where
-    ownInput, ownOutput :: TxOut
-    ownInput = fst $ strictFindOutAndIn ctx
-    ownOutput = snd $ strictFindOutAndIn ctx
-
-    inputTokens :: Integer
-    inputTokens = assetClassValueOf (txOutValue ownInput) sig
-
-    inputHasToken :: Bool
-    inputHasToken = inputTokens > 0
-
-    outputTokens :: Integer
-    outputTokens = assetClassValueOf (txOutValue ownOutput) sig
-
-    outputHasToken :: Bool
-    outputHasToken = ((inputTokens - outputTokens) == 1) && (outputTokens > 0)
+    ( findContractDatum,
+      isInitial,
+      strictFindContractInputWithValHash',
+      strictFindContractOutputWithValHash',
+      ContractDatum )
+import Membership.Signature
+    ( findSignature,
+      findSignatures,
+      signatureAssetClass',
+      signatureValue' )
 
 {-# INLINEABLE validateCreate #-}
 validateCreate :: PlatformSettings -> AccountDatum -> ScriptContext -> Bool
@@ -113,28 +99,19 @@ validateCreate ps dat ctx = case owner of
     owner :: Maybe PubKeyHash
     owner = findSignature (psSignatureSymbol ps) (txOutValue ownInput)
 
-    fees :: Value
-    fees = assetClassValue (psToken ps) (psTxFee ps)
-
     sigToken :: PubKeyHash -> AssetClass
-    sigToken = signatureAssetClass ps
+    sigToken pkh = signatureAssetClass' ps pkh (ownHash ctx)
 
     contractOutput :: Maybe (ContractDatum, Value)
     contractOutput = do
-      o <- strictFindOutputWithValHash ps info
-      dat <- findContractDatum o (`findDatum` info)
-      return (dat, txOutValue o)
+      o <- strictFindContractOutputWithValHash' ps info
+      d <- findContractDatum o (`findDatum` info)
+      return (d, txOutValue o)
 
     sigPaid :: PubKeyHash -> Bool
     sigPaid pkh = case contractOutput of
       Just (_, val) -> assetClassValueOf val (sigToken pkh) == 1
       _ -> False
-
-    expectedValue :: PubKeyHash -> Value
-    expectedValue pkh =
-      txOutValue ownInput
-        <> fees
-        <> negate (signatureValue ps pkh)
 
     dsetProfit :: Integer
     dsetProfit =
@@ -148,12 +125,12 @@ validateCreate ps dat ctx = case owner of
 
     validContractDatum :: Bool
     validContractDatum = case contractOutput of
-      Just (dat, _) -> isInitial dat
+      Just (d, _) -> isInitial d
       Nothing -> False
 
     validAccountDatum :: Bool
     validAccountDatum = case (inputDatum, outputDatum) of
-      (Just iDat, Just oDat) -> applyCAS iDat == oDat
+      (Just iDat, Just oDat) -> (iDat == dat) && applyCAS iDat == oDat
       _ -> traceError "could not find input or output datum"
 
 {-# INLINEABLE validateSign #-}
@@ -186,19 +163,19 @@ validateSign ps dat ctx = case owner of
     fees = assetClassValue (psToken ps) (psTxFee ps)
 
     sigToken :: PubKeyHash -> AssetClass
-    sigToken = signatureAssetClass ps
+    sigToken pkh = signatureAssetClass' ps pkh (ownHash ctx)
 
     contractInput :: Maybe (ContractDatum, Value)
     contractInput = do
-      o <- strictFindInputWithValHash ps info
-      dat <- findContractDatum o (`findDatum` info)
-      return (dat, txOutValue o)
+      o <- strictFindContractInputWithValHash' ps info
+      d <- findContractDatum o (`findDatum` info)
+      return (d, txOutValue o)
 
     contractOutput :: Maybe (ContractDatum, Value)
     contractOutput = do
-      o <- strictFindOutputWithValHash ps info
-      dat <- findContractDatum o (`findDatum` info)
-      return (dat, txOutValue o)
+      o <- strictFindContractOutputWithValHash' ps info
+      d <- findContractDatum o (`findDatum` info)
+      return (d, txOutValue o)
 
     sigPaid :: PubKeyHash -> Bool
     sigPaid pkh = case contractOutput of
@@ -210,7 +187,7 @@ validateSign ps dat ctx = case owner of
       txOutValue ownOutput
         == ( txOutValue ownInput
                <> fees
-               <> negate (signatureValue ps pkh)
+               <> negate (signatureValue' ps pkh (ownHash ctx))
            )
 
     validContractDatum :: Bool
@@ -220,7 +197,7 @@ validateSign ps dat ctx = case owner of
 
     validAccountDatum :: Bool
     validAccountDatum = case (inputDatum, outputDatum) of
-      (Just iDat, Just oDat) -> applyCAS iDat == oDat
+      (Just iDat, Just oDat) -> (iDat == dat) && applyCAS iDat == oDat
       _ -> False
 
 {-# INLINEABLE validateCollect #-}
@@ -232,9 +209,6 @@ validateCollect ps pkh ctx =
   where
     info :: TxInfo
     info = scriptContextTxInfo ctx
-
-    sigToken :: PubKeyHash -> AssetClass
-    sigToken = signatureAssetClass ps
 
     ownInput, ownOutput :: TxOut
     ownInput = fst $ findOutAndIn pkh ps ctx
@@ -263,21 +237,14 @@ validateCollect ps pkh ctx =
     validOutput = case (inputDatum, inputHasToken) of
       (Just dat, True) -> outputValue `geq` (
         inputValue <> negate (assetClassValue (psToken ps) (dsetInput - adReviewCredit dat)))
-        -- (dsetInput - adReviewCredit dat)
       _ -> False
 
 {-# INLINEABLE mkAccountValidator #-}
 mkAccountValidator :: PlatformSettings -> AccountDatum -> AccountRedeemer -> ScriptContext -> Bool
 mkAccountValidator ps dat Create ctx = validateCreate ps dat ctx
 mkAccountValidator ps dat Sign ctx = validateSign ps dat ctx
-mkAccountValidator ps dat (Collect pkh) ctx = validateCollect ps pkh ctx
+mkAccountValidator ps _ (Collect pkh) ctx = validateCollect ps pkh ctx
 mkAccountValidator _ _ _ _ = False
-
-data AccountType
-
-instance Scripts.ValidatorTypes AccountType where
-  type DatumType AccountType = AccountDatum
-  type RedeemerType AccountType = AccountRedeemer
 
 typedAccountValidator :: PlatformSettings -> Scripts.TypedValidator AccountType
 typedAccountValidator ps =

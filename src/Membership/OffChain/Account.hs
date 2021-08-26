@@ -14,29 +14,101 @@
 
 module Membership.OffChain.Account where
 
-import Control.Monad hiding (fmap)
+import Control.Monad (forever)
 import qualified Data.Map as Map
-import Data.Monoid (Last (..), Monoid (mempty))
-import Data.Monoid as M
+import Data.Monoid as M (Last (Last), Monoid (mconcat))
 import Data.Text (Text, pack)
-import Ledger hiding (singleton)
-import Ledger.Ada as Ada (Ada (getLovelace), fromValue)
+import Ledger
+  ( Datum (Datum),
+    PubKeyHash,
+    Redeemer (Redeemer),
+    TxOut (txOutValue),
+    TxOutRef,
+    TxOutTx (..),
+    lookupDatum,
+    pubKeyHash,
+    txId,
+  )
 import Ledger.Constraints as Constraints
-import qualified Ledger.Typed.Scripts as Scripts
+  ( mustBeSignedBy,
+    mustPayToOtherScript,
+    mustPayToTheScript,
+    mustSpendScriptOutput,
+    otherScript,
+    typedValidatorLookups,
+    unspentOutputs,
+  )
 import Ledger.Value
+  ( AssetClass (AssetClass),
+    Value,
+    assetClassValue,
+    assetClassValueOf,
+    singleton,
+  )
 import Membership.Account
+  ( AccountDatum (adReviewCredit),
+    AccountRedeemer (Collect, Create, Sign),
+    AccountType,
+    applyCAS,
+    findAccountDatum,
+  )
+-- import Membership.Sample
+
+-- import Membership.Sample as S
+-- import Membership.Utils
+
+import Membership.Contract
+  ( ContractDatum,
+    findContract,
+    findContractDatum,
+  )
 import Membership.OnChain.Account
+import Membership.OnChain.Contract
 import Membership.PlatformSettings (PlatformSettings (..))
-import Membership.Sample as S
-import Membership.Utils
+import qualified Membership.Sample as S
+import Membership.Signature (findSignature, findSignatures, makeSigToken)
 import Plutus.Contract as Contract
-import Plutus.Contract.StateMachine
+  ( Contract,
+    Endpoint,
+    Promise (awaitPromise),
+    awaitTxConfirmed,
+    endpoint,
+    handleError,
+    logError,
+    logInfo,
+    mapError,
+    ownPubKey,
+    submitTxConstraintsWith,
+    tell,
+    utxoAt,
+    type (.\/),
+  )
 import Plutus.Contracts.Currency as Currency
+  ( CurrencyError,
+    OneShotCurrency,
+    currencySymbol,
+    mintContract,
+    mintedValue,
+  )
 import qualified PlutusTx
-import PlutusTx.Prelude hiding (Semigroup (..), check, unless)
+import PlutusTx.Prelude
+  ( AdditiveGroup ((-)),
+    Bool,
+    Eq ((==)),
+    Integer,
+    Maybe (..),
+    length,
+    map,
+    negate,
+    return,
+    traceError,
+    ($),
+    (++),
+    (.),
+    (<$>),
+  )
 import Wallet.Emulator.Wallet ()
 import Prelude (Semigroup (..), Show (..), String, uncurry)
-import Membership.Contract
 
 -- Returns all accounts, their Datum, the Value of fees they hold and their owners
 {-# INLINEABLE findAccounts #-}
@@ -87,40 +159,41 @@ findAccount owner ps = do
     f :: TxOutTx -> Bool
     f o = findSignatures (psSignatureSymbol ps) (txOutValue $ txOutTxOut o) == [owner]
 
-createAccount :: forall s. PlatformSettings -> Contract () s Text ()
-createAccount ps = do
-  pkh <- pubKeyHash <$> Contract.ownPubKey
-  let v =
-        assetClassValue (psToken ps) (psEntranceFee ps)
-          <> singleton (psSignatureSymbol ps) (userToSig pkh) 100
-      tx = Constraints.mustPayToOtherScript (accountValidatorHash ps) (Datum $ PlutusTx.toBuiltinData initDatum) v
-  ledgerTx <- submitTxConstraints @AccountType (typedAccountValidator ps) tx
-  logInfo @String $ show pkh
-  logInfo @String $ show (txData ledgerTx)
-  logInfo @String $ "initialised account"
+-- createAccount :: forall s. PlatformSettings -> Contract () s Text ()
+-- createAccount ps = do
+--   pkh <- pubKeyHash <$> Contract.ownPubKey
+--   let v =
+--         assetClassValue (psToken ps) (psEntranceFee ps)
+--           <> singleton (psSignatureSymbol ps) (makeSigToken pkh) 100
+--       tx = Constraints.mustPayToOtherScript (accountValidatorHash ps) (Datum $ PlutusTx.toBuiltinData initDatum) v
+--   ledgerTx <- submitTxConstraints @AccountType (typedAccountValidator ps) tx
+--   logInfo @String $ show pkh
+--   logInfo @String $ show (txData ledgerTx)
+--   logInfo @String $ "initialised account"
 
 createContract :: PlatformSettings -> ContractDatum -> Contract (Last AssetClass) s Text ()
 createContract ps dat = do
   pkh <- pubKeyHash <$> Contract.ownPubKey
   m <- findAccount pkh ps
   case m of
-    Just (oref, TxOutTx outTx out) -> do
-      case findAccountDatum out (lookupDatum outTx) of
+    Just (oref, TxOutTx outTx o) -> do
+      case findAccountDatum o (lookupDatum outTx) of
         Just aDat -> do
           osc <-
             mapError
               (pack . show)
               (mintContract pkh [("", 1)] :: Contract w s CurrencyError OneShotCurrency)
           let cs = Currency.currencySymbol osc
+              vh = accountValidatorHash ps
               cv =
-                singleton (psSignatureSymbol ps) (userToSig pkh) 1
+                singleton (psSignatureSymbol ps) (makeSigToken pkh vh) 1
                   <> Currency.mintedValue osc
               av =
-                txOutValue out
-                  <> negate (singleton (psSignatureSymbol ps) (userToSig pkh) 1)
+                txOutValue o
+                  <> negate (singleton (psSignatureSymbol ps) (makeSigToken pkh vh) 1)
                   <> assetClassValue (psToken ps) (psTxFee ps)
               lookups =
-                Constraints.unspentOutputs (Map.singleton oref (TxOutTx outTx out))
+                Constraints.unspentOutputs (Map.singleton oref (TxOutTx outTx o))
                   <> Constraints.typedValidatorLookups (typedAccountValidator ps)
                   <> Constraints.otherScript (accountValidator ps)
               tx =
@@ -131,7 +204,7 @@ createContract ps dat = do
                     (psContractVH ps)
                     (Datum $ PlutusTx.toBuiltinData dat)
                     cv
-          ledgerTx <- submitTxConstraintsWith @AccountType lookups tx
+          _ <- submitTxConstraintsWith @AccountType lookups tx
           tell $ Last $ Just (AssetClass (cs, ""))
           logInfo @String $ show (AssetClass (cs, ""))
           logInfo @String $ "created contract"
@@ -147,12 +220,13 @@ signContract ps ac = do
     (Just (oref, TxOutTx outTx o), Just (oref', TxOutTx outTx' o')) -> do
       case (findAccountDatum o (lookupDatum outTx), findContractDatum o' (lookupDatum outTx')) of
         (Just aDat, Just cDat) -> do
-          let cv =
+          let vh = accountValidatorHash ps
+              cv =
                 txOutValue o'
-                  <> singleton (psSignatureSymbol ps) (userToSig pkh) 1
+                  <> singleton (psSignatureSymbol ps) (makeSigToken pkh vh) 1
               av =
                 txOutValue o
-                  <> negate (singleton (psSignatureSymbol ps) (userToSig pkh) 1)
+                  <> negate (singleton (psSignatureSymbol ps) (makeSigToken pkh vh) 1)
                   <> assetClassValue (psToken ps) (psTxFee ps)
               lookups =
                 Constraints.unspentOutputs
@@ -170,14 +244,13 @@ signContract ps ac = do
                     (accountValidatorHash ps)
                     (Datum $ PlutusTx.toBuiltinData (applyCAS aDat))
                     av
-          ledgerTx <- submitTxConstraintsWith @SampleContractType lookups tx
+          _ <- submitTxConstraintsWith @ContractType lookups tx
           logInfo @String $ "signed contract"
         _ -> logError @String "account or contract datum not found"
     _ -> logError @String "account or contract not found"
 
 collectFees :: PlatformSettings -> Contract w s Text ()
 collectFees ps = do
-  pkh <- pubKeyHash <$> Contract.ownPubKey
   xs <- findAccounts ps
   case xs of
     [] -> logInfo @String "no accounts found"
@@ -192,28 +265,33 @@ collectFees ps = do
                   $ Redeemer $ PlutusTx.toBuiltinData (Collect wPkh)
                 | (oref, _, _, _, wPkh) <- xs
               ]
-            <> M.mconcat
-              [ Constraints.mustPayToOtherScript
-                  (accountValidatorHash ps)
-                  (Datum $ PlutusTx.toBuiltinData dat)
-                  v
-                | (oref, _, dat, v, _) <- xs
-              ]
+              <> M.mconcat
+                [ Constraints.mustPayToOtherScript
+                    (accountValidatorHash ps)
+                    (Datum $ PlutusTx.toBuiltinData dat)
+                    v
+                  | (_, _, dat, v, _) <- xs
+                ]
       ledgerTx <- submitTxConstraintsWith @AccountType lookups tx
       awaitTxConfirmed $ txId ledgerTx
       logInfo @String $ "collected from " ++ show (length xs) ++ " account(s)"
 
+-- type AccountSchema =
+--   Endpoint "start" PlatformSettings
+--     .\/ Endpoint "create" (PlatformSettings, ContractDatum)
+--     .\/ Endpoint "sign" (PlatformSettings, AssetClass)
+--     .\/ Endpoint "collect" PlatformSettings
+
+-- startEndpoint :: Contract () AccountSchema Text ()
+-- startEndpoint = forever $
+--   handleError logError $
+--     awaitPromise $
+--       endpoint @"start" $ \ps -> createAccount ps
+
 type AccountSchema =
-  Endpoint "start" PlatformSettings
-    .\/ Endpoint "create" (PlatformSettings, ContractDatum)
+  Endpoint "create" (PlatformSettings, ContractDatum)
     .\/ Endpoint "sign" (PlatformSettings, AssetClass)
     .\/ Endpoint "collect" PlatformSettings
-
-startEndpoint :: Contract () AccountSchema Text ()
-startEndpoint = forever $
-  handleError logError $
-    awaitPromise $
-      endpoint @"start" $ \ps -> createAccount ps
 
 createEndpoint :: Contract (Last AssetClass) AccountSchema Text ()
 createEndpoint =

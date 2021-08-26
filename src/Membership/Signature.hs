@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -10,145 +11,122 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Signature where
+module Membership.Signature where
 
--- Declaring data types explicitily for future reference
-import Control.Monad (void)
-import qualified Data.ByteString.Char8 as B
-import qualified Data.Map as Map
-import Data.Text (Text)
-import Data.Void (Void)
-import Helper (valHash)
-import Ledger
-  ( PubKeyHash,
-    ScriptContext (scriptContextTxInfo),
-    TxInInfo (txInInfoOutRef),
-    TxInfo (txInfoForge, txInfoInputs),
-    TxOutRef,
-    ValidatorHash,
-    mkMintingPolicyScript,
-    ownCurrencySymbol,
-    pubKeyAddress,
-    pubKeyHash,
-    scriptCurrencySymbol,
-    txId,
-    txSignedBy,
-  )
-import Ledger.Constraints as Constraints
-  ( mintingPolicy,
-    mustMintValue,
-    mustSpendPubKeyOutput,
-    unspentOutputs,
-  )
-import qualified Ledger.Typed.Scripts as Scripts
+import Data.Aeson (FromJSON, ToJSON)
+import GHC.Generics (Generic)
+import Ledger.Contexts (TxInfo, txSignedBy)
+import Ledger.Crypto (PubKeyHash (..))
+import Ledger.Scripts (ValidatorHash (..))
 import Ledger.Value as Value
-  ( CurrencySymbol,
-    TokenName (TokenName),
+  ( AssetClass (AssetClass),
+    CurrencySymbol,
+    TokenName (..),
+    Value,
     flattenValue,
     singleton,
   )
-import Playground.TH (mkKnownCurrencies, mkSchemaDefinitions)
-import Playground.Types (KnownCurrency (..))
-import Plutus.Contract as Contract
-  ( Contract,
-    Endpoint,
-    awaitTxConfirmed,
-    endpoint,
-    logError,
-    logInfo,
-    ownPubKey,
-    submitTxConstraintsWith,
-    utxoAt,
+import Membership.PlatformSettings
+  ( PlatformSettings (psSignatureSymbol),
   )
-import Plutus.Trace.Emulator as Emulator
-  ( activateContractWallet,
-    callEndpoint,
-    runEmulatorTraceIO,
-    waitNSlots,
-  )
+import Membership.Utils (tripleSnd)
 import qualified PlutusTx
 import PlutusTx.Prelude
-  ( Bool (False),
-    ByteString,
+  ( AdditiveSemigroup ((+)),
+    Bool,
+    BuiltinByteString,
     Eq ((==)),
+    Maybe,
     any,
-    traceIfFalse,
+    appendByteString,
+    filter,
+    find,
+    lengthOfByteString,
+    map,
+    return,
+    sliceByteString,
     ($),
-    (&&),
     (.),
-    (>>),
-    (>>=),
   )
-import Text.Printf (printf)
-import Wallet.Emulator.Wallet (Wallet (Wallet))
-import Prelude (IO, Semigroup (..), Show (..), String)
+import qualified Prelude as P
 
-{-# INLINEABLE mkPolicy #-}
-mkPolicy :: PubKeyHash -> ScriptContext -> Bool
-mkPolicy pkh ctx =
-    traceIfFalse "wrong amount minted" checkMintedAmount
-    && traceIfFalse "not signed by pkh" (txSignedBy info pkh)
-    && traceIfFalse "minted amount must go to script" checkOutputs
+data Sig = Sig
+  { sTokenName :: !TokenName,
+    sUser :: !PubKeyHash,
+    sScript :: !ValidatorHash
+  }
+  deriving (P.Show, Generic, FromJSON, ToJSON, P.Eq)
+
+PlutusTx.unstableMakeIsData ''Sig
+
+{-# INLINEABLE unValidatorHash #-}
+unValidatorHash :: ValidatorHash -> BuiltinByteString
+unValidatorHash vh = case vh of ValidatorHash h -> h
+
+{-# INLINEABLE makeSigToken #-}
+makeSigToken :: PubKeyHash -> ValidatorHash -> TokenName
+makeSigToken pkh vh =
+  TokenName $ getPubKeyHash pkh `appendByteString` unValidatorHash vh
+
+{-# INLINEABLE makeSig #-}
+makeSig :: TokenName -> Sig
+makeSig tn = Sig tn pkh vh
   where
-    info :: TxInfo
-    info = scriptContextTxInfo ctx
+    bTokenName :: BuiltinByteString
+    bTokenName = unTokenName tn
 
-    checkOutputs :: Bool
-    checkOutputs = (length txInfoOutputs == 2) &&
-                    all valid txInfoInputs
-      where
-        valid :: TxOut -> Bool
-        valid (addr, val, dh) = True
+    vh :: ValidatorHash
+    vh = ValidatorHash $ sliceByteString 28 (lengthOfByteString (unTokenName tn) + 1) bTokenName
 
-    -- Check script outputs
+    pkh :: PubKeyHash
+    pkh = PubKeyHash $ sliceByteString 0 28 bTokenName
 
-    checkMintedAmount :: Bool
-    checkMintedAmount = case flattenValue (txInfoForge info) of
-      [(cs, tn, _)] -> (cs == ownCurrencySymbol ctx) && (tn == userToSig pkh)
-      _ -> False
+{-# INLINEABLE sig #-}
+sig :: PubKeyHash -> ValidatorHash -> Sig
+sig pkh = makeSig . makeSigToken pkh
 
-policy :: PubKeyHash -> Scripts.MintingPolicy
-policy pkh =
-  mkMintingPolicyScript $
-    $$(PlutusTx.compile [||\oref' pkh' vh' -> Scripts.wrapMintingPolicy $ mkPolicy oref' pkh' vh'||])
-      `PlutusTx.applyCode` PlutusTx.liftCode pkh
+{-# INLINEABLE sigTokenToUser #-}
+sigTokenToUser :: TokenName -> PubKeyHash
+sigTokenToUser = sUser . makeSig
 
-curSymbol :: PubKeyHash -> CurrencySymbol
-curSymbol = scriptCurrencySymbol . policy
+{-# INLINEABLE findSignature #-}
+findSignature :: CurrencySymbol -> Value -> Maybe PubKeyHash
+findSignature cs v = do
+  (_, tn, _) <- find (\(cs', _, _) -> cs == cs') (flattenValue v)
+  return $ sigTokenToUser tn
 
-type NFTSchema = Endpoint "mint" ValidatorHash
+{-# INLINEABLE findSignature' #-}
+findSignature' :: PlatformSettings -> Value -> Maybe PubKeyHash
+findSignature' ps = findSignature (psSignatureSymbol ps)
 
-mint :: ValidatorHash -> Contract w NFTSchema Text ()
-mint vh = do
-  pk <- Contract.ownPubKey
-  utxos <- utxoAt (pubKeyAddress pk)
-  case Map.keys utxos of
-    [] -> Contract.logError @String "no utxo found"
-    oref : _ -> do
-      let vhBS = B.pack . show $ vh
-          tn = TokenName vhBS
-          val = Value.singleton (curSymbol oref (pubKeyHash pk) vhBS) tn 1
-          lookups =
-            Constraints.mintingPolicy (policy oref (pubKeyHash pk) vhBS)
-              <> Constraints.unspentOutputs utxos
-          tx = Constraints.mustMintValue val <> Constraints.mustSpendPubKeyOutput oref
-      ledgerTx <- submitTxConstraintsWith @Void lookups tx
-      void $ awaitTxConfirmed $ txId ledgerTx
-      Contract.logInfo @String $ printf "forged %s" (show val)
+{-# INLINEABLE findSignatures #-}
+findSignatures :: CurrencySymbol -> Value -> [PubKeyHash]
+findSignatures cs v = map (sigTokenToUser . tripleSnd) $ filter (\(cs', _, _) -> cs == cs') (flattenValue v)
 
-endpoints :: Contract () NFTSchema Text ()
-endpoints = mint' >> endpoints
-  where
-    mint' = endpoint @"mint" >>= mint
+{-# INLINEABLE findSignatures' #-}
+findSignatures' :: PlatformSettings -> Value -> [PubKeyHash]
+findSignatures' ps = findSignatures (psSignatureSymbol ps)
 
-mkSchemaDefinitions ''NFTSchema
+{-# INLINEABLE anySigned #-}
+anySigned :: TxInfo -> [PubKeyHash] -> Bool
+anySigned info = any (txSignedBy info)
 
-mkKnownCurrencies []
+{-# INLINEABLE whoSigned #-}
+whoSigned :: TxInfo -> [PubKeyHash] -> Maybe PubKeyHash
+whoSigned info = find (txSignedBy info)
 
-testSignature :: IO ()
-testSignature = runEmulatorTraceIO $ do
-  h1 <- activateContractWallet (Wallet 1) endpoints
-  h2 <- activateContractWallet (Wallet 2) endpoints
-  callEndpoint @"mint" h1 (valHash 1)
-  callEndpoint @"mint" h2 (valHash 2)
-  void $ Emulator.waitNSlots 1
+{-# INLINEABLE signatureAssetClass #-}
+signatureAssetClass :: CurrencySymbol -> PubKeyHash -> ValidatorHash -> AssetClass
+signatureAssetClass cs pkh vh = AssetClass (cs, makeSigToken pkh vh)
+
+{-# INLINEABLE signatureAssetClass' #-}
+signatureAssetClass' :: PlatformSettings -> PubKeyHash -> ValidatorHash -> AssetClass
+signatureAssetClass' ps = signatureAssetClass (psSignatureSymbol ps)
+
+{-# INLINEABLE signatureValue #-}
+signatureValue :: CurrencySymbol -> PubKeyHash -> ValidatorHash -> Value
+signatureValue cs pkh vh = singleton cs (makeSigToken pkh vh) 1
+
+{-# INLINEABLE signatureValue' #-}
+signatureValue' :: PlatformSettings -> PubKeyHash -> ValidatorHash -> Value
+signatureValue' ps = signatureValue (psSignatureSymbol ps)

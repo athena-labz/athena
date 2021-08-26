@@ -17,9 +17,11 @@ module Membership.Service where
 import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic)
 import Ledger (POSIXTime, PubKeyHash, Value)
+import Ledger.Crypto (pubKeyHash)
 import Ledger.Value as Value (geq, singleton)
 import qualified PlutusTx
-import PlutusTx.Prelude (Bool (False, True), ByteString, Eq, Integer, (&&), (==))
+import PlutusTx.Prelude (Bool (False, True), BuiltinByteString, Eq, Integer, (&&), (==), ($))
+import Wallet.Emulator (Wallet (Wallet), walletPubKey)
 import Prelude (Semigroup (..), Show (..))
 import qualified Prelude
 
@@ -36,8 +38,8 @@ PlutusTx.unstableMakeIsData ''ServiceType
 
 data Service = Service
   { sPublisher :: PubKeyHash, -- The pkh of the person that published this service
-    sTitle :: ByteString,
-    sDescription :: ByteString,
+    sTitle :: BuiltinByteString,
+    sDescription :: BuiltinByteString,
     sTrust :: Integer,
     sType :: ServiceType -- Indicates the service availability
   }
@@ -49,6 +51,17 @@ instance Eq Service where
     pu == pu' && ti == ti' && d == d' && tr == tr' && tp == tp'
 
 PlutusTx.unstableMakeIsData ''Service
+
+{-# INLINEABLE sampleService #-}
+sampleService :: Service
+sampleService =
+  Service
+    { sPublisher = pubKeyHash $ walletPubKey $ Wallet 1,
+      sTitle = "Title",
+      sDescription = "Description",
+      sTrust = 30,
+      sType = CConstant
+    }
 
 {-# INLINEABLE paidOffer #-}
 paidOffer :: Value -> Value -> Service -> Bool

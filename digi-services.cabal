@@ -18,9 +18,15 @@ library
                      , Membership.Sample
                      , Membership.Utils
                      , Membership.OnChain.Account
+                     , Membership.OnChain.Signature
+                     , Membership.OnChain.Contract
+                     , Membership.Logic
                      , Membership.OffChain.Account
+                     , Membership.OffChain.Signature
+                     , Membership.Signature
   build-depends:       aeson
                      , base ^>=4.14.1.0
+                     , bytestring
                      , containers
                      , data-default
                      , freer-extras
