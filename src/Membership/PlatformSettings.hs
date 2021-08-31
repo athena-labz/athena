@@ -21,61 +21,66 @@ import Ledger.Ada as Ada ()
 import Ledger.Constraints as Constraints ()
 import Ledger.Crypto (PubKeyHash)
 import Ledger.Scripts (ValidatorHash)
-import Ledger.Value (AssetClass, CurrencySymbol, Value, assetClassValue)
+import Ledger.Value (AssetClass, CurrencySymbol)
 import Plutus.Contract as Contract ()
 import Plutus.Contract.StateMachine ()
 import qualified PlutusTx
-import PlutusTx.Prelude (Integer, Maybe)
+import PlutusTx.Prelude (Eq, Integer, (&&), (==))
 import Prelude (Show (..))
 import qualified Prelude
+
+-- Separate universal aspects
 
 data PlatformSettings = PlatformSettings
   { psVersion :: !Integer,
     psToken :: !AssetClass,
-    psSignatureSymbol :: !CurrencySymbol,
-    psContractVH :: !ValidatorHash,
     psEntranceFee :: !Integer,
-    psTxFee :: !Integer, -- Should be a percentage (0 - 100)
-    psCollectors :: ![PubKeyHash],
-    psOldVH :: !(Maybe ValidatorHash)
+    psTxFee :: !Integer
   }
   deriving (Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
 PlutusTx.makeLift ''PlatformSettings
 
-data IncompletePlatformSettings = IncompletePlatformSettings
-  { ipsVersion :: !Integer,
-    ipsToken :: !AssetClass,
-    ipsContractVH :: !ValidatorHash,
-    ipsEntranceFee :: !Integer,
-    ipsTxFee :: !Integer,
-    ipsCollectors :: ![PubKeyHash],
-    ipsOldVH :: !(Maybe ValidatorHash)
+data AccountSettings = AccountSettings
+  { asPlatformSettings :: !PlatformSettings,
+    asSignatureSymbol :: !CurrencySymbol,
+    asContractValidatorHash :: !ValidatorHash,
+    asCollectors :: ![PubKeyHash]
   }
   deriving (Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
-PlutusTx.makeLift ''IncompletePlatformSettings
+PlutusTx.makeLift ''AccountSettings
 
-completePS :: CurrencySymbol -> IncompletePlatformSettings -> PlatformSettings
-completePS cs ips =
-  PlatformSettings
-    { psVersion = ipsVersion ips,
-      psToken = ipsToken ips,
-      psSignatureSymbol = cs,
-      psContractVH = ipsContractVH ips,
-      psEntranceFee = ipsEntranceFee ips,
-      psTxFee = ipsTxFee ips,
-      psCollectors = ipsCollectors ips,
-      psOldVH = ipsOldVH ips
+-- Change platform token to platform settings
+data ContractSettings = ContractSettings
+  { csPlatformToken :: AssetClass,
+    csSignatureSymbol :: CurrencySymbol
+  }
+  deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
+
+instance Eq ContractSettings where
+  {-# INLINEABLE (==) #-}
+  ContractSettings pt ss == ContractSettings pt' ss' =
+    pt == pt' && ss == ss'
+
+PlutusTx.makeLift ''ContractSettings
+
+{-# INLINEABLE contractSettings #-}
+contractSettings :: AssetClass -> CurrencySymbol -> ContractSettings
+contractSettings ac cs =
+  ContractSettings
+    { csPlatformToken = ac,
+      csSignatureSymbol = cs
     }
 
-entranceFee :: PlatformSettings -> Value
-entranceFee ps = assetClassValue (psToken ps) (psEntranceFee ps)
-
-{-# INLINEABLE sampleEntranceFee #-}
-sampleEntranceFee :: Integer
-sampleEntranceFee = 300_000
-
-{-# INLINEABLE sampleTxFee #-}
-sampleTxFee :: Integer
-sampleTxFee = 1_000
+-- data PlatformSettings = PlatformSettings
+--   { psVersion :: !Integer,
+--     psToken :: !AssetClass,
+--     psSignatureSymbol :: !CurrencySymbol,
+--     psContractVH :: !ValidatorHash,
+--     psEntranceFee :: !Integer,
+--     psTxFee :: !Integer,
+--     psCollectors :: ![PubKeyHash],
+--     psOldVH :: !(Maybe ValidatorHash)
+--   }
+--   deriving (Show, Generic, FromJSON, ToJSON, Prelude.Eq)

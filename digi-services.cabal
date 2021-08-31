@@ -15,12 +15,12 @@ library
                      , Membership.Account
                      , Membership.Contract
                      , Membership.Service
-                     , Membership.Sample
                      , Membership.Utils
                      , Membership.OnChain.Account
                      , Membership.OnChain.Signature
                      , Membership.OnChain.Contract
-                     , Membership.Logic
+                     , Membership.OnChain.Logic
+                     , Membership.OnChain.Utils
                      , Membership.OffChain.Account
                      , Membership.OffChain.Signature
                      , Membership.Signature

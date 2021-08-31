@@ -19,85 +19,153 @@ import qualified Data.Map as Map
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Ledger
-    ( PubKeyHash,
-      Value,
-      POSIXTime,
-      AssetClass,
-      ValidatorHash,
-      CurrencySymbol,
-      Datum(Datum),
-      DatumHash,
-      TxOutRef,
-      TxOut(TxOut, txOutValue),
-      TxOutTx(txOutTxOut),
-      pubKeyHash,
-      scriptHashAddress,
-      toValidatorHash,
-      txOutDatum,
-      TxInInfo(txInInfoResolved),
-      TxInfo(txInfoInputs, txInfoOutputs) )
-import Ledger.Value (assetClassValueOf)
-import Membership.PlatformSettings (PlatformSettings (..))
-import Membership.Service (Service (sPublisher))
-import Membership.Signature (findSignatures)
+  ( Datum (Datum),
+    DatumHash,
+    POSIXTime,
+    POSIXTimeRange,
+    PubKeyHash,
+    TxInInfo (txInInfoResolved),
+    TxInfo (txInfoInputs, txInfoOutputs),
+    TxOut (TxOut, txOutValue),
+    TxOutRef,
+    TxOutTx (txOutTxOut),
+    ValidatorHash,
+    contains,
+    scriptHashAddress,
+    to,
+    toValidatorHash,
+    txOutDatum,
+  )
+import Ledger.Typed.Scripts as Scripts (ValidatorTypes (..))
+import Ledger.Value
+  ( AssetClass,
+    CurrencySymbol,
+    TokenName,
+    Value,
+    assetClassValueOf,
+    flattenValue,
+  )
+import Membership.Service (Service (..))
+import Membership.Signature (sigTokenToUser)
+import Membership.Utils (tripleSnd)
 import Plutus.Contract as Contract (Contract, utxoAt)
 import qualified PlutusTx
+import qualified PlutusTx.AssocMap as M
+import PlutusTx.Builtins (BuiltinByteString)
 import PlutusTx.Prelude
-  ( Bool,
-    BuiltinByteString,
+  ( Bool (..),
     Eq (..),
+    Integer,
     Maybe (..),
-    Ord ((>)),
     elem,
     filter,
     find,
-    length,
     map,
     not,
     null,
     ($),
     (&&),
+    (+),
     (.),
     (<$>),
   )
-import Prelude (Show (..))
-import Ledger.Typed.Scripts as Scripts ( ValidatorTypes(..) )
-import Wallet.Emulator.Wallet ( walletPubKey, Wallet(Wallet) )
-import Membership.Logic
-import Membership.Service
+import qualified Prelude
 
-type Accusation = (PubKeyHash, PubKeyHash)
+-- Defining alias to better explain each component's function
+
+-- Yes / No question that will be used in the logic
+type InputQuestion = BuiltinByteString
+
+-- The validator hash of a script that will distribute the
+-- collateral based on the judges inputs
+type LogicScriptVH = ValidatorHash
+
+-- A token that will be sent to the guilty party account
+type ShameToken = AssetClass
+
+type User = PubKeyHash
+
+data Role = Publisher | Client | Mediator
+  deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
+
+instance Eq Role where
+  {-# INLINEABLE (==) #-}
+  Publisher == Publisher = True
+  Client == Client = True
+  Mediator == Mediator = True
+  _ == _ = False
+
+PlutusTx.unstableMakeIsData ''Role
+
+data Judges = Judges
+  { jPubKeyHashes :: [PubKeyHash], -- The PubKeyHash of those responsible for mediating conflicts
+    jPrice :: Integer, -- The price each judge will receive if he accepts
+    jMaxDuration :: POSIXTime -- The maximum time a judge will have to make a decision
+  }
+  deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
+
+instance Eq Judges where
+  {-# INLINEABLE (==) #-}
+  Judges pkhs prc md == Judges pkhs' prc' md' =
+    pkhs' == pkhs && prc == prc' && md == md'
+
+PlutusTx.unstableMakeIsData ''Judges
+
+data Accusation = Accusation
+  { aAccuser :: PubKeyHash,
+    aAccused :: PubKeyHash,
+    aTime :: POSIXTime -- The time this accusation was sent
+  }
+  deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
+
+instance Eq Accusation where
+  {-# INLINEABLE (==) #-}
+  Accusation acr acd time == Accusation acr' acd' time' =
+    acr' == acr && acd == acd' && time == time'
+
+PlutusTx.unstableMakeIsData ''Accusation
 
 data ContractDatum = ContractDatum
-  { cdJudges :: [PubKeyHash],
-    cdInputs :: [BuiltinByteString],
-    cdLogicScript :: ValidatorHash,
-    cdAccusations :: [(Accusation, POSIXTime)],
-    cdService :: Service
+  { cdJudges :: Judges,
+    cdInputs :: [InputQuestion],
+    cdLogicScript :: (LogicScriptVH, ShameToken),
+    cdAccusations :: [Accusation],
+    cdService :: Service,
+    cdRoleMap :: M.Map User Role
   }
   deriving (Prelude.Show, Generic, FromJSON, ToJSON)
 
 instance Eq ContractDatum where
   {-# INLINEABLE (==) #-}
-  (ContractDatum jud inp ls acc svc) == (ContractDatum jud' inp' ls' acc' svc') =
-    jud == jud' && inp == inp' && ls == ls' && acc == acc' && svc == svc'
+  (ContractDatum jds inp ls acc svc rm)
+    == (ContractDatum jds' inp' ls' acc' svc' rm') =
+      jds == jds'
+        && inp == inp'
+        && ls == ls'
+        && acc == acc'
+        && svc == svc'
+        && rm == rm'
 
 PlutusTx.unstableMakeIsData ''ContractDatum
 
-{-# INLINEABLE sampleContract #-}
-sampleContract :: ContractDatum
-sampleContract =
-  ContractDatum
-    { cdJudges = [pubKeyHash $ walletPubKey $ Wallet w | w <- [4 .. 10]],
-      cdInputs =
-        [ "Was a book actually written and delivered?",
-          "Did it have more than 200 pages?",
-          "Was the client collaborative, providing any information needed?"
-        ],
-      cdLogicScript = sampleLogicHash,
-      cdAccusations = [],
-      cdService = sampleService
-    }
+data ContractRedeemer = CSign | CAccuse PubKeyHash PubKeyHash | CMediate | CCollect
+  deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
+
+instance Eq ContractRedeemer where
+  {-# INLINEABLE (==) #-}
+  CSign == CSign = True
+  CAccuse acr acd == CAccuse acr' acd' = acr == acr' && acd == acd'
+  CMediate == CMediate = True
+  CCollect == CCollect = True
+  _ == _ = False
+
+PlutusTx.unstableMakeIsData ''ContractRedeemer
+
+data ContractType
+
+instance Scripts.ValidatorTypes ContractType where
+  type DatumType ContractType = ContractDatum
+  type RedeemerType ContractType = ContractRedeemer
 
 type DigiContract = (ContractDatum, Value)
 
@@ -105,31 +173,67 @@ type DigiContract = (ContractDatum, Value)
 digiContract :: ContractDatum -> TxOut -> DigiContract
 digiContract cd (TxOut _ v _) = (cd, v)
 
-{-# INLINEABLE publisherSignedContract #-}
-publisherSignedContract :: CurrencySymbol -> DigiContract -> Bool
-publisherSignedContract cs (d, v) = publisher `elem` sigTokenUsers
+{-# INLINABLE addUser #-}
+addUser :: PubKeyHash -> Role -> ContractDatum -> ContractDatum
+addUser pkh userRole oldContractDatum =
+  ContractDatum
+    { cdJudges = cdJudges oldContractDatum,
+      cdInputs = cdInputs oldContractDatum,
+      cdLogicScript = cdLogicScript oldContractDatum,
+      cdAccusations = cdAccusations oldContractDatum,
+      cdService = cdService oldContractDatum,
+      cdRoleMap = M.insert pkh userRole (cdRoleMap oldContractDatum)
+    }
+
+accuseUser :: PubKeyHash -> PubKeyHash -> POSIXTime -> ContractDatum -> ContractDatum
+accuseUser accuser accused currentTime oldContractDatum =
+  ContractDatum
+    { cdJudges = cdJudges oldContractDatum,
+      cdInputs = cdInputs oldContractDatum,
+      cdLogicScript = cdLogicScript oldContractDatum,
+      cdAccusations = Accusation accuser accused currentTime : cdAccusations oldContractDatum,
+      cdService = cdService oldContractDatum,
+      cdRoleMap = cdRoleMap oldContractDatum
+    }
+
+-- Get's the judge that is supposed to mediate a conflict in case there's one
+{-# INLINEABLE currentJudge #-}
+currentJudge :: CurrencySymbol -> Accusation -> POSIXTimeRange -> DigiContract -> Maybe PubKeyHash
+currentJudge cs (Accusation _ _ accTime) curTime (cd, val) = findJudge authenticatedJudges dln
   where
-    sigTokenUsers :: [PubKeyHash]
-    sigTokenUsers = findSignatures cs v
+    judges :: [PubKeyHash]
+    judges = jPubKeyHashes $ cdJudges cd
 
-    publisher :: PubKeyHash
-    publisher = sPublisher (cdService d)
+    authenticatedJudges :: [PubKeyHash]
+    authenticatedJudges = map (sigTokenToUser . tripleSnd) $ filter f (flattenValue val)
+      where
+        f :: (CurrencySymbol, TokenName, Integer) -> Bool
+        f (cs', tn, _) = (cs' == cs) && (sigTokenToUser tn `elem` judges)
 
-{-# INLINEABLE publisherSignedContract' #-}
-publisherSignedContract' :: PlatformSettings -> DigiContract -> Bool
-publisherSignedContract' ps = publisherSignedContract (psSignatureSymbol ps)
+    dln :: POSIXTime
+    dln = accTime + jMaxDuration (cdJudges cd)
 
+    findJudge :: [PubKeyHash] -> POSIXTime -> Maybe PubKeyHash
+    findJudge [] _ = Nothing
+    findJudge (x : xs) deadline =
+      if to deadline `contains` curTime
+        then Just x
+        else findJudge xs (deadline + dln)
+
+-- Verifies if a contract datum is in the "initial state"
 {-# INLINEABLE isInitial #-}
-isInitial :: ContractDatum -> Bool
-isInitial (ContractDatum jud inp _ acc _) =
-  length jud > 5
+isInitial :: PubKeyHash -> ContractDatum -> Bool
+isInitial pkh (ContractDatum (Judges jds _ _) inp _ acc _ rm) =
+  not (null jds)
     && not (null inp)
     && null acc
+    && M.toList rm == [(pkh, Publisher)]
 
+-- Get's the first UTxO sitting at a specific contract validator hash
 {-# INLINEABLE findContract #-}
-findContract :: AssetClass -> PlatformSettings -> Contract w s Text (Maybe (TxOutRef, TxOutTx))
-findContract nft ps = do
-  utxos <- Map.filter f <$> utxoAt (scriptHashAddress (psContractVH ps))
+findContract :: AssetClass -> ValidatorHash -> Contract w s Text (Maybe (TxOutRef, TxOutTx))
+findContract nft contrValHash = do
+  utxos <- Map.filter f <$> utxoAt (scriptHashAddress contrValHash)
   return $ case Map.toList utxos of
     [(oref, o)] -> Just (oref, o)
     _ -> Nothing
@@ -137,6 +241,7 @@ findContract nft ps = do
     f :: TxOutTx -> Bool
     f o = assetClassValueOf (txOutValue $ txOutTxOut o) nft == 1
 
+-- Given a transaction output and a function, tries to get a contract datum
 {-# INLINEABLE findContractDatum #-}
 findContractDatum :: TxOut -> (DatumHash -> Maybe Datum) -> Maybe ContractDatum
 findContractDatum o f = do
@@ -150,10 +255,8 @@ findContractInputWithValHash vh info = find predicate ((map txInInfoResolved . t
   where
     predicate (TxOut addr _ _) = toValidatorHash addr == Just vh
 
-{-# INLINEABLE findContractInputWithValHash' #-}
-findContractInputWithValHash' :: PlatformSettings -> TxInfo -> Maybe TxOut
-findContractInputWithValHash' ps = findContractInputWithValHash (psContractVH ps)
-
+-- Searchs for a transaction output of a specific contract validator hash
+-- in the inputs list, but only return it if it's unique
 {-# INLINEABLE strictFindContractInputWithValHash #-}
 strictFindContractInputWithValHash :: ValidatorHash -> TxInfo -> Maybe TxOut
 strictFindContractInputWithValHash vh info = case filter predicate ((map txInInfoResolved . txInfoInputs) info) of
@@ -162,20 +265,14 @@ strictFindContractInputWithValHash vh info = case filter predicate ((map txInInf
   where
     predicate (TxOut addr _ _) = toValidatorHash addr == Just vh
 
-{-# INLINEABLE strictFindContractInputWithValHash' #-}
-strictFindContractInputWithValHash' :: PlatformSettings -> TxInfo -> Maybe TxOut
-strictFindContractInputWithValHash' ps = strictFindContractInputWithValHash (psContractVH ps)
-
 {-# INLINEABLE findContractOutputWithValHash #-}
 findContractOutputWithValHash :: ValidatorHash -> TxInfo -> Maybe TxOut
 findContractOutputWithValHash vh info = find predicate (txInfoOutputs info)
   where
     predicate (TxOut addr _ _) = toValidatorHash addr == Just vh
 
-{-# INLINEABLE findContractOutputWithValHash' #-}
-findContractOutputWithValHash' :: PlatformSettings -> TxInfo -> Maybe TxOut
-findContractOutputWithValHash' ps = findContractOutputWithValHash (psContractVH ps)
-
+-- Searchs for a transaction output of a specific contract validator hash
+-- in the outputs list, but only return it if it's unique
 {-# INLINEABLE strictFindContractOutputWithValHash #-}
 strictFindContractOutputWithValHash :: ValidatorHash -> TxInfo -> Maybe TxOut
 strictFindContractOutputWithValHash vh info = case filter predicate (txInfoOutputs info) of
@@ -183,7 +280,3 @@ strictFindContractOutputWithValHash vh info = case filter predicate (txInfoOutpu
   _ -> Nothing
   where
     predicate (TxOut addr _ _) = toValidatorHash addr == Just vh
-
-{-# INLINEABLE strictFindContractOutputWithValHash' #-}
-strictFindContractOutputWithValHash' :: PlatformSettings -> TxInfo -> Maybe TxOut
-strictFindContractOutputWithValHash' ps = strictFindContractOutputWithValHash (psContractVH ps)

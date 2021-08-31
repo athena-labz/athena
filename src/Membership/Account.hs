@@ -18,43 +18,24 @@ import Ledger
   ( Datum (Datum),
     DatumHash,
     PubKeyHash,
-    ScriptContext,
-    TxInInfo (txInInfoResolved),
-    TxOut (TxOut, txOutValue),
-    findOwnInput,
-    getContinuingOutputs,
+    TxOut,
     txOutDatum,
   )
 import Ledger.Typed.Scripts as Scripts (ValidatorTypes (..))
-import Ledger.Value
-  ( AssetClass,
-    Value,
-    assetClassValue,
-    assetClassValueOf,
-  )
+import Ledger.Value (AssetClass, Value, assetClassValue)
 import Membership.PlatformSettings (PlatformSettings (..))
-import Membership.Signature (findSignatures)
 import qualified PlutusTx
 import PlutusTx.Prelude
   ( AdditiveGroup ((-)),
     AdditiveSemigroup ((+)),
-    Bool,
     Eq (..),
     Integer,
-    Maybe (..),
+    Maybe,
     MultiplicativeSemigroup ((*)),
-    Ord ((>)),
-    filter,
-    fst,
-    negate,
-    snd,
-    traceError,
     ($),
     (&&),
-    (<>),
   )
 import qualified PlutusTx.Ratio as R
-import Wallet.Emulator.Wallet ()
 import qualified Prelude
 
 -- The datatype that represents the account information on-chain
@@ -73,10 +54,11 @@ instance Eq AccountDatum where
 
 PlutusTx.unstableMakeIsData ''AccountDatum
 
+{-# INLINABLE initDatum #-}
 initDatum :: AccountDatum
 initDatum = AccountDatum 60_000 0
 
-data AccountRedeemer = Create | Sign | Collect PubKeyHash
+data AccountRedeemer = ACreate | ASign | ACollect PubKeyHash
   deriving (Prelude.Show)
 
 PlutusTx.unstableMakeIsData ''AccountRedeemer
@@ -87,26 +69,26 @@ instance Scripts.ValidatorTypes AccountType where
   type DatumType AccountType = AccountDatum
   type RedeemerType AccountType = AccountRedeemer
 
+-- Given the asset class that represent's the platform token and an account datum,
+-- returns the corresponding value of the review credit in DSET
 {-# INLINEABLE userReviewCredit #-}
 userReviewCredit :: AssetClass -> AccountDatum -> Value
 userReviewCredit ac ad = assetClassValue ac (adReviewCredit ad)
 
+{-# INLINEABLE userReviewCredit' #-}
+userReviewCredit' :: PlatformSettings -> AccountDatum -> Value
+userReviewCredit' ps = userReviewCredit (psToken ps)
+
+-- Given the old CAS score and a percentage, return's the new score
 {-# INLINEABLE calculateNewScore #-}
 calculateNewScore :: Integer -> R.Rational -> Integer
 calculateNewScore oldScore percentage =
   R.round $ R.fromInteger oldScore + percentage * R.fromInteger (100_000 - oldScore)
 
-{-# INLINEABLE platformFees #-}
-platformFees :: AssetClass -> Value -> AccountDatum -> Value
-platformFees ac v ad = v <> negate (userReviewCredit ac ad)
-
-{-# INLINEABLE applyCAS #-}
-applyCAS :: AccountDatum -> AccountDatum
-applyCAS (AccountDatum cas rc) = AccountDatum (calculateNewScore cas (5 R.% 100)) rc
-
-{-# INLINEABLE reviewCreditValue #-}
-reviewCreditValue :: PlatformSettings -> AccountDatum -> Value
-reviewCreditValue ps ad = assetClassValue (psToken ps) (adReviewCredit ad)
+-- Increases CAS score based on a coefficient of 5% (the current value for contract creation)
+{-# INLINEABLE contractCreationCAS #-}
+contractCreationCAS :: AccountDatum -> AccountDatum
+contractCreationCAS (AccountDatum cas rc) = AccountDatum (calculateNewScore cas (5 R.% 100)) rc
 
 {-# INLINEABLE findAccountDatum #-}
 findAccountDatum :: TxOut -> (DatumHash -> Maybe Datum) -> Maybe AccountDatum
@@ -114,54 +96,3 @@ findAccountDatum o f = do
   dh <- txOutDatum o
   Datum d <- f dh
   PlutusTx.fromBuiltinData d
-
-{-# INLINEABLE strictFindOutAndIn #-}
-strictFindOutAndIn :: ScriptContext -> (TxOut, TxOut)
-strictFindOutAndIn ctx = (ownInput, ownOutput)
-  where
-    ownInput :: TxOut
-    ownInput = case findOwnInput ctx of
-      Nothing -> traceError "account input missing"
-      Just i -> txInInfoResolved i
-
-    ownOutput :: TxOut
-    ownOutput = case getContinuingOutputs ctx of
-      [o] -> o
-      _ -> traceError "expected exactly one account output"
-
-{-# INLINEABLE findOutAndIn #-}
-findOutAndIn :: PubKeyHash -> PlatformSettings -> ScriptContext -> (TxOut, TxOut)
-findOutAndIn pkh ps ctx = (ownInput, ownOutput)
-  where
-    ownInput :: TxOut
-    ownInput = case findOwnInput ctx of
-      Nothing -> traceError "account input missing"
-      Just i -> txInInfoResolved i
-
-    f :: TxOut -> Bool
-    f (TxOut _ val _) = findSignatures (psSignatureSymbol ps) val == [pkh]
-
-    ownOutput :: TxOut
-    ownOutput = case filter f (getContinuingOutputs ctx) of
-      [o] -> o
-      _ -> traceError "expected exactly one account output"
-
-{-# INLINEABLE sigTokenIn #-}
-sigTokenIn :: AssetClass -> ScriptContext -> Bool
-sigTokenIn sig ctx = inputHasToken && outputHasToken
-  where
-    ownInput, ownOutput :: TxOut
-    ownInput = fst $ strictFindOutAndIn ctx
-    ownOutput = snd $ strictFindOutAndIn ctx
-
-    inputTokens :: Integer
-    inputTokens = assetClassValueOf (txOutValue ownInput) sig
-
-    inputHasToken :: Bool
-    inputHasToken = inputTokens > 0
-
-    outputTokens :: Integer
-    outputTokens = assetClassValueOf (txOutValue ownOutput) sig
-
-    outputHasToken :: Bool
-    outputHasToken = ((inputTokens - outputTokens) == 1) && (outputTokens > 0)

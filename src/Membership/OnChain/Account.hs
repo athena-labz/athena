@@ -15,73 +15,78 @@
 module Membership.OnChain.Account where
 
 import Ledger
-    ( PubKeyHash,
-      ValidatorHash,
-      TxOut(txOutValue),
-      Address,
-      scriptAddress,
-      validatorHash,
-      findDatum,
-      ownHash,
-      txSignedBy,
-      ScriptContext(scriptContextTxInfo),
-      TxInfo,
-      Validator )
+  ( Address,
+    PubKeyHash,
+    ScriptContext (scriptContextTxInfo),
+    TxInfo,
+    TxOut (txOutValue),
+    Validator,
+    ValidatorHash,
+    findDatum,
+    ownHash,
+    scriptAddress,
+    txSignedBy,
+    validatorHash,
+  )
 import qualified Ledger.Typed.Scripts as Scripts
 import Ledger.Value
-    ( Value, AssetClass, assetClassValue, assetClassValueOf, geq )
+  ( AssetClass,
+    Value,
+    assetClassValue,
+    assetClassValueOf,
+    geq,
+  )
 import Membership.Account
-    ( AccountDatum(adReviewCredit),
-      AccountRedeemer(..),
-      AccountType,
-      applyCAS,
-      findAccountDatum,
-      strictFindOutAndIn,
-      findOutAndIn,
-      sigTokenIn )
-import Membership.PlatformSettings (PlatformSettings (..))
+  ( AccountDatum (adReviewCredit),
+    AccountRedeemer (..),
+    AccountType,
+    contractCreationCAS,
+    findAccountDatum,
+  )
+import Membership.Contract
+    ( strictFindContractOutputWithValHash,
+      findContractDatum,
+      isInitial,
+      ContractDatum )
+import Membership.OnChain.Utils
+    ( sigTokenIn, findOutAndIn, strictFindOutAndIn )
+import Membership.PlatformSettings (AccountSettings(..), PlatformSettings (..))
+import Membership.Signature
+    ( findSignatories,
+      findSignatory,
+      signatureAssetClass,
+      signatureValue )
 import qualified PlutusTx
 import PlutusTx.Prelude
-    ( return,
-      Bool(..),
-      Integer,
-      Maybe(..),
-      Eq((==)),
-      (.),
-      (&&),
-      any,
-      length,
-      negate,
-      ($),
-      fst,
-      snd,
-      traceError,
-      traceIfFalse,
-      AdditiveGroup((-)),
-      Ord((>=)) )
-import Wallet.Emulator.Wallet ()
+  ( AdditiveGroup ((-)),
+    Bool (..),
+    Eq ((==)),
+    Integer,
+    Maybe (..),
+    Ord ((>=)),
+    any,
+    fst,
+    length,
+    negate,
+    return,
+    snd,
+    traceError,
+    traceIfFalse,
+    ($),
+    (&&),
+    (.),
+  )
 import Prelude (Semigroup (..))
-import Membership.Contract
-    ( findContractDatum,
-      isInitial,
-      strictFindContractInputWithValHash',
-      strictFindContractOutputWithValHash',
-      ContractDatum )
-import Membership.Signature
-    ( findSignature,
-      findSignatures,
-      signatureAssetClass',
-      signatureValue' )
 
 {-# INLINEABLE validateCreate #-}
-validateCreate :: PlatformSettings -> AccountDatum -> ScriptContext -> Bool
-validateCreate ps dat ctx = case owner of
+validateCreate :: AccountSettings -> AccountDatum -> ScriptContext -> Bool
+validateCreate (AccountSettings ps sigSym contrValHash _) dat ctx = case owner of
   (Just pkh) ->
     traceIfFalse "SIG token missing" (sigTokenIn (sigToken pkh) ctx)
       && traceIfFalse "transaction not signed by account owner" (txSignedBy info pkh)
       && traceIfFalse "SIG token was not paid to the contract" (sigPaid pkh)
       && traceIfFalse "unexpected output value" valueMatches
-      && traceIfFalse "wrong contract datum" validContractDatum
+      && traceIfFalse "wrong contract datum" (validContractDatum pkh)
       && traceIfFalse "wrong account datum" validAccountDatum
   Nothing -> traceError "invalid account"
   where
@@ -97,14 +102,14 @@ validateCreate ps dat ctx = case owner of
     outputDatum = findAccountDatum ownOutput (`findDatum` info)
 
     owner :: Maybe PubKeyHash
-    owner = findSignature (psSignatureSymbol ps) (txOutValue ownInput)
+    owner = findSignatory sigSym (txOutValue ownInput)
 
     sigToken :: PubKeyHash -> AssetClass
-    sigToken pkh = signatureAssetClass' ps pkh (ownHash ctx)
+    sigToken pkh = signatureAssetClass sigSym pkh (ownHash ctx)
 
     contractOutput :: Maybe (ContractDatum, Value)
     contractOutput = do
-      o <- strictFindContractOutputWithValHash' ps info
+      o <- strictFindContractOutputWithValHash contrValHash info
       d <- findContractDatum o (`findDatum` info)
       return (d, txOutValue o)
 
@@ -123,26 +128,25 @@ validateCreate ps dat ctx = case owner of
     valueMatches :: Bool
     valueMatches = dsetProfit >= psTxFee ps
 
-    validContractDatum :: Bool
-    validContractDatum = case contractOutput of
-      Just (d, _) -> isInitial d
+    validContractDatum :: PubKeyHash -> Bool
+    validContractDatum pkh = case contractOutput of
+      Just (d, _) -> isInitial pkh d
       Nothing -> False
 
     validAccountDatum :: Bool
     validAccountDatum = case (inputDatum, outputDatum) of
-      (Just iDat, Just oDat) -> (iDat == dat) && applyCAS iDat == oDat
+      (Just iDat, Just oDat) -> (iDat == dat) && contractCreationCAS iDat == oDat
       _ -> traceError "could not find input or output datum"
 
 {-# INLINEABLE validateSign #-}
-validateSign :: PlatformSettings -> AccountDatum -> ScriptContext -> Bool
-validateSign ps dat ctx = case owner of
+validateSign :: AccountSettings -> AccountDatum -> ScriptContext -> Bool
+validateSign (AccountSettings ps sigSym contrValHash _) dat ctx = case owner of
   (Just pkh) ->
-    traceIfFalse "SIG token missing" (sigTokenIn (sigToken pkh) ctx)
-      && traceIfFalse "transaction not signed by account owner" (txSignedBy info pkh)
-      && traceIfFalse "SIG token was not paid to the contract" (sigPaid pkh)
-      && traceIfFalse "final value does not match" (valueMatches pkh)
-      && traceIfFalse "wrong contract datum" validContractDatum
-      && traceIfFalse "wrong account datum" validAccountDatum
+    traceIfFalse "Account - SIG token missing" (sigTokenIn (sigToken pkh) ctx)
+      && traceIfFalse "Account - Transaction not signed by account owner" (txSignedBy info pkh)
+      && traceIfFalse "Account - SIG token was not paid to the contract" (sigPaid pkh)
+      && traceIfFalse "Account - final value does not match" (valueMatches pkh)
+      && traceIfFalse "Account - wrong account datum" validAccountDatum
   Nothing -> traceError "invalid account"
   where
     info :: TxInfo
@@ -157,23 +161,17 @@ validateSign ps dat ctx = case owner of
     outputDatum = findAccountDatum ownOutput (`findDatum` info)
 
     owner :: Maybe PubKeyHash
-    owner = findSignature (psSignatureSymbol ps) (txOutValue ownInput)
+    owner = findSignatory sigSym (txOutValue ownInput)
 
     fees :: Value
     fees = assetClassValue (psToken ps) (psTxFee ps)
 
     sigToken :: PubKeyHash -> AssetClass
-    sigToken pkh = signatureAssetClass' ps pkh (ownHash ctx)
-
-    contractInput :: Maybe (ContractDatum, Value)
-    contractInput = do
-      o <- strictFindContractInputWithValHash' ps info
-      d <- findContractDatum o (`findDatum` info)
-      return (d, txOutValue o)
+    sigToken pkh = signatureAssetClass sigSym pkh (ownHash ctx)
 
     contractOutput :: Maybe (ContractDatum, Value)
     contractOutput = do
-      o <- strictFindContractOutputWithValHash' ps info
+      o <- strictFindContractOutputWithValHash contrValHash info
       d <- findContractDatum o (`findDatum` info)
       return (d, txOutValue o)
 
@@ -187,22 +185,17 @@ validateSign ps dat ctx = case owner of
       txOutValue ownOutput
         == ( txOutValue ownInput
                <> fees
-               <> negate (signatureValue' ps pkh (ownHash ctx))
+               <> negate (signatureValue sigSym pkh (ownHash ctx))
            )
-
-    validContractDatum :: Bool
-    validContractDatum = case (contractInput, contractOutput) of
-      (Just (iDat, _), Just (oDat, _)) -> iDat == oDat
-      _ -> False
 
     validAccountDatum :: Bool
     validAccountDatum = case (inputDatum, outputDatum) of
-      (Just iDat, Just oDat) -> (iDat == dat) && applyCAS iDat == oDat
+      (Just iDat, Just oDat) -> (iDat == dat) && contractCreationCAS iDat == oDat
       _ -> False
 
 {-# INLINEABLE validateCollect #-}
-validateCollect :: PlatformSettings -> PubKeyHash -> ScriptContext -> Bool
-validateCollect ps pkh ctx =
+validateCollect :: AccountSettings -> PubKeyHash -> ScriptContext -> Bool
+validateCollect (AccountSettings ps sigSym _ collectors) pkh ctx =
   traceIfFalse "user is not allowed to collect fees" signedByCollector
     && traceIfFalse "invalid datum" (inputDatum == outputDatum)
     && traceIfFalse "invalid output" validOutput
@@ -211,21 +204,21 @@ validateCollect ps pkh ctx =
     info = scriptContextTxInfo ctx
 
     ownInput, ownOutput :: TxOut
-    ownInput = fst $ findOutAndIn pkh ps ctx
-    ownOutput = snd $ findOutAndIn pkh ps ctx
+    ownInput = fst $ findOutAndIn pkh sigSym ctx
+    ownOutput = snd $ findOutAndIn pkh sigSym ctx
 
     inputDatum, outputDatum :: Maybe AccountDatum
     inputDatum = findAccountDatum ownInput (`findDatum` info)
     outputDatum = findAccountDatum ownOutput (`findDatum` info)
 
     signedByCollector :: Bool
-    signedByCollector = any (txSignedBy info) (psCollectors ps)
+    signedByCollector = any (txSignedBy info) collectors
 
     inputValue :: Value
     inputValue = txOutValue ownInput
 
     inputHasToken :: Bool
-    inputHasToken = length (findSignatures (psSignatureSymbol ps) inputValue) == 1
+    inputHasToken = length (findSignatories sigSym inputValue) == 1
 
     outputValue :: Value
     outputValue = txOutValue ownOutput
@@ -235,30 +228,37 @@ validateCollect ps pkh ctx =
 
     validOutput :: Bool
     validOutput = case (inputDatum, inputHasToken) of
-      (Just dat, True) -> outputValue `geq` (
-        inputValue <> negate (assetClassValue (psToken ps) (dsetInput - adReviewCredit dat)))
+      (Just dat, True) ->
+        outputValue
+          `geq` ( inputValue <> negate (assetClassValue (psToken ps) (dsetInput - adReviewCredit dat))
+                )
       _ -> False
 
 {-# INLINEABLE mkAccountValidator #-}
-mkAccountValidator :: PlatformSettings -> AccountDatum -> AccountRedeemer -> ScriptContext -> Bool
-mkAccountValidator ps dat Create ctx = validateCreate ps dat ctx
-mkAccountValidator ps dat Sign ctx = validateSign ps dat ctx
-mkAccountValidator ps _ (Collect pkh) ctx = validateCollect ps pkh ctx
-mkAccountValidator _ _ _ _ = False
+mkAccountValidator ::
+  AccountSettings ->
+  AccountDatum ->
+  AccountRedeemer ->
+  ScriptContext ->
+  Bool
 
-typedAccountValidator :: PlatformSettings -> Scripts.TypedValidator AccountType
-typedAccountValidator ps =
+mkAccountValidator as dat ACreate ctx = validateCreate as dat ctx
+mkAccountValidator as dat ASign ctx = validateSign as dat ctx
+mkAccountValidator as _ (ACollect pkh) ctx = validateCollect as pkh ctx
+
+typedAccountValidator :: AccountSettings -> Scripts.TypedValidator AccountType
+typedAccountValidator as =
   Scripts.mkTypedValidator @AccountType
-    ($$(PlutusTx.compile [||mkAccountValidator||]) `PlutusTx.applyCode` PlutusTx.liftCode ps)
+    ($$(PlutusTx.compile [||mkAccountValidator||]) `PlutusTx.applyCode` PlutusTx.liftCode as)
     $$(PlutusTx.compile [||wrap||])
   where
     wrap = Scripts.wrapValidator @AccountDatum @AccountRedeemer
 
-accountValidator :: PlatformSettings -> Validator
+accountValidator :: AccountSettings -> Validator
 accountValidator = Scripts.validatorScript . typedAccountValidator
 
-accountValidatorHash :: PlatformSettings -> ValidatorHash
+accountValidatorHash :: AccountSettings -> ValidatorHash
 accountValidatorHash = validatorHash . accountValidator
 
-accountAddress :: PlatformSettings -> Ledger.Address
+accountAddress :: AccountSettings -> Ledger.Address
 accountAddress = scriptAddress . accountValidator

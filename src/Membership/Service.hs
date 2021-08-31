@@ -17,14 +17,14 @@ module Membership.Service where
 import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic)
 import Ledger (POSIXTime, PubKeyHash, Value)
-import Ledger.Crypto (pubKeyHash)
-import Ledger.Value as Value (geq, singleton)
 import qualified PlutusTx
-import PlutusTx.Prelude (Bool (False, True), BuiltinByteString, Eq, Integer, (&&), (==), ($))
-import Wallet.Emulator (Wallet (Wallet), walletPubKey)
-import Prelude (Semigroup (..), Show (..))
+import PlutusTx.Prelude (Bool (False, True), BuiltinByteString, Eq, Integer, (&&), (==))
+import Prelude (Show (..))
 import qualified Prelude
 
+-- A data type that determines if a service is constant  or one-time.
+-- The former needs no arguments, the latter needs the service price
+-- and how much time will be needed to complete it
 data ServiceType = CConstant | OneTime Value POSIXTime
   deriving (Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
@@ -36,12 +36,13 @@ instance Eq ServiceType where
 
 PlutusTx.unstableMakeIsData ''ServiceType
 
+-- The essential information about a contract, including the price if it has one
 data Service = Service
   { sPublisher :: PubKeyHash, -- The pkh of the person that published this service
-    sTitle :: BuiltinByteString,
-    sDescription :: BuiltinByteString,
-    sTrust :: Integer,
-    sType :: ServiceType -- Indicates the service availability
+    sTitle :: BuiltinByteString, -- Brief description of the sevice
+    sDescription :: BuiltinByteString, -- In-depth description
+    sTrust :: Integer, -- Amount of DSET tokens hold as collateral
+    sType :: ServiceType
   }
   deriving (Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
@@ -51,24 +52,3 @@ instance Eq Service where
     pu == pu' && ti == ti' && d == d' && tr == tr' && tp == tp'
 
 PlutusTx.unstableMakeIsData ''Service
-
-{-# INLINEABLE sampleService #-}
-sampleService :: Service
-sampleService =
-  Service
-    { sPublisher = pubKeyHash $ walletPubKey $ Wallet 1,
-      sTitle = "Title",
-      sDescription = "Description",
-      sTrust = 30,
-      sType = CConstant
-    }
-
-{-# INLINEABLE paidOffer #-}
-paidOffer :: Value -> Value -> Service -> Bool
-paidOffer input output s = output `geq` (input <> singleton "ff" "DSET" (sTrust s))
-
-{-# INLINEABLE paidRequest #-}
-paidRequest :: Value -> Value -> Service -> Bool
-paidRequest input output s = case s of
-  (Service _ _ _ t (OneTime p _)) -> output `geq` (input <> singleton "ff" "DSET" t <> p)
-  (Service _ _ _ t CConstant) -> output `geq` (input <> singleton "ff" "DSET" t)

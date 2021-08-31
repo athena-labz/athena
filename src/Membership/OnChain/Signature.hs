@@ -37,7 +37,6 @@ import Ledger.Value as Value
     TokenName,
     Value,
     flattenValue,
-    geq,
     singleton,
   )
 import Membership.Account (AccountDatum, initDatum)
@@ -71,15 +70,21 @@ mkPolicy fees () ctx =
     info :: TxInfo
     info = scriptContextTxInfo ctx
 
+    -- Verifies if only a specific token was minted and get's
+    -- a Sig based on this token name
     policySig :: Sig
     policySig = case flattenValue (txInfoMint info) of
       [(_, tn', _)] -> makeSig tn'
       _ -> Ptx.traceError "must mint one token only"
 
-    mintedValue :: Integer
-    mintedValue = case flattenValue (txInfoMint info) of
+    -- Get's how much SIG was minted
+    mintedAmount :: Integer
+    mintedAmount = case flattenValue (txInfoMint info) of
       [(_, _, amt)] -> amt
       _ -> Ptx.traceError "must mint one token only"
+
+    sigValue :: Value
+    sigValue = singleton (ownCurrencySymbol ctx) tn mintedAmount
 
     tn :: TokenName
     tn = sTokenName policySig
@@ -95,6 +100,8 @@ mkPolicy fees () ctx =
       Datum d <- (`findDatum` info) dh
       PlutusTx.fromBuiltinData d
 
+    -- For each script output, if the datum is transformable
+    -- into AccountDatum, add it to the resulting list
     scriptOutputs :: [(ValidatorHash, AccountDatum, Value)]
     scriptOutputs = foldr flt [] (txInfoOutputs info)
       where
@@ -114,7 +121,7 @@ mkPolicy fees () ctx =
     checkOutputs = case scriptOutputs of
       [(vh', dat, v)] ->
         traceIfFalse "wrong datum" (dat == initDatum)
-          && traceIfFalse "wrong amount" (v `geq` (singleton (ownCurrencySymbol ctx) tn mintedValue <> fees))
+          && traceIfFalse "wrong amount" (v == (sigValue <> fees))
           && traceIfFalse "wrong script address" (vh == vh')
       _ -> traceError "script output should be exactly one"
 
