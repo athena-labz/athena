@@ -10,19 +10,27 @@ License-files:      LICENSE
 
 library
   hs-source-dirs:      src, test
-  exposed-modules:     Spec.Trace
+  exposed-modules:     Spec.Run
+                     , Spec.Sample
+                     , Spec.Example
+                     , Spec.Trace
                      , Membership.PlatformSettings
                      , Membership.Account
                      , Membership.Contract
                      , Membership.Service
+                     , Membership.Logic
                      , Membership.Utils
                      , Membership.OnChain.Account
                      , Membership.OnChain.Signature
                      , Membership.OnChain.Contract
                      , Membership.OnChain.Logic
                      , Membership.OnChain.Utils
+                     , Membership.OnChain.ShameToken
                      , Membership.OffChain.Account
-                     , Membership.OffChain.Signature
+                     , Membership.OffChain.Contract
+                     , Membership.OffChain.Logic
+                     , Membership.OffChain.Utils
+                     , Membership.ShameToken
                      , Membership.Signature
   build-depends:       aeson
                      , base ^>=4.14.1.0

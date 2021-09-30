@@ -15,28 +15,22 @@
 module Membership.OnChain.Utils where
 
 import Ledger
-  ( PubKeyHash,
-    ScriptContext,
+  ( ScriptContext,
     TxInInfo (txInInfoResolved),
-    TxOut (TxOut, txOutValue),
+    TxOut (txOutValue),
     findOwnInput,
     getContinuingOutputs,
   )
 import Ledger.Value
   ( AssetClass,
-    CurrencySymbol,
+    Value,
     assetClassValueOf,
   )
-import Membership.PlatformSettings (PlatformSettings (psToken))
-import Membership.Signature (findSignatories)
 import PlutusTx.Prelude
-  ( AdditiveGroup ((-)),
-    Bool,
-    Eq ((==)),
+  ( Bool,
     Integer,
     Maybe (Just, Nothing),
     Ord ((>)),
-    filter,
     fst,
     snd,
     traceError,
@@ -51,51 +45,30 @@ strictFindOutAndIn ctx = (ownInput, ownOutput)
   where
     ownInput :: TxOut
     ownInput = case findOwnInput ctx of
-      Nothing -> traceError "account input missing"
+      Nothing -> traceError "Input missing"
       Just i -> txInInfoResolved i
 
     ownOutput :: TxOut
     ownOutput = case getContinuingOutputs ctx of
       [o] -> o
-      _ -> traceError "expected exactly one output"
+      _ -> traceError "Expected exactly one output"
 
-{-# INLINEABLE findOutAndIn #-}
-findOutAndIn :: PubKeyHash -> CurrencySymbol -> ScriptContext -> (TxOut, TxOut)
-findOutAndIn pkh sig ctx = (ownInput, ownOutput)
-  where
-    ownInput :: TxOut
-    ownInput = case findOwnInput ctx of
-      Nothing -> traceError "input missing"
-      Just i -> txInInfoResolved i
-
-    f :: TxOut -> Bool
-    f (TxOut _ val _) = findSignatories sig val == [pkh]
-
-    ownOutput :: TxOut
-    ownOutput = case filter f (getContinuingOutputs ctx) of
-      [o] -> o
-      _ -> traceError "expected exactly one account output"
-
-{-# INLINEABLE sigTokenIn #-}
-sigTokenIn :: AssetClass -> ScriptContext -> Bool
-sigTokenIn sig ctx = inputHasToken && outputHasToken
+-- Given the asset class corresponding to the SIG token we wanna search for
+-- and a script context, determine wheter this SIG token is present or not
+{-# INLINEABLE sigTokenInContext #-}
+sigTokenInContext :: AssetClass -> ScriptContext -> Bool
+sigTokenInContext sig ctx =
+  sigTokenIn sig (txOutValue ownInput)
+    && sigTokenIn sig (txOutValue ownOutput)
   where
     ownInput, ownOutput :: TxOut
     ownInput = fst $ strictFindOutAndIn ctx
     ownOutput = snd $ strictFindOutAndIn ctx
 
-    inputTokens :: Integer
-    inputTokens = assetClassValueOf (txOutValue ownInput) sig
-
-    inputHasToken :: Bool
-    inputHasToken = inputTokens > 0
-
-    outputTokens :: Integer
-    outputTokens = assetClassValueOf (txOutValue ownOutput) sig
-
-    outputHasToken :: Bool
-    outputHasToken = ((inputTokens - outputTokens) == 1) && (outputTokens > 0)
-
-{-# INLINEABLE sigTokenIn' #-}
-sigTokenIn' :: PlatformSettings -> ScriptContext -> Bool
-sigTokenIn' ps = sigTokenIn (psToken ps)
+-- Given the asset class corresponding to the SIG token we wanna search for
+-- and a value, determine wheter this SIG token is present or not
+sigTokenIn :: AssetClass -> Value -> Bool
+sigTokenIn sig val = tokens > 0
+  where
+    tokens :: Integer
+    tokens = assetClassValueOf val sig

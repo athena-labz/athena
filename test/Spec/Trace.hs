@@ -19,21 +19,27 @@ import Control.Monad.Freer.Extras as Extras (logError, logInfo)
 import Data.Default (Default (..))
 import qualified Data.Map as Map
 import Data.Monoid (Last (..))
+import Data.Text (Text, pack)
 import Ledger
 import Ledger.Ada as Ada (lovelaceValueOf)
 import Ledger.TimeSlot
 import Ledger.Value (AssetClass (AssetClass), assetClass, assetClassValue)
 import Membership.Contract
+import Membership.Logic
 import Membership.OffChain.Account
-import Membership.OffChain.Signature
+import Membership.OffChain.Contract
+import Membership.OffChain.Logic
 import Membership.OnChain.Contract
 import Membership.OnChain.Logic
+import Membership.OnChain.ShameToken
 import Membership.OnChain.Signature
 import Membership.PlatformSettings
 import Membership.Service
+import Membership.ShameToken
 import Plutus.Contract.Test (Wallet (Wallet), walletPubKey)
 import Plutus.Trace.Emulator as Emulator
-  ( EmulatorConfig (EmulatorConfig),
+  ( ContractHandle,
+    EmulatorConfig (EmulatorConfig),
     EmulatorTrace,
     activateContractWallet,
     callEndpoint,
@@ -43,7 +49,9 @@ import Plutus.Trace.Emulator as Emulator
   )
 import PlutusTx.AssocMap as M
 import PlutusTx.Prelude
-  ( Either (Left),
+  ( Bool (..),
+    BuiltinByteString,
+    Either (Left),
     Integer,
     Maybe (Just, Nothing),
     Semigroup ((<>)),
@@ -51,141 +59,127 @@ import PlutusTx.Prelude
     (++),
     (-),
   )
+import qualified PlutusTx.Ratio as R
 import Test.Tasty ()
 import Prelude (IO, Show (..), String)
+import qualified Prelude
+import Spec.Sample
+import Membership.OnChain.Account
 
-{-# INLINEABLE sampleService #-}
-sampleService :: Service
-sampleService =
-  Service
-    { sPublisher = pubKeyHash $ walletPubKey $ Wallet 1,
-      sTitle = "Title",
-      sDescription = "Description",
-      sTrust = 50_000,
-      sType = CConstant
-    }
+createAccountTrace :: Wallet -> EmulatorTrace ()
+createAccountTrace w = do
+  h <- activateContractWallet w accountEndpoints
+  callEndpoint @"create-account" h platformSettings
 
-{-# INLINEABLE beginningOfTime #-}
-beginningOfTime :: Integer
-beginningOfTime = 1596059091000
+createAccountsTrace :: [Wallet] -> EmulatorTrace ()
+createAccountsTrace [] = void $ Emulator.waitNSlots 5
+createAccountsTrace (w : ws) = do
+  createAccountTrace w
+  createAccountsTrace ws
 
-{-# INLINEABLE platformToken #-}
-platformToken :: AssetClass
-platformToken = AssetClass ("aa", "DSET")
+collectFeesTrace :: ContractHandle () AccountSchema Text -> AccountSettings -> EmulatorTrace ()
+collectFeesTrace handle as = do
+  callEndpoint @"collect-fees" handle as
+  void $ Emulator.waitNSlots 3
 
-{-# INLINEABLE sampleEntranceFee #-}
-sampleEntranceFee :: Integer
-sampleEntranceFee = 300_000
+createContractTrace :: AccountSettings -> ContractDatum -> Wallet -> EmulatorTrace (Maybe AssetClass)
+createContractTrace as cd w = do
+  h <- activateContractWallet w contractEndpoints
+  callEndpoint @"create-contract" h (as, cd)
 
-{-# INLINEABLE sampleTxFee #-}
-sampleTxFee :: Integer
-sampleTxFee = 1_000
+  void $ Emulator.waitNSlots 3
 
-{-# INLINEABLE judges #-}
-judges :: Judges
-judges =
-  Judges
-    { jPubKeyHashes = [pubKeyHash $ walletPubKey $ Wallet w | w <- [4 .. 10]],
-      jPrice = 100_000,
-      jMaxDuration = slotToBeginPOSIXTime def 20 - POSIXTime beginningOfTime -- 20 slots to complete mediation
-    }
+  Last maybeContractNFT <- observableState h
+  Prelude.return maybeContractNFT
 
-{-# INLINEABLE sampleContractSettings #-}
-sampleContractSettings :: ContractSettings
-sampleContractSettings = ContractSettings
-  { csPlatformToken = platformToken,
-    csSignatureSymbol = curSymbol (assetClassValue platformToken sampleTxFee)
-  }
+signTrace ::
+  ContractHandle (Last AssetClass) ContractSchema Text ->
+  AccountSettings ->
+  AssetClass ->
+  Role ->
+  EmulatorTrace ()
+signTrace handle as contractNFT role = do
+  callEndpoint @"sign" handle (role, as, contractNFT)
+  void $ Emulator.waitNSlots 3
 
-{-# INLINEABLE contractValidatorHash #-}
-contractValidatorHash :: ValidatorHash
-contractValidatorHash = validatorHash $ contractValidator sampleContractSettings
+cancelTrace ::
+  ContractHandle (Last AssetClass) ContractSchema Text ->
+  AccountSettings ->
+  AssetClass ->
+  Bool ->
+  EmulatorTrace ()
+cancelTrace handle as contractNFT invInAcc = do
+  callEndpoint @"cancel" handle (invInAcc, as, contractNFT)
+  void $ Emulator.waitNSlots 3
 
-{-# INLINEABLE platformSettings #-}
-platformSettings :: PlatformSettings
-platformSettings = PlatformSettings
-  { psVersion = 1,
-    psToken = platformToken,
-    psEntranceFee = sampleEntranceFee,
-    psTxFee = sampleTxFee
-  }
+leaveTrace ::
+  ContractHandle (Last AssetClass) ContractSchema Text ->
+  AccountSettings ->
+  AssetClass ->
+  EmulatorTrace ()
+leaveTrace handle as contractNFT = do
+  callEndpoint @"leave" handle (as, contractNFT)
+  void $ Emulator.waitNSlots 3
 
-{-# INLINEABLE sampleLogic #-}
-sampleLogic :: ValidatorHash
-sampleLogic = logicValHash platformToken [pubKeyHash $ walletPubKey $ Wallet w | w <- [4 .. 10]]
+reviewTrace ::
+  ContractHandle (Last AssetClass) ContractSchema Text ->
+  AccountSettings ->
+  AssetClass ->
+  Integer ->
+  BuiltinByteString ->
+  EmulatorTrace ()
+reviewTrace handle as contractNFT rev des = do
+  callEndpoint @"review" handle (rev, des, as, contractNFT)
+  void $ Emulator.waitNSlots 3
 
-sampleContractDatum = ContractDatum
-  { cdJudges = judges,
-    cdInputs =
-      [ "Was a book actually written and delivered?",
-        "Was the client accessible?",
-        "How many pages were written?",
-        "How many readers did the book have?"
-      ],
-    cdLogicScript = (sampleLogic, assetClass "" ""),
-    cdAccusations = [],
-    cdService = sampleService,
-    cdRoleMap = M.fromList [(pubKeyHash $ walletPubKey $ Wallet 1, Publisher)]
-  }
+createLogicTrace ::
+  AccountSettings ->
+  LogicSettings ->
+  BuiltinByteString ->
+  Wallet ->
+  EmulatorTrace (Maybe AssetClass)
+createLogicTrace as ls key w = do
+  h <- activateContractWallet w logicEndpoints
+  callEndpoint @"create-logic" h (as, ls, key)
 
-runMyTrace :: IO ()
-runMyTrace = runEmulatorTraceIO' def emCfg myTrace
+  void $ Emulator.waitNSlots 3
 
-runMintingTrace :: IO ()
-runMintingTrace = runEmulatorTraceIO' def emCfg mintingTrace
+  Last maybeShameToken <- observableState h
+  Prelude.return maybeShameToken
 
-emCfg :: EmulatorConfig
-emCfg = EmulatorConfig (Left $ Map.fromList [(Wallet w, setValue w) | w <- [1 .. 3]]) def def
-  where
-    setValue :: Integer -> Value
-    setValue _ =
-      Ada.lovelaceValueOf 1_000_000_000
-        <> assetClassValue platformToken 1_000_000
+accuseTrace ::
+  ContractHandle (Last AssetClass) LogicSchema Text ->
+  PubKeyHash ->
+  AccountSettings ->
+  LogicSettings ->
+  AssetClass ->
+  AssetClass ->
+  EmulatorTrace ()
+accuseTrace handle accused as ls contractNFT shame = do
+  callEndpoint @"accuse" handle (accused, as, ls, contractNFT, shame)
+  void $ Emulator.waitNSlots 3
+
+mediateTrace ::
+  ContractHandle (Last AssetClass) LogicSchema Text ->
+  Verdict ->
+  AccountSettings ->
+  LogicSettings ->
+  AssetClass ->
+  EmulatorTrace ()
+mediateTrace handle verdict as ls shame = do
+  callEndpoint @"mediate" handle (verdict, as, ls, shame)
+  void $ Emulator.waitNSlots 3
+
+logicCollectTrace ::
+  ContractHandle (Last AssetClass) LogicSchema Text ->
+  AccountSettings ->
+  LogicSettings ->
+  AssetClass ->
+  AssetClass ->
+  EmulatorTrace ()
+logicCollectTrace handle as ls contractNFT shame = do
+  callEndpoint @"collect" handle (as, ls, contractNFT, shame)
+  void $ Emulator.waitNSlots 3
 
 mintingTrace :: EmulatorTrace ()
-mintingTrace = do
-  h1 <- activateContractWallet (Wallet 1) endpoints
-  h2 <- activateContractWallet (Wallet 2) endpoints
-
-  callEndpoint @"mint" h1 platformSettings
-  callEndpoint @"mint" h2 platformSettings
-  void $ Emulator.waitNSlots 1
-
-myTrace :: EmulatorTrace ()
-myTrace = do
-  h <- activateContractWallet (Wallet 1) endpoints
-  h' <- activateContractWallet (Wallet 2) endpoints
-
-  callEndpoint @"mint" h platformSettings
-  callEndpoint @"mint" h' platformSettings
-  void $ Emulator.waitNSlots 5
-
-  Last maybeAccountSettings <- observableState h
-
-  case maybeAccountSettings of
-    Just accountSettings -> do
-      h1 <- activateContractWallet (Wallet 1) accountEndpoint
-
-      callEndpoint @"create" h1 (accountSettings, sampleContractDatum)
-
-      void $ Emulator.waitNSlots 5
-
-      Last mConID <- observableState h1
-
-      case mConID of
-        Just contractNFT -> do
-          Extras.logInfo $ "Contract created " ++ show contractNFT
-
-          hA <- activateContractWallet (Wallet 1) contractEndpoint
-          hB <- activateContractWallet (Wallet 2) contractEndpoint
-
-          callEndpoint @"sign" hB (Client, accountSettings, contractNFT)
-
-          void $ Emulator.waitNSlots 5
-
-          callEndpoint @"accuse" hA (pubKeyHash $ walletPubKey $ Wallet 1, 100_000, accountSettings, contractNFT)
-
-          void $ Emulator.waitNSlots 5
-
-        _ -> Extras.logError @String "error creating contract"
-    Nothing -> Extras.logError @String "error creating account"
+mintingTrace = createAccountsTrace [Wallet 1, Wallet 2]

@@ -13,44 +13,39 @@
 
 module Membership.OnChain.Signature where
 
-import Ledger.Address (Address (Address))
 import Ledger.Contexts
   ( ScriptContext (scriptContextTxInfo),
-    TxInfo (txInfoMint, txInfoOutputs),
+    TxInfo (txInfoMint),
     TxOut (..),
     findDatum,
     ownCurrencySymbol,
     scriptCurrencySymbol,
     txSignedBy,
   )
-import Ledger.Credential (Credential (ScriptCredential))
 import Ledger.Crypto (PubKeyHash)
 import Ledger.Scripts
-  ( Datum (Datum),
-    DatumHash,
-    ValidatorHash,
+  ( ValidatorHash,
     mkMintingPolicyScript,
   )
 import qualified Ledger.Typed.Scripts as Scripts
 import Ledger.Value as Value
   ( CurrencySymbol,
-    TokenName,
     Value,
     flattenValue,
-    singleton,
+    assetClassValue
   )
-import Membership.Account (AccountDatum, initDatum)
+import Membership.Account
 import Membership.Signature
-  ( Sig (sScript, sTokenName, sUser),
+  ( Sig (..),
     makeSig,
+    signatureValueOf'
   )
+import Membership.Utils
 import qualified PlutusTx
 import PlutusTx.Prelude
   ( Bool,
     Eq ((==)),
-    Integer,
-    Maybe (Just),
-    foldr,
+    Maybe (..),
     traceError,
     traceIfFalse,
     ($),
@@ -59,77 +54,68 @@ import PlutusTx.Prelude
     (<>),
     (==),
   )
-import qualified PlutusTx.Prelude as Ptx
+import Membership.PlatformSettings (PlatformSettings (..))
 
-{-# INLINEABLE mkPolicy #-}
-mkPolicy :: Value -> () -> ScriptContext -> Bool
-mkPolicy fees () ctx =
-  traceIfFalse "not signed by pkh" (txSignedBy info pkh)
-    && traceIfFalse "wrong script output" checkOutputs
+-- The policy that will allow or not the minting of new signature tokens
+-- Signature tokens are DigiService's way of authenticating accounts,
+-- making sure the fees are paid and identifying users
+{-# INLINEABLE mkSignaturePolicy #-}
+mkSignaturePolicy :: PlatformSettings -> () -> ScriptContext -> Bool
+mkSignaturePolicy ps () ctx =
+  traceIfFalse "Sig Policy - Transaction not signed by token public key" (txSignedBy info pkh)
+    && traceIfFalse "Sig Policy - Invalid account value" validAccountValue
+    && traceIfFalse "Sig Policy - Invalid account datum" validAccountDatum
   where
+    -- The basic information about this transaction
     info :: TxInfo
     info = scriptContextTxInfo ctx
 
     -- Verifies if only a specific token was minted and get's
     -- a Sig based on this token name
-    policySig :: Sig
-    policySig = case flattenValue (txInfoMint info) of
-      [(_, tn', _)] -> makeSig tn'
-      _ -> Ptx.traceError "must mint one token only"
+    ownSig :: Sig
+    ownSig = case flattenValue (txInfoMint info) of
+      [(_, tn, _)] -> makeSig tn
+      _ -> traceError "Sig Policy - Must mint one token only"
 
-    -- Get's how much SIG was minted
-    mintedAmount :: Integer
-    mintedAmount = case flattenValue (txInfoMint info) of
-      [(_, _, amt)] -> amt
-      _ -> Ptx.traceError "must mint one token only"
-
+    -- Builds a value based on our currency symbol and the
+    -- sig we made with the token name minted
     sigValue :: Value
-    sigValue = singleton (ownCurrencySymbol ctx) tn mintedAmount
-
-    tn :: TokenName
-    tn = sTokenName policySig
+    sigValue = signatureValueOf' (ownCurrencySymbol ctx) ownSig 100
 
     pkh :: PubKeyHash
-    pkh = sUser policySig
+    pkh = sUser ownSig
 
-    vh :: ValidatorHash
-    vh = sScript policySig
+    -- This should be the account validator hash, but could be any script
+    -- Therefore, off-chain authentication should also make sure that the
+    -- validator hash found in the token name is equivalent to the account one
+    accValHash :: ValidatorHash
+    accValHash = sScript ownSig
 
-    findAccountDatumWithDH :: DatumHash -> Maybe AccountDatum
-    findAccountDatumWithDH dh = do
-      Datum d <- (`findDatum` info) dh
-      PlutusTx.fromBuiltinData d
+    -- The entrance fee required to enter in the platform
+    fees :: Value
+    fees = assetClassValue (psToken ps) (psEntranceFee ps)
 
-    -- For each script output, if the datum is transformable
-    -- into AccountDatum, add it to the resulting list
-    scriptOutputs :: [(ValidatorHash, AccountDatum, Value)]
-    scriptOutputs = foldr flt [] (txInfoOutputs info)
-      where
-        flt :: TxOut -> [(ValidatorHash, AccountDatum, Value)] -> [(ValidatorHash, AccountDatum, Value)]
-        flt
-          TxOut
-            { txOutDatumHash = Just dh,
-              txOutAddress = Address (ScriptCredential vh') _,
-              txOutValue = v
-            }
-          acc = case findAccountDatumWithDH dh of
-            Just ad -> (vh', ad, v) : acc
-            _ -> acc
-        flt _ acc = acc
+    accountOutput :: TxOut
+    accountOutput = case strictFindOutputWithValHash accValHash info of
+      Just out -> out
+      Nothing -> traceError "Contract Remove Account - Couldn't an unique account output"
+    
+    accountDatum :: AccountDatum
+    accountDatum = case findAccountDatum accountOutput (`findDatum` info) of
+      Just dat -> dat
+      Nothing -> traceError "Logic Mediate - Logic Datum could not be found"
+    
+    validAccountValue :: Bool
+    validAccountValue = txOutValue accountOutput == sigValue <> fees
 
-    checkOutputs :: Bool
-    checkOutputs = case scriptOutputs of
-      [(vh', dat, v)] ->
-        traceIfFalse "wrong datum" (dat == initDatum)
-          && traceIfFalse "wrong amount" (v == (sigValue <> fees))
-          && traceIfFalse "wrong script address" (vh == vh')
-      _ -> traceError "script output should be exactly one"
+    validAccountDatum :: Bool
+    validAccountDatum = accountDatum == initDatum
 
-policy :: Value -> Scripts.MintingPolicy
-policy fees =
+signaturePolicy :: PlatformSettings -> Scripts.MintingPolicy
+signaturePolicy ps =
   mkMintingPolicyScript $
-    $$(PlutusTx.compile [||Scripts.wrapMintingPolicy . mkPolicy||])
-      `PlutusTx.applyCode` PlutusTx.liftCode fees
+    $$(PlutusTx.compile [||Scripts.wrapMintingPolicy . mkSignaturePolicy||])
+      `PlutusTx.applyCode` PlutusTx.liftCode ps
 
-curSymbol :: Value -> CurrencySymbol
-curSymbol = scriptCurrencySymbol . policy
+signatureCurrencySymbol :: PlatformSettings -> CurrencySymbol
+signatureCurrencySymbol = scriptCurrencySymbol . signaturePolicy

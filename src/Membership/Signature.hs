@@ -26,23 +26,25 @@ import Ledger.Value as Value
     flattenValue,
     singleton,
   )
-import Membership.Utils (tripleSnd)
+import Membership.Utils (tripleSnd, unValidatorHash)
 import qualified PlutusTx
 import PlutusTx.Prelude
-  ( AdditiveSemigroup ((+)),
-    Bool,
+  ( Bool (True),
     BuiltinByteString,
     Eq ((==)),
+    Integer,
     Maybe,
+    all,
     any,
     appendByteString,
     filter,
     find,
-    lengthOfByteString,
+    isJust,
     map,
     return,
     sliceByteString,
     ($),
+    (&&),
     (.),
     (<$>),
   )
@@ -55,7 +57,7 @@ import qualified Prelude as P
 -- the user, but also that the embeded validator hash corresponds
 -- to the account
 
--- Sig is a data type that can be created by givin makeSig a token name
+-- Sig is a data type that can be created by giving makeSig a token name
 -- and serves as an easy way to get the "signature" essential information
 data Sig = Sig
   { sTokenName :: !TokenName,
@@ -66,18 +68,23 @@ data Sig = Sig
 
 PlutusTx.unstableMakeIsData ''Sig
 
-{-# INLINEABLE unValidatorHash #-}
-unValidatorHash :: ValidatorHash -> BuiltinByteString
-unValidatorHash vh = case vh of ValidatorHash h -> h
+instance Eq Sig where
+  {-# INLINEABLE (==) #-}
+  Sig tn usr scr == Sig tn' usr' scr' =
+    tn
+      == tn' && usr
+      == usr' && scr
+      == scr'
 
 -- Join two BuiltinByteString corresponding to the user's
 -- PubKeyHash and the account ValidatorHash and make that
--- into a TokeName
+-- into a TokenName
 {-# INLINEABLE makeSigToken #-}
 makeSigToken :: PubKeyHash -> ValidatorHash -> TokenName
 makeSigToken pkh vh =
   TokenName $ getPubKeyHash pkh `appendByteString` unValidatorHash vh
 
+-- Given a TokenName, create a SIG. Useful for easily extracting the information from a SIG token.
 {-# INLINEABLE makeSig #-}
 makeSig :: TokenName -> Sig
 makeSig tn = Sig tn pkh vh
@@ -89,11 +96,12 @@ makeSig tn = Sig tn pkh vh
     bTokenName = unTokenName tn
 
     vh :: ValidatorHash
-    vh = ValidatorHash $ sliceByteString 28 (lengthOfByteString (unTokenName tn) + 1) bTokenName
+    vh = ValidatorHash $ sliceByteString 28 28 bTokenName
 
     pkh :: PubKeyHash
     pkh = PubKeyHash $ sliceByteString 0 28 bTokenName
 
+-- Given the user's pubkeyhash and the account validator hash, create a SIG
 {-# INLINEABLE sig #-}
 sig :: PubKeyHash -> ValidatorHash -> Sig
 sig pkh = makeSig . makeSigToken pkh
@@ -140,12 +148,45 @@ anySigned info = any (txSignedBy info)
 whoSigned :: TxInfo -> [PubKeyHash] -> Maybe PubKeyHash
 whoSigned info = find (txSignedBy info)
 
+-- Given a transaction context info and a list of
+-- Sigs, get the one corresponding to the user that
+-- signed this transaction
+{-# INLINEABLE whoSigned' #-}
+whoSigned' :: TxInfo -> [Sig] -> Maybe Sig
+whoSigned' info = find (txSignedBy info . sUser)
+
+-- Find the signature with the corresponding public key
+{-# INLINEABLE findSig #-}
+findSig :: PubKeyHash -> [Sig] -> Maybe Sig
+findSig pkh = find (\s -> sUser s == pkh)
+
+{-# INLINEABLE sigIn #-}
+sigIn :: PubKeyHash -> [Sig] -> Bool
+sigIn pkh s = isJust $ findSig pkh s
+
+-- Verify if all sig tokens have the same script address embeded
+{-# INLINEABLE consistentSigs #-}
+consistentSigs :: [Sig] -> Bool
+consistentSigs [] = True
+consistentSigs (x : xs) = all ((== sScript x) . sScript) xs
+
 -- Make a SIG token asset class
 {-# INLINEABLE signatureAssetClass #-}
 signatureAssetClass :: CurrencySymbol -> PubKeyHash -> ValidatorHash -> AssetClass
 signatureAssetClass cs pkh vh = AssetClass (cs, makeSigToken pkh vh)
 
--- Make a single SIG token value
+-- Make a single SIG token value based on the user's
+-- public key hash and the account's validator hash
 {-# INLINEABLE signatureValue #-}
 signatureValue :: CurrencySymbol -> PubKeyHash -> ValidatorHash -> Value
 signatureValue cs pkh vh = singleton cs (makeSigToken pkh vh) 1
+
+-- Make a single SIG token value based on the given SIG
+{-# INLINEABLE signatureValue' #-}
+signatureValue' :: CurrencySymbol -> Sig -> Value
+signatureValue' cs s = singleton cs (makeSigToken (sUser s) (sScript s)) 1
+
+-- Make a single SIG token value based on the given SIG and an amount
+{-# INLINEABLE signatureValueOf' #-}
+signatureValueOf' :: CurrencySymbol -> Sig -> Integer -> Value
+signatureValueOf' cs s = singleton cs (makeSigToken (sUser s) (sScript s))
