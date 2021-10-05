@@ -120,12 +120,25 @@ import qualified PlutusTx.Ratio as R
 import Wallet.Emulator.Wallet ()
 import Prelude (Semigroup (..), Show (..), String, uncurry)
 
-createContract :: AccountSettings -> ContractDatum -> Contract (Last AssetClass) s Text ()
+-- Based on the given initial contract datum, createContract mints a new NFT,
+-- and transfers it to the platform contract script address, creating a new UTxO
+-- this UTxO also receives the user's SIG token and the trust amount, which serves
+-- as a collateral
+createContract ::
+  AccountSettings ->
+  ContractDatum ->
+  Contract (Last AssetClass) s Text ()
 createContract accountSettings contractDatum = do
+  -- The public key hash of the user who is trying to create a new contract
   pkh <- pubKeyHash <$> Contract.ownPubKey
 
-  maybeAccountOffChainEssentials <- getAccountOffChainEssentials accountSettings pkh
+  -- The essential information needed to create a contract
+  maybeAccountOffChainEssentials <-
+    getAccountOffChainEssentials accountSettings pkh
 
+  -- Mints a NFT and holds it's reference in a variable
+  -- This NFT will serve as a way to uniquely identify our contract
+  -- and make sure we are always consuming the write one
   contractNFT <-
     mapError
       (pack . show)
@@ -133,6 +146,8 @@ createContract accountSettings contractDatum = do
           Contract w s CurrencyError OneShotCurrency
       )
 
+  -- Verifies if we were able or not to get the account important information.
+  -- If so, completes the transaction. Otherwise, logs an error and leave
   case maybeAccountOffChainEssentials of
     Just aoe -> do
       -- Submit transaction
@@ -145,36 +160,52 @@ createContract accountSettings contractDatum = do
       awaitTxConfirmed $ txId ledgerTx
 
       logInfo @String $
-        "Create Contract - Contract succefully created " ++ show contractNFTAssetClass
+        "Create Contract - "
+          ++ "Contract succefully created "
+          ++ show contractNFTAssetClass
       where
+        -- The currency symbol for the SIG tokens
         sigSymbol :: CurrencySymbol
         sigSymbol = asSignatureSymbol accountSettings
 
+        -- The platform settings derived from account settings
         platformSettings :: PlatformSettings
         platformSettings = asPlatformSettings accountSettings
 
+        -- The reference to the account UTxO from our user
         accountReference :: TxOutRef
         accountReference = aoeAccountReference aoe
 
+        -- The datum fron the account we are consuming
         accountDatum :: AccountDatum
         accountDatum = aoeAccountDatum aoe
 
+        -- A chain index version of the account script output which is
+        -- being consumed
         accountChainIndexTxOut :: ChainIndexTxOut
         accountChainIndexTxOut = fst (aoeAccountOutTx aoe)
 
+        -- The important information about the account output which is
+        -- being consumed
         accountOutput :: TxOut
         accountOutput = toTxOut accountChainIndexTxOut
 
+        -- The currency symbol from the NFT we just minted
         contractNFTSymbol :: CurrencySymbol
         contractNFTSymbol = Currency.currencySymbol contractNFT
 
+        -- The asset class from the NFT we just minted
         contractNFTAssetClass :: AssetClass
         contractNFTAssetClass = assetClass contractNFTSymbol "contract-nft"
-        accValHash = accountValidatorHash accountSettings
 
-        contrValHash :: ValidatorHash
+        -- The script validator hashes from the platform accounts and contracts
+        accValHash, contrValHash :: ValidatorHash
+        accValHash = accountValidatorHash accountSettings
         contrValHash = asContractValidatorHash accountSettings
 
+        -- The account datum we will give to the newly created account UTxO
+        -- It should increase our CAS score, since we are using the platform
+        -- and should register the newly created contract and it's NFT
         newAccountDatum :: AccountDatum
         newAccountDatum =
           addContract
@@ -182,13 +213,21 @@ createContract accountSettings contractDatum = do
             contrValHash
             contractNFTAssetClass
 
-        sigValue, txFeeValue, trustValue, contractValue, accountValue :: Value
+        -- Some values that we are going send from the account or the user wallet
+        -- to the contract
+        sigValue, txFeeValue, trustValue :: Value
         sigValue = singleton sigSymbol (makeSigToken pkh accValHash) 1
-        txFeeValue = assetClassValue (psToken platformSettings) (psTxFee platformSettings)
+        txFeeValue =
+          assetClassValue
+            (psToken platformSettings)
+            (psTxFee platformSettings)
         trustValue =
           assetClassValue
             (psToken platformSettings)
             (sTrust $ cdService contractDatum)
+
+        -- The expected resulting values in each script
+        contractValue, accountValue :: Value
         contractValue =
           sigValue <> Currency.mintedValue contractNFT <> trustValue
         accountValue = txOutValue accountOutput <> txFeeValue <> negate sigValue
@@ -208,17 +247,26 @@ createContract accountSettings contractDatum = do
               contractValue
     Nothing -> logError @String "Create Contract - Contract Essentials failed"
 
+-- Based on the role we intend to have and an asset class that represent the
+-- nft from the contract the user want's to sign, adds the user's SIG token
+-- to the contract, together with the necessary value (trust and price maybe),
+-- changing the datum according to our role
 signContract :: Role -> AccountSettings -> AssetClass -> Contract w s Text ()
 signContract userRole accountSettings contractNFT = do
   -- The signer public key hash
   pkh <- pubKeyHash <$> Contract.ownPubKey
 
   -- Tries to get the account off-chain essentials
-  maybeAccountOffChainEssentials <- getAccountOffChainEssentials accountSettings pkh
+  maybeAccountOffChainEssentials <-
+    getAccountOffChainEssentials accountSettings pkh
 
   -- Tries to get the contract off-chain essentials
-  maybeContractOffChainEssentials <- getContractOffChainEssentials accountSettings contractNFT
+  maybeContractOffChainEssentials <-
+    getContractOffChainEssentials accountSettings contractNFT
 
+  -- Verifies if both account and contract important information were gathered.
+  -- If they all were, completes the transaction. Otherwise, logs an error and
+  -- leaves.
   case (maybeAccountOffChainEssentials, maybeContractOffChainEssentials) of
     (Just aoe, Just coe) -> do
       -- Submit transaction
@@ -233,55 +281,95 @@ signContract userRole accountSettings contractNFT = do
           ++ " by user "
           ++ show pkh
       where
+        -- The currency symbol used in every SIG token
         sigSymbol :: CurrencySymbol
         sigSymbol = asSignatureSymbol accountSettings
 
+        -- The information needed in all the platform
         platformSettings :: PlatformSettings
         platformSettings = asPlatformSettings accountSettings
 
-        accValHash :: ValidatorHash
+        -- The script validator hashes from the platform accounts and contracts
+        accValHash, contrValHash :: ValidatorHash
         accValHash = accountValidatorHash accountSettings
-
-        contrValHash :: ValidatorHash
         contrValHash = coeContractValidatorHash coe
 
+        -- An account and contract transaction output we are trying to consume
+        -- more fitted to the blockchain
         accountChainIndexTxOut, contractChainIndexTxOut :: ChainIndexTxOut
         accountChainIndexTxOut = fst (aoeAccountOutTx aoe)
         contractChainIndexTxOut = fst (coeContractOutTx coe)
 
+        -- An account and contract transaction output we are trying to consume
+        -- easy to understand and modify
         accountOut, contractOut :: TxOut
         accountOut = toTxOut accountChainIndexTxOut
         contractOut = toTxOut contractChainIndexTxOut
 
+        -- The data held in the account output we are trying to consume
         accountDatum :: AccountDatum
         accountDatum = aoeAccountDatum aoe
 
+        -- The data held in the contract output we are trying to consume
         contractDatum :: ContractDatum
         contractDatum = coeContractDatum coe
 
+        -- A blockchain reference to both the account and contract output we
+        -- are trying to consume
         accountReference, contractReference :: TxOutRef
         accountReference = aoeAccountReference aoe
         contractReference = coeContractReference coe
 
+        -- The information needed to transact with a contract
         contractSett :: ContractSettings
         contractSett = coeContractSettings coe
 
+        -- The values, which will either be sent or consumed from the contract
+        -- and account
         sigValue, trustValue, priceValue, txFeesValue :: Value
         sigValue = singleton sigSymbol (makeSigToken pkh accValHash) 1
-        trustValue = assetClassValue (psToken platformSettings) (sTrust $ cdService contractDatum)
+        trustValue =
+          assetClassValue
+            (psToken platformSettings)
+            (sTrust $ cdService contractDatum)
         priceValue = case sType (cdService contractDatum) of
           OneTime p _
             | userRole == Client -> p
           _ -> mempty
-        txFeesValue = assetClassValue (psToken platformSettings) (psTxFee platformSettings)
+        txFeesValue =
+          assetClassValue
+            (psToken platformSettings)
+            (psTxFee platformSettings)
 
+        -- Account and contract resulting values
         contractValue, accountValue :: Value
-        contractValue = txOutValue contractOut <> trustValue <> sigValue <> priceValue
-        accountValue = txOutValue accountOut <> txFeesValue <> negate sigValue
+        -- In this case, the contract must receive the trust value (a collateral
+        -- in case the contract is broken or cancelled), one user's SIG token
+        -- and the service price
+        contractValue =
+          txOutValue contractOut
+            <> trustValue
+            <> sigValue
+            <> priceValue
+        -- The account, in the other hand, is losing one SIG token and earning
+        -- the transaction fees. Which can not be used by the account owner, but 
+        -- instead can be transfered to the "governance script", which should
+        -- administrate the platform funds
+        accountValue =
+          txOutValue accountOut
+            <> txFeesValue
+            <> negate sigValue
 
+        -- The data that will be given to the newly created contract UTxO
+        -- In this case, the user is being added to the contract role map, which
+        -- is a data type that maps each user to his role (Publisher, Client
+        -- or Mediator). In our case, we can only be the two last ones
         newContractDatum :: ContractDatum
         newContractDatum = addUser pkh userRole contractDatum
 
+        -- The data that will be given to the newly created account UTxO
+        -- In this case, the CAS is increased because the user is using the
+        -- platform by singing a contract
         newAccountDatum :: AccountDatum
         newAccountDatum =
           signContractCAS
@@ -298,7 +386,8 @@ signContract userRole accountSettings contractNFT = do
             )
             <> Constraints.otherScript (accountValidator accountSettings)
             <> Constraints.otherScript (contractValidator contractSett)
-            <> Constraints.typedValidatorLookups (typedContractValidator contractSett)
+            <> Constraints.typedValidatorLookups
+              (typedContractValidator contractSett)
 
         tx :: TxConstraints (RedeemerType ContractType) (DatumType ContractType)
         tx =
@@ -314,20 +403,30 @@ signContract userRole accountSettings contractNFT = do
               accValHash
               (Datum $ PlutusTx.toBuiltinData newAccountDatum)
               accountValue
-    _ -> logError @String "Sign Contract - Account or Contract Essentials failed"
+    _ ->
+      logError @String $
+        "Sign Contract - "
+          ++ "Account or Contract Essentials failed"
 
--- TODO : Refactor this
-cancelContract :: Bool -> AccountSettings -> AssetClass -> Contract w s Text ()
-cancelContract involvedInAccusation accountSettings contractNFT = do
+-- Allows a user to leave a contract when supposidely couldn't, lowering his
+-- CAS score and not giving his trust tokens back or the price he paid for the
+-- service. The only thing his account receives is the user's SIG token.
+cancelContract :: AccountSettings -> AssetClass -> Contract w s Text ()
+cancelContract accountSettings contractNFT = do
   -- The signer public key hash
   pkh <- pubKeyHash <$> Contract.ownPubKey
 
   -- Tries to get the account off-chain essentials
-  maybeAccountOffChainEssentials <- getAccountOffChainEssentials accountSettings pkh
+  maybeAccountOffChainEssentials <-
+    getAccountOffChainEssentials accountSettings pkh
 
   -- Tries to get the contract off-chain essentials
-  maybeContractOffChainEssentials <- getContractOffChainEssentials accountSettings contractNFT
+  maybeContractOffChainEssentials <-
+    getContractOffChainEssentials accountSettings contractNFT
 
+  -- Verifies if both account and contract important information were gathered.
+  -- If they all were, completes the transaction. Otherwise, logs an error and
+  -- leaves.
   case (maybeAccountOffChainEssentials, maybeContractOffChainEssentials) of
     (Just aoe, Just coe) -> do
       -- Submit transaction
@@ -341,55 +440,58 @@ cancelContract involvedInAccusation accountSettings contractNFT = do
       logInfo @String $
         "Cancel Contract - Successfully canceled contract " ++ show contractNFT
       where
+        -- The currency symbol used in every SIG token
+        sigSymbol :: CurrencySymbol
+        sigSymbol = asSignatureSymbol accountSettings
+
+        -- The information needed in all the platform
+        platformSettings :: PlatformSettings
+        platformSettings = asPlatformSettings accountSettings
+
+        -- The script validator hashes from the platform accounts and contracts
+        accValHash, contrValHash :: ValidatorHash
+        accValHash = accountValidatorHash accountSettings
+        contrValHash = coeContractValidatorHash coe
+
+        -- A reference to the account and contract UTxO we are trying to consume
         accountReference, contractReference :: TxOutRef
         accountReference = aoeAccountReference aoe
         contractReference = coeContractReference coe
 
+        -- A version of the UTxOs we are consuming easy to be digested by the
+        -- blockchain
         accountChainIndexTxOut, contractChainIndexTxOut :: ChainIndexTxOut
         accountChainIndexTxOut = fst (aoeAccountOutTx aoe)
         contractChainIndexTxOut = fst (coeContractOutTx coe)
 
+        -- A version of the UTxOs we are consuming easy to be read and
+        -- manipulated
         accountOut, contractOut :: TxOut
         accountOut = toTxOut accountChainIndexTxOut
         contractOut = toTxOut contractChainIndexTxOut
 
+        -- The data from the account we are consuming
         accountDatum :: AccountDatum
         accountDatum = aoeAccountDatum aoe
 
+        -- The data from the contract we are consuming
         contractDatum :: ContractDatum
         contractDatum = coeContractDatum coe
 
-        sigSym :: CurrencySymbol
-        sigSym = asSignatureSymbol accountSettings
-
-        platformSettings :: PlatformSettings
-        platformSettings = asPlatformSettings accountSettings
-
-        accValHash, contrValHash :: ValidatorHash
-        accValHash = accountValidatorHash accountSettings
-        contrValHash = asContractValidatorHash accountSettings
-
-        priceValue, sigValue, trustValue :: Value
-        priceValue
-          | involvedInAccusation = mempty
-          | otherwise = case sType $ cdService contractDatum of
-            CConstant -> mempty
-            OneTime v _ -> v
+        -- The value corresponding to a single SIG token from the user who
+        -- invoked this transaction and want's to leave the contract
+        sigValue :: Value
         sigValue = singleton sigSym (makeSigToken pkh accValHash) 1
-        trustValue
-          | involvedInAccusation = mempty
-          | otherwise =
-            assetClassValue
-              (psToken platformSettings)
-              (sTrust $ cdService contractDatum)
 
-        contractValue, accountValue, userValue :: Value
+        -- The resulting contract and account values
+        -- In this case the contract SIG token is simply being transfered to the
+        -- account back
+        contractValue, accountValue :: Value
         contractValue =
-          txOutValue contractOut
-            <> negate (sigValue <> trustValue <> priceValue)
+          txOutValue contractOut <> negate sigValue
         accountValue = txOutValue accountOut <> sigValue
-        userValue = trustValue <> priceValue
 
+        -- The information needed to transact with a contract
         contractSett :: ContractSettings
         contractSett =
           ContractSettings
@@ -397,11 +499,20 @@ cancelContract involvedInAccusation accountSettings contractNFT = do
               csSignatureSymbol = sigSym
             }
 
+        -- The data that will be given to the newly created contract UTxO
+        -- In this case, the user is being removed from the contract role map
         newContractDatum :: ContractDatum
         newContractDatum = removeUser pkh contractDatum
 
+        -- The data that will be given to the newly created account UTxO
+        -- In this case, the contract is being removed from the account register
+        -- of contracts and the CAS is being decreased, because the user is
+        -- cancelling a contract
         newAccountDatum :: AccountDatum
-        newAccountDatum = removeContract accountDatum contrValHash
+        newAccountDatum =
+          cancelContractCAS
+            (psCASMap platformSettings)
+            (removeContract accountDatum contrValHash)
 
         lookups :: ScriptLookups ContractType
         lookups =
@@ -413,7 +524,8 @@ cancelContract involvedInAccusation accountSettings contractNFT = do
             )
             <> Constraints.otherScript (accountValidator accountSettings)
             <> Constraints.otherScript (contractValidator contractSett)
-            <> Constraints.typedValidatorLookups (typedContractValidator contractSett)
+            <> Constraints.typedValidatorLookups
+              (typedContractValidator contractSett)
 
         tx :: TxConstraints (RedeemerType ContractType) (DatumType ContractType)
         tx =
@@ -431,20 +543,32 @@ cancelContract involvedInAccusation accountSettings contractNFT = do
               accValHash
               (Datum $ PlutusTx.toBuiltinData newAccountDatum)
               accountValue
-            <> Constraints.mustPayToPubKey pkh userValue
-    _ -> logError @String "Cancel Contract - Account or Contract Essentials failed"
+    _ ->
+      logError @String $
+        "Cancel Contract - "
+          ++ "Account or Contract Essentials failed"
 
+-- Leaves a contract in the right time. Differently from cancelContract,
+-- a user that uses leaveContract is not involved in any accusation, is
+-- not supposed to deliver any service and is not supposed to judge any
+-- conflict. He can, therefore, return with his trust tokens, his SIG and,
+-- if he is a publisher, the price value
 leaveContract :: AccountSettings -> AssetClass -> Contract w s Text ()
 leaveContract accountSettings contractNFT = do
   -- The signer public key hash
   pkh <- pubKeyHash <$> Contract.ownPubKey
 
   -- Tries to get the account off-chain essentials
-  maybeAccountOffChainEssentials <- getAccountOffChainEssentials accountSettings pkh
+  maybeAccountOffChainEssentials <-
+    getAccountOffChainEssentials accountSettings pkh
 
   -- Tries to get the contract off-chain essentials
-  maybeContractOffChainEssentials <- getContractOffChainEssentials accountSettings contractNFT
+  maybeContractOffChainEssentials <-
+    getContractOffChainEssentials accountSettings contractNFT
 
+  -- Verifies if both account and contract important information were gathered.
+  -- If they all were, completes the transaction. Otherwise, logs an error and
+  -- leaves.
   case (maybeAccountOffChainEssentials, maybeContractOffChainEssentials) of
     (Just aoe, Just coe) -> do
       -- Submit transaction
@@ -456,49 +580,85 @@ leaveContract accountSettings contractNFT = do
       logInfo @String $
         "Leave Contract - Successfully left contract " ++ show contractNFT
       where
+        -- The currency symbol used in every SIG token
         sigSymbol :: CurrencySymbol
         sigSymbol = asSignatureSymbol accountSettings
 
+        -- The information needed in all the platform
         platformSettings :: PlatformSettings
         platformSettings = asPlatformSettings accountSettings
 
+        -- The script validator hashes from the platform accounts and contracts
         accValHash, contrValHash :: ValidatorHash
         accValHash = accountValidatorHash accountSettings
-        contrValHash = asContractValidatorHash accountSettings
+        contrValHash = coeContractValidatorHash coe
 
-        accountChainIndexTxOut, contractChainIndexTxOut :: ChainIndexTxOut
-        accountChainIndexTxOut = fst (aoeAccountOutTx aoe)
-        contractChainIndexTxOut = fst (coeContractOutTx coe)
-
-        accountOut, contractOut :: TxOut
-        accountOut = toTxOut accountChainIndexTxOut
-        contractOut = toTxOut contractChainIndexTxOut
-
-        accountDatum :: AccountDatum
-        accountDatum = aoeAccountDatum aoe
-
-        contractDatum :: ContractDatum
-        contractDatum = coeContractDatum coe
-
+        -- A reference to the account and contract UTxO we are trying to consume
         accountReference, contractReference :: TxOutRef
         accountReference = aoeAccountReference aoe
         contractReference = coeContractReference coe
 
+        -- A version of the UTxOs we are consuming easy to be digested by the
+        -- blockchain
+        accountChainIndexTxOut, contractChainIndexTxOut :: ChainIndexTxOut
+        accountChainIndexTxOut = fst (aoeAccountOutTx aoe)
+        contractChainIndexTxOut = fst (coeContractOutTx coe)
+
+        -- A version of the UTxOs we are consuming easy to be read and
+        -- manipulated
+        accountOut, contractOut :: TxOut
+        accountOut = toTxOut accountChainIndexTxOut
+        contractOut = toTxOut contractChainIndexTxOut
+
+        -- The data from the account we are consuming
+        accountDatum :: AccountDatum
+        accountDatum = aoeAccountDatum aoe
+
+        -- The data from the contract we are consuming
+        contractDatum :: ContractDatum
+        contractDatum = coeContractDatum coe
+
+        -- The information needed to transact with a contract
         contractSett :: ContractSettings
         contractSett = coeContractSettings coe
 
+        -- The values, which will either be sent or consumed by the contract
+        -- and account
         sigValue, trustValue, txFeesValue :: Value
         sigValue = singleton sigSymbol (makeSigToken pkh accValHash) 1
-        trustValue = assetClassValue (psToken platformSettings) (sTrust $ cdService contractDatum)
-        txFeesValue = assetClassValue (psToken platformSettings) (psTxFee platformSettings)
+        trustValue =
+          assetClassValue
+            (psToken platformSettings)
+            (sTrust $ cdService contractDatum)
+        txFeesValue =
+          assetClassValue
+            (psToken platformSettings)
+            (psTxFee platformSettings)
 
+        -- The resulting value from contract and account
         contractValue, accountValue :: Value
-        contractValue = txOutValue contractOut <> negate trustValue <> negate sigValue
-        accountValue = txOutValue accountOut <> sigValue <> txFeesValue
+        -- In this case our contract loses the user's SIG token and his
+        -- collateral, since everything went well for him
+        contractValue =
+          txOutValue contractOut
+            <> negate trustValue
+            <> negate sigValue
+        -- The account value, simmilarly to the other transactions, loses get's
+        -- the SIG token back and earn transaction fees
+        accountValue =
+          txOutValue accountOut
+            <> sigValue
+            <> txFeesValue
 
+        -- The data that will be given to the newly created contract UTxO
+        -- In this case, the user is being removed from the contract role map
         newContractDatum :: ContractDatum
         newContractDatum = removeUser pkh contractDatum
 
+        -- The data that will be given to the newly created account UTxO
+        -- In this case, the contract is being removed from the account register
+        -- of contracts and the CAS is being increased because everything went
+        -- well
         newAccountDatum :: AccountDatum
         newAccountDatum =
           leaveContractCAS
@@ -515,7 +675,8 @@ leaveContract accountSettings contractNFT = do
             )
             <> Constraints.otherScript (accountValidator accountSettings)
             <> Constraints.otherScript (contractValidator contractSett)
-            <> Constraints.typedValidatorLookups (typedContractValidator contractSett)
+            <> Constraints.typedValidatorLookups
+              (typedContractValidator contractSett)
 
         tx :: TxConstraints (RedeemerType ContractType) (DatumType ContractType)
         tx =
@@ -531,18 +692,28 @@ leaveContract accountSettings contractNFT = do
               accValHash
               (Datum $ PlutusTx.toBuiltinData newAccountDatum)
               accountValue
-    _ -> logError @String "Leave Contract - Account or Contract Essentials failed"
+    _ ->
+      logError @String $
+        "Leave Contract - "
+          ++ "Account or Contract Essentials failed"
 
-reviewContract :: Integer -> BuiltinByteString -> AccountSettings -> AssetClass -> Contract w s Text ()
+reviewContract ::
+  Integer ->
+  BuiltinByteString ->
+  AccountSettings ->
+  AssetClass ->
+  Contract w s Text ()
 reviewContract review description accountSettings contractNFT = do
   logInfo @String "Review Contract - Incomplete"
 
 type ContractSchema =
   Endpoint "create-contract" (AccountSettings, ContractDatum)
     .\/ Endpoint "sign" (Role, AccountSettings, AssetClass)
-    .\/ Endpoint "cancel" (Bool, AccountSettings, AssetClass)
+    .\/ Endpoint "cancel" (AccountSettings, AssetClass)
     .\/ Endpoint "leave" (AccountSettings, AssetClass)
-    .\/ Endpoint "review" (Integer, BuiltinByteString, AccountSettings, AssetClass)
+    .\/ Endpoint
+          "review"
+          (Integer, BuiltinByteString, AccountSettings, AssetClass)
 
 contractEndpoints :: Contract (Last AssetClass) ContractSchema Text ()
 contractEndpoints =
@@ -553,6 +724,6 @@ contractEndpoints =
   where
     create' = endpoint @"create-contract" $ \(as, dat) -> createContract as dat
     sign' = endpoint @"sign" $ \(r, as, ac) -> signContract r as ac
-    cancel' = endpoint @"cancel" $ \(invInAcc, as, ac) -> cancelContract invInAcc as ac
+    cancel' = endpoint @"cancel" $ \(as, ac) -> cancelContract as ac
     leave' = endpoint @"leave" $ uncurry leaveContract
     review' = endpoint @"review" $ \(rev, des, as, ac) -> reviewContract rev des as ac
