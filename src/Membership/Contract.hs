@@ -19,7 +19,8 @@ import qualified Data.Map as Map
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Ledger
-  ( Datum (Datum),
+  ( ChainIndexTxOut (..),
+    Datum (Datum),
     DatumHash,
     POSIXTime,
     POSIXTimeRange,
@@ -34,6 +35,7 @@ import Ledger
     contains,
     scriptHashAddress,
     to,
+    toTxOut,
     txOutDatum,
   )
 import Ledger.Typed.Scripts as Scripts (ValidatorTypes (..))
@@ -42,14 +44,16 @@ import Ledger.Value
     CurrencySymbol,
     TokenName (..),
     Value,
+    assetClass,
     assetClassValueOf,
-    flattenValue, assetClass
+    flattenValue,
   )
 import Membership.PlatformSettings (ContractSettings)
 import Membership.Service (Service (..))
 import Membership.Signature (Sig, sigTokenToUser)
 import Membership.Utils (tripleSnd)
-import Plutus.Contract as Contract (Contract, utxoAt)
+import Plutus.ChainIndex.Tx
+import Plutus.Contract as Contract (Contract, utxosTxOutTxAt)
 import qualified PlutusTx
 import qualified PlutusTx.AssocMap as M
 import PlutusTx.Builtins (BuiltinByteString)
@@ -69,9 +73,9 @@ import PlutusTx.Prelude
     ($),
     (&&),
     (.),
+    (/=),
     (<$>),
     (||),
-    (/=)
   )
 import qualified Prelude
 
@@ -250,9 +254,7 @@ PlutusTx.unstableMakeIsData ''ContractEssentials
 -- code and, therefore, were all united in this data type
 data ContractOffChainEssentials = ContractOffChainEssentials
   { coeContractReference :: TxOutRef,
-    coeContractOutTx :: TxOutTx,
-    coeContractTx :: Tx,
-    coeContractOut :: TxOut,
+    coeContractOutTx :: (ChainIndexTxOut, ChainIndexTx),
     coeContractDatum :: ContractDatum,
     coeContractSettings :: ContractSettings,
     coeContractValidatorHash :: ValidatorHash
@@ -309,7 +311,7 @@ removeUser pkh oldContractDatum =
 -- Given two users (the accuser and accused), their roles, and the time
 -- this function is being called, construct an accusation and add it to
 -- the list of the old datum, returning the new one
-{-# INLINABLE accuseUser #-}
+{-# INLINEABLE accuseUser #-}
 accuseUser ::
   (PubKeyHash, Role) ->
   (PubKeyHash, Role) ->
@@ -327,7 +329,7 @@ accuseUser accuser accused currentTime oldContractDatum =
 
 -- Given an accusation and an input contract datum, removes the accusation
 -- from the accusations list and returns a new datum
-{-# INLINABLE removeAccusation #-}
+{-# INLINEABLE removeAccusation #-}
 removeAccusation :: Accusation -> ContractDatum -> ContractDatum
 removeAccusation acc oldContractDatum =
   ContractDatum
@@ -381,15 +383,18 @@ isInitial pkh (ContractDatum (Judges jds _ _) _ acc _ rm) =
 
 -- Get's the first UTxO sitting at a specific contract validator hash
 {-# INLINEABLE findContract #-}
-findContract :: AssetClass -> ValidatorHash -> Contract w s Text (Maybe (TxOutRef, TxOutTx))
+findContract ::
+  AssetClass ->
+  ValidatorHash ->
+  Contract w s Text (Maybe (TxOutRef, (ChainIndexTxOut, ChainIndexTx)))
 findContract nft contrValHash = do
-  utxos <- Map.filter f <$> utxoAt (scriptHashAddress contrValHash)
+  utxos <- Map.filter f <$> utxosTxOutTxAt (scriptHashAddress contrValHash)
   return $ case Map.toList utxos of
     [(oref, o)] -> Just (oref, o)
     _ -> Nothing
   where
-    f :: TxOutTx -> Bool
-    f o = assetClassValueOf (txOutValue $ txOutTxOut o) nft == 1
+    f :: (ChainIndexTxOut, ChainIndexTx) -> Bool
+    f (cTxOut, _) = assetClassValueOf (txOutValue $ toTxOut cTxOut) nft == 1
 
 -- Given a transaction output and a function, tries to get a contract datum
 {-# INLINEABLE findContractDatum #-}
@@ -399,7 +404,7 @@ findContractDatum o f = do
   Datum d <- f dh
   PlutusTx.fromBuiltinData d
 
-{-# INLINABLE findContractNFT #-}
+{-# INLINEABLE findContractNFT #-}
 findContractNFT :: Value -> Maybe AssetClass
 findContractNFT val = do
   (cs, tn, _) <- find (\(_, tn, amt) -> tn == contractNFTTokenName && amt == 1) (flattenValue val)

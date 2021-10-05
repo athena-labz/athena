@@ -31,6 +31,7 @@ import Ledger.Value as Value
     assetClassValue,
     singleton,
   )
+import Membership.Account
 import Membership.OffChain.Utils
 import Membership.OnChain.Account
 import Membership.OnChain.Contract
@@ -53,11 +54,9 @@ import Plutus.Contract as Contract
     type (.\/),
   )
 import qualified PlutusTx
-import PlutusTx.Prelude (Maybe (Just), length, return, ($), (++), (<$>), (<>))
+import PlutusTx.Prelude (Maybe (Just), fst, length, return, ($), (++), (<$>), (<>))
 import Text.Printf (printf)
 import qualified Prelude as P
-
-import Membership.Account
 
 type AccountSchema =
   Endpoint "create-account" PlatformSettings
@@ -120,7 +119,7 @@ createAccount ps = do
             accValHash
             (Datum $ PlutusTx.toBuiltinData initDatum)
             (mintVal <> fees)
-  
+
   ledgerTx <- submitTxConstraintsWith @AccountType lookups tx
 
   Monad.void $ awaitTxConfirmed $ L.txId ledgerTx
@@ -150,7 +149,7 @@ collectFees accountSettings = do
         lookups :: ScriptLookups AccountType
         lookups =
           Constraints.unspentOutputs
-            (Map.fromList [(auiReference aui, auiOutTx aui) | aui <- accounts])
+            (Map.fromList [(auiReference aui, fst (auiOutTx aui)) | aui <- accounts])
             P.<> Constraints.otherScript (accountValidator accountSettings)
 
         tx :: TxConstraints (RedeemerType AccountType) (DatumType AccountType)

@@ -36,7 +36,7 @@ import Membership.OnChain.Signature
 import Membership.PlatformSettings
 import Membership.Service
 import Membership.ShameToken
-import Plutus.Contract.Test (Wallet (Wallet), walletPubKey)
+import Plutus.Contract.Test (Wallet (Wallet), walletPubKey, knownWallet)
 import Plutus.Trace.Emulator as Emulator
   ( ContractHandle,
     EmulatorConfig (EmulatorConfig),
@@ -80,7 +80,7 @@ sampleTime = POSIXTime (10 * 86400) -- 10 Days
 sampleService :: Service
 sampleService =
   Service
-    { sPublisher = pubKeyHash $ walletPubKey $ Wallet 1,
+    { sPublisher = pubKeyHash $ walletPubKey $ knownWallet 1,
       sTitle = "Title",
       sDescription = "Description",
       sTrust = 50_000,
@@ -107,7 +107,7 @@ key = "aaab"
 judges :: Judges
 judges =
   Judges
-    { jsPubKeyHashes = [pubKeyHash $ walletPubKey $ Wallet w | w <- [3 .. 10]],
+    { jsPubKeyHashes = [pubKeyHash $ walletPubKey $ knownWallet w | w <- [3 .. 10]],
       jsPrice = 10_000,
       jsMaxDuration = slotToBeginPOSIXTime def 20 - POSIXTime beginningOfTime -- 20 slots to complete mediation
     }
@@ -233,5 +233,5 @@ sampleContractDatum =
       cdLogicScript = sampleLogicValHash,
       cdAccusations = [],
       cdService = sampleService,
-      cdRoleMap = M.fromList [(pubKeyHash $ walletPubKey $ Wallet 1, Publisher)]
+      cdRoleMap = M.fromList [(pubKeyHash $ walletPubKey $ knownWallet 1, Publisher)]
     }

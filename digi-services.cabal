@@ -32,17 +32,18 @@ library
                      , Membership.OffChain.Utils
                      , Membership.ShameToken
                      , Membership.Signature
-  build-depends:       aeson
+  build-depends:       aeson -any
                      , base ^>=4.14.1.0
-                     , bytestring
-                     , containers
-                     , data-default
+                     , bytestring -any
+                     , containers -any
+                     , data-default -any
                      , freer-extras
                      , lens
                      , playground-common
                      , plutus-contract
                      , plutus-ledger
                      , plutus-ledger-api
+                     , plutus-chain-index
                      , plutus-tx-plugin
                      , plutus-tx
                      , plutus-use-cases
@@ -53,27 +54,3 @@ library
                      , text
   default-language:    Haskell2010
   ghc-options:         -Wall -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas -fno-strictness -fno-spec-constr -fno-specialise
-
-test-suite digiservices-tests
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
-  hs-source-dirs: test
-  other-modules:       Spec.Model
-                     , Spec.Trace
-  default-language: Haskell2010
-  ghc-options:         -Wall -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas
-  build-depends:       base ^>=4.14.1.0
-                     , containers
-                     , data-default
-                     , freer-extras
-                     , lens
-                     , plutus-contract
-                     , plutus-ledger
-                     , digiservices
-                     , plutus-tx
-                     , QuickCheck
-                     , tasty
-                     , tasty-quickcheck
-                     , text
-  if !(impl(ghcjs) || os(ghcjs))
-    build-depends: plutus-tx-plugin -any

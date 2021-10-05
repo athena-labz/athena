@@ -19,7 +19,8 @@ import qualified Data.Map as Map
 import Data.Monoid as M (Last (Last), Monoid (mconcat))
 import Data.Text (Text, pack)
 import Ledger
-  ( Datum (Datum),
+  ( ChainIndexTxOut,
+    Datum (Datum),
     PubKeyHash,
     Redeemer (Redeemer),
     TxOut (txOutValue),
@@ -28,6 +29,7 @@ import Ledger
     ValidatorHash,
     lookupDatum,
     pubKeyHash,
+    toTxOut,
     txId,
   )
 import Ledger.Constraints as Constraints
@@ -76,7 +78,6 @@ import Plutus.Contract as Contract
     select,
     submitTxConstraintsWith,
     tell,
-    utxoAt,
     type (.\/),
   )
 import Plutus.Contracts.Currency as Currency
@@ -86,6 +87,7 @@ import Plutus.Contracts.Currency as Currency
     mintContract,
     mintedValue,
   )
+import Plutus.V2.Ledger.Api (CurrencySymbol (CurrencySymbol))
 import qualified PlutusTx
 import qualified PlutusTx.AssocMap as AM
 import PlutusTx.Prelude
@@ -96,6 +98,7 @@ import PlutusTx.Prelude
     Integer,
     Maybe (..),
     filter,
+    fst,
     length,
     map,
     mempty,
@@ -156,11 +159,11 @@ createContract accountSettings contractDatum = do
         accountDatum :: AccountDatum
         accountDatum = aoeAccountDatum aoe
 
-        accountOutTx :: TxOutTx
-        accountOutTx = aoeAccountOutTx aoe
+        accountChainIndexTxOut :: ChainIndexTxOut
+        accountChainIndexTxOut = fst (aoeAccountOutTx aoe)
 
         accountOutput :: TxOut
-        accountOutput = aoeAccountOut aoe
+        accountOutput = toTxOut accountChainIndexTxOut
 
         contractNFTSymbol :: CurrencySymbol
         contractNFTSymbol = Currency.currencySymbol contractNFT
@@ -191,7 +194,8 @@ createContract accountSettings contractDatum = do
         accountValue = txOutValue accountOutput <> txFeeValue <> negate sigValue
 
         lookups :: ScriptLookups AccountType
-        lookups = accountLookups accountSettings accountReference accountOutTx
+        lookups =
+          accountLookups accountSettings accountReference accountChainIndexTxOut
 
         tx :: TxConstraints (RedeemerType AccountType) (DatumType AccountType)
         tx =
@@ -241,13 +245,13 @@ signContract userRole accountSettings contractNFT = do
         contrValHash :: ValidatorHash
         contrValHash = coeContractValidatorHash coe
 
-        accountOut, contractOut :: TxOut
-        accountOut = aoeAccountOut aoe
-        contractOut = coeContractOut coe
+        accountChainIndexTxOut, contractChainIndexTxOut :: ChainIndexTxOut
+        accountChainIndexTxOut = fst (aoeAccountOutTx aoe)
+        contractChainIndexTxOut = fst (coeContractOutTx coe)
 
-        accountOutTx, contractOutTx :: TxOutTx
-        accountOutTx = aoeAccountOutTx aoe
-        contractOutTx = coeContractOutTx coe
+        accountOut, contractOut :: TxOut
+        accountOut = toTxOut accountChainIndexTxOut
+        contractOut = toTxOut contractChainIndexTxOut
 
         accountDatum :: AccountDatum
         accountDatum = aoeAccountDatum aoe
@@ -281,15 +285,15 @@ signContract userRole accountSettings contractNFT = do
         newAccountDatum :: AccountDatum
         newAccountDatum =
           signContractCAS
-            (psCASMap $ asPlatformSettings accountSettings) 
+            (psCASMap $ asPlatformSettings accountSettings)
             (addContract accountDatum contrValHash contractNFT)
 
         lookups :: ScriptLookups ContractType
         lookups =
           Constraints.unspentOutputs
             ( Map.fromList
-                [ (accountReference, accountOutTx),
-                  (contractReference, contractOutTx)
+                [ (accountReference, accountChainIndexTxOut),
+                  (contractReference, contractChainIndexTxOut)
                 ]
             )
             <> Constraints.otherScript (accountValidator accountSettings)
@@ -318,85 +322,117 @@ cancelContract involvedInAccusation accountSettings contractNFT = do
   -- The signer public key hash
   pkh <- pubKeyHash <$> Contract.ownPubKey
 
-  -- Tries to get the account that belongs to this user
-  maybeAccount <- findAccount pkh accountSettings
+  -- Tries to get the account off-chain essentials
+  maybeAccountOffChainEssentials <- getAccountOffChainEssentials accountSettings pkh
 
-  -- Tries to get the contract corresponding to this NFT
-  maybeContract <- findContract contractNFT (asContractValidatorHash accountSettings)
+  -- Tries to get the contract off-chain essentials
+  maybeContractOffChainEssentials <- getContractOffChainEssentials accountSettings contractNFT
 
-  case (maybeAccount, maybeContract) of
-    (Just (accountReference, accountOutTx), Just (contractReference, contractOutTx)) -> do
-      let accountTx = txOutTxTx accountOutTx
-          accountOut = txOutTxOut accountOutTx
-          contractTx = txOutTxTx contractOutTx
-          contractOut = txOutTxOut contractOutTx
+  case (maybeAccountOffChainEssentials, maybeContractOffChainEssentials) of
+    (Just aoe, Just coe) -> do
+      -- Submit transaction
+      ledgerTx <- submitTxConstraintsWith @ContractType lookups tx
 
-          maybeAccountDatum = findAccountDatum accountOut (lookupDatum accountTx)
-          maybeContractDatum = findContractDatum contractOut (lookupDatum contractTx)
+      -- Wait until transaction is confirmed
+      awaitTxConfirmed $ txId ledgerTx
 
-      case (maybeAccountDatum, maybeContractDatum) of
-        (Just accountDatum, Just contractDatum) -> do
-          let sigSym = asSignatureSymbol accountSettings
-              platformSettings = asPlatformSettings accountSettings
-              accValHash = accountValidatorHash accountSettings
-              contrValHash = asContractValidatorHash accountSettings
+      logInfo @String $ show (cdRoleMap newContractDatum)
 
-              priceValue
-                | involvedInAccusation = mempty
-                | otherwise = case sType $ cdService contractDatum of
-                  CConstant -> mempty
-                  OneTime v _ -> v
-              sigValue = singleton sigSym (makeSigToken pkh accValHash) 1
-              trustValue
-                | involvedInAccusation = mempty
-                | otherwise = assetClassValue (psToken platformSettings) (sTrust $ cdService contractDatum)
+      logInfo @String $
+        "Cancel Contract - Successfully canceled contract " ++ show contractNFT
+      where
+        accountReference, contractReference :: TxOutRef
+        accountReference = aoeAccountReference aoe
+        contractReference = coeContractReference coe
 
-              contractValue = txOutValue contractOut <> negate (sigValue <> trustValue <> priceValue)
-              accountValue = txOutValue accountOut <> sigValue
-              userValue = trustValue <> priceValue
+        accountChainIndexTxOut, contractChainIndexTxOut :: ChainIndexTxOut
+        accountChainIndexTxOut = fst (aoeAccountOutTx aoe)
+        contractChainIndexTxOut = fst (coeContractOutTx coe)
 
-              contractSett = ContractSettings
-                    { csPlatformSettings = platformSettings,
-                      csSignatureSymbol = sigSym
-                    }
-              newContractDatum = removeUser pkh contractDatum
-              newAccountDatum = removeContract accountDatum contrValHash
+        accountOut, contractOut :: TxOut
+        accountOut = toTxOut accountChainIndexTxOut
+        contractOut = toTxOut contractChainIndexTxOut
 
-              lookups =
-                Constraints.unspentOutputs
-                  ( Map.fromList
-                      [ (accountReference, accountOutTx),
-                        (contractReference, contractOutTx)
-                      ]
-                  )
-                  <> Constraints.otherScript (accountValidator accountSettings)
-                  <> Constraints.otherScript (contractValidator contractSett)
-                  <> Constraints.typedValidatorLookups (typedContractValidator contractSett)
-              tx =
-                Constraints.mustBeSignedBy pkh
-                  <> Constraints.mustSpendScriptOutput
-                    accountReference
-                    (Redeemer $ PlutusTx.toBuiltinData (AReturn ARTCancel))
-                  <> Constraints.mustSpendScriptOutput
-                    contractReference
-                    (Redeemer $ PlutusTx.toBuiltinData CCancel)
-                  <> Constraints.mustPayToTheScript
-                    newContractDatum
-                    contractValue
-                  <> Constraints.mustPayToOtherScript
-                    accValHash
-                    (Datum $ PlutusTx.toBuiltinData newAccountDatum)
-                    accountValue
-                  <> Constraints.mustPayToPubKey pkh userValue
-          _ <- submitTxConstraintsWith @ContractType lookups tx
-          logInfo @String (show $ cdRoleMap newContractDatum)
-          logInfo @String $
-            "Cancel Contract - Successfully canceled contract " ++ show contractNFT
-        _ -> logError @String "Cancel Contract - Account or contract datum not found"
-    (Nothing, _) -> logError @String "Cancel Contract - Account not found"
-    _ -> logError @String "Cancel Contract - Contract not found"
+        accountDatum :: AccountDatum
+        accountDatum = aoeAccountDatum aoe
 
+        contractDatum :: ContractDatum
+        contractDatum = coeContractDatum coe
 
+        sigSym :: CurrencySymbol
+        sigSym = asSignatureSymbol accountSettings
+
+        platformSettings :: PlatformSettings
+        platformSettings = asPlatformSettings accountSettings
+
+        accValHash, contrValHash :: ValidatorHash
+        accValHash = accountValidatorHash accountSettings
+        contrValHash = asContractValidatorHash accountSettings
+
+        priceValue, sigValue, trustValue :: Value
+        priceValue
+          | involvedInAccusation = mempty
+          | otherwise = case sType $ cdService contractDatum of
+            CConstant -> mempty
+            OneTime v _ -> v
+        sigValue = singleton sigSym (makeSigToken pkh accValHash) 1
+        trustValue
+          | involvedInAccusation = mempty
+          | otherwise =
+            assetClassValue
+              (psToken platformSettings)
+              (sTrust $ cdService contractDatum)
+
+        contractValue, accountValue, userValue :: Value
+        contractValue =
+          txOutValue contractOut
+            <> negate (sigValue <> trustValue <> priceValue)
+        accountValue = txOutValue accountOut <> sigValue
+        userValue = trustValue <> priceValue
+
+        contractSett :: ContractSettings
+        contractSett =
+          ContractSettings
+            { csPlatformSettings = platformSettings,
+              csSignatureSymbol = sigSym
+            }
+
+        newContractDatum :: ContractDatum
+        newContractDatum = removeUser pkh contractDatum
+
+        newAccountDatum :: AccountDatum
+        newAccountDatum = removeContract accountDatum contrValHash
+
+        lookups :: ScriptLookups ContractType
+        lookups =
+          Constraints.unspentOutputs
+            ( Map.fromList
+                [ (accountReference, accountChainIndexTxOut),
+                  (contractReference, contractChainIndexTxOut)
+                ]
+            )
+            <> Constraints.otherScript (accountValidator accountSettings)
+            <> Constraints.otherScript (contractValidator contractSett)
+            <> Constraints.typedValidatorLookups (typedContractValidator contractSett)
+
+        tx :: TxConstraints (RedeemerType ContractType) (DatumType ContractType)
+        tx =
+          Constraints.mustBeSignedBy pkh
+            <> Constraints.mustSpendScriptOutput
+              accountReference
+              (Redeemer $ PlutusTx.toBuiltinData (AReturn ARTCancel))
+            <> Constraints.mustSpendScriptOutput
+              contractReference
+              (Redeemer $ PlutusTx.toBuiltinData CCancel)
+            <> Constraints.mustPayToTheScript
+              newContractDatum
+              contractValue
+            <> Constraints.mustPayToOtherScript
+              accValHash
+              (Datum $ PlutusTx.toBuiltinData newAccountDatum)
+              accountValue
+            <> Constraints.mustPayToPubKey pkh userValue
+    _ -> logError @String "Cancel Contract - Account or Contract Essentials failed"
 
 leaveContract :: AccountSettings -> AssetClass -> Contract w s Text ()
 leaveContract accountSettings contractNFT = do
@@ -419,7 +455,6 @@ leaveContract accountSettings contractNFT = do
 
       logInfo @String $
         "Leave Contract - Successfully left contract " ++ show contractNFT
-      
       where
         sigSymbol :: CurrencySymbol
         sigSymbol = asSignatureSymbol accountSettings
@@ -431,13 +466,13 @@ leaveContract accountSettings contractNFT = do
         accValHash = accountValidatorHash accountSettings
         contrValHash = asContractValidatorHash accountSettings
 
-        accountOut, contractOut :: TxOut
-        accountOut = aoeAccountOut aoe
-        contractOut = coeContractOut coe
+        accountChainIndexTxOut, contractChainIndexTxOut :: ChainIndexTxOut
+        accountChainIndexTxOut = fst (aoeAccountOutTx aoe)
+        contractChainIndexTxOut = fst (coeContractOutTx coe)
 
-        accountOutTx, contractOutTx :: TxOutTx
-        accountOutTx = aoeAccountOutTx aoe
-        contractOutTx = coeContractOutTx coe
+        accountOut, contractOut :: TxOut
+        accountOut = toTxOut accountChainIndexTxOut
+        contractOut = toTxOut contractChainIndexTxOut
 
         accountDatum :: AccountDatum
         accountDatum = aoeAccountDatum aoe
@@ -474,8 +509,8 @@ leaveContract accountSettings contractNFT = do
         lookups =
           Constraints.unspentOutputs
             ( Map.fromList
-                [ (accountReference, accountOutTx),
-                  (contractReference, contractOutTx)
+                [ (accountReference, accountChainIndexTxOut),
+                  (contractReference, contractChainIndexTxOut)
                 ]
             )
             <> Constraints.otherScript (accountValidator accountSettings)
@@ -496,7 +531,6 @@ leaveContract accountSettings contractNFT = do
               accValHash
               (Datum $ PlutusTx.toBuiltinData newAccountDatum)
               accountValue
-
     _ -> logError @String "Leave Contract - Account or Contract Essentials failed"
 
 reviewContract :: Integer -> BuiltinByteString -> AccountSettings -> AssetClass -> Contract w s Text ()

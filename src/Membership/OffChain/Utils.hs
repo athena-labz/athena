@@ -14,16 +14,17 @@
 
 module Membership.OffChain.Utils where
 
+import Control.Lens hiding (elements)
 import Control.Monad (forever)
--- import Membership.OnChain.Contract
-
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Map as Map
 import Data.Monoid as M (Last (Last), Monoid (mconcat))
 import Data.Text (Text, pack)
 import GHC.Generics (Generic)
 import Ledger
-  ( Datum (Datum),
+  ( ChainIndexTxOut,
+    Datum (..),
+    DatumHash (..),
     PubKeyHash,
     Redeemer (Redeemer),
     TxOut (txOutValue),
@@ -32,6 +33,7 @@ import Ledger
     ValidatorHash,
     lookupDatum,
     pubKeyHash,
+    toTxOut,
     txId,
   )
 import Ledger.Constraints as Constraints
@@ -76,6 +78,7 @@ import Membership.OnChain.Logic
 import Membership.PlatformSettings
 import Membership.Service
 import Membership.Signature (findSignatories, findSignatory, makeSigToken)
+import Plutus.ChainIndex
 import Plutus.Contract as Contract
   ( Contract,
     Endpoint,
@@ -91,7 +94,7 @@ import Plutus.Contract as Contract
     select,
     submitTxConstraintsWith,
     tell,
-    utxoAt,
+    utxosTxOutTxAt,
     type (.\/),
   )
 import Plutus.Contracts.Currency as Currency
@@ -112,12 +115,14 @@ import PlutusTx.Prelude
     Maybe (..),
     filter,
     foldr,
+    fst,
     length,
     map,
     mempty,
     negate,
     otherwise,
     return,
+    snd,
     traceError,
     ($),
     (*),
@@ -136,18 +141,21 @@ import qualified Prelude as P
 
 data AccountUTxOInfo = AccountUTxOInfo
   { auiReference :: TxOutRef,
-    auiOutTx :: TxOutTx,
+    auiOutTx :: (ChainIndexTxOut, ChainIndexTx),
     auiDatum :: AccountDatum,
     auiFees :: Value,
     auiUser :: PubKeyHash
   }
   deriving (P.Show, Generic, FromJSON, ToJSON, P.Eq)
 
+lookupChainIndexDatum :: ChainIndexTx -> DatumHash -> Maybe Datum
+lookupChainIndexDatum ciTx dh = Map.lookup dh (ciTx ^. citxData)
+
 -- Returns all accounts, their Datum, the Value of fees they hold and their owners
 findAccounts :: AccountSettings -> Contract w s Text [AccountUTxOInfo]
 findAccounts accountSettings = do
   -- All UTxOs located at the account address
-  utxos <- utxoAt (accountAddress accountSettings)
+  utxos <- utxosTxOutTxAt (accountAddress accountSettings)
 
   -- Return these UTxOs altered
   return $ foldr filterUTxO [] (Map.toList utxos)
@@ -159,45 +167,45 @@ findAccounts accountSettings = do
     sigSymbol = asSignatureSymbol accountSettings
 
     -- The number of DSET tokens located in a specific transaction output
-    dsetTokens :: TxOutTx -> Integer
-    dsetTokens o =
+    dsetTokens :: ChainIndexTxOut -> Integer
+    dsetTokens cTxOut =
       assetClassValueOf
-        (txOutValue $ txOutTxOut o)
+        (txOutValue $ toTxOut cTxOut)
         (psToken platformSettings)
 
     -- The public key hash from a user with a SIG token in this value
     sigPubKeys :: Value -> [PubKeyHash]
     sigPubKeys v = findSignatories sigSymbol v
 
-    getAccountInfo :: (TxOutRef, TxOutTx) -> Maybe AccountUTxOInfo
-    getAccountInfo (oref, outTx) = do
+    getAccountInfo :: (TxOutRef, (ChainIndexTxOut, ChainIndexTx)) -> Maybe AccountUTxOInfo
+    getAccountInfo (oref, (cTxOut, cTxTx)) = do
       pkh <-
-        ( case sigPubKeys (txOutValue $ txOutTxOut outTx) of
+        ( case sigPubKeys (txOutValue $ toTxOut cTxOut) of
             [p] -> Just p
             _ -> Nothing
           )
-      accountDatum <- findAccountDatum (txOutTxOut outTx) (lookupDatum (txOutTxTx outTx))
+      accountDatum <- findAccountDatum (toTxOut cTxOut) (lookupChainIndexDatum cTxTx)
 
       let reviewCreditValue :: Value
           reviewCreditValue =
             assetClassValue
               (psToken platformSettings)
-              (dsetTokens outTx - adReviewCredit accountDatum)
+              (dsetTokens cTxOut - adReviewCredit accountDatum)
 
           fees :: Value
-          fees = txOutValue (txOutTxOut outTx) <> negate reviewCreditValue
+          fees = txOutValue (toTxOut cTxOut) <> negate reviewCreditValue
 
       return
         AccountUTxOInfo
           { auiReference = oref,
-            auiOutTx = outTx,
+            auiOutTx = (cTxOut, cTxTx),
             auiDatum = accountDatum,
             auiFees = fees,
             auiUser = pkh
           }
 
     filterUTxO ::
-      (TxOutRef, TxOutTx) ->
+      (TxOutRef, (ChainIndexTxOut, ChainIndexTx)) ->
       [AccountUTxOInfo] ->
       [AccountUTxOInfo]
     filterUTxO (oref, o) acc = case getAccountInfo (oref, o) of
@@ -205,10 +213,13 @@ findAccounts accountSettings = do
       Nothing -> acc
 
 -- Return the UTxO from the account with a PubKeyHash
-findAccount :: PubKeyHash -> AccountSettings -> Contract w s Text (Maybe (TxOutRef, TxOutTx))
+findAccount ::
+  PubKeyHash ->
+  AccountSettings ->
+  Contract w s Text (Maybe (TxOutRef, (ChainIndexTxOut, ChainIndexTx)))
 findAccount user accountSettings = do
   -- All UTxOs located at the account address
-  utxos <- Map.filter f <$> utxoAt (accountAddress accountSettings)
+  utxos <- Map.filter f <$> utxosTxOutTxAt (accountAddress accountSettings)
 
   -- Return UTxO if there is only one UTxO in the filtered list
   return $ case Map.toList utxos of
@@ -216,20 +227,35 @@ findAccount user accountSettings = do
     _ -> Nothing
   where
     -- Only return UTxOs that contain a SIG values, whose signatory is the given user
-    f :: TxOutTx -> Bool
-    f o = findSignatories (asSignatureSymbol accountSettings) (txOutValue $ txOutTxOut o) == [user]
+    f :: (ChainIndexTxOut, ChainIndexTx) -> Bool
+    f (cTxOut, _) =
+      findSignatories
+        (asSignatureSymbol accountSettings)
+        (txOutValue $ toTxOut cTxOut)
+        == [user]
 
-getAccountOffChainEssentials :: AccountSettings -> PubKeyHash -> Contract w s Text (Maybe AccountOffChainEssentials)
+getAccountOffChainEssentials ::
+  AccountSettings ->
+  PubKeyHash ->
+  Contract w s Text (Maybe AccountOffChainEssentials)
 getAccountOffChainEssentials accountSettings pkh = do
   -- Tries to get the account that belongs to this user
   maybeAccount <- findAccount pkh accountSettings
 
   case maybeAccount of
     Just (accountReference, accountOutTx) -> do
-      let accountTx = txOutTxTx accountOutTx
-          accountOut = txOutTxOut accountOutTx
+      let 
+          accountOut :: ChainIndexTxOut
+          accountOut = fst accountOutTx
 
-          maybeAccountDatum = findAccountDatum accountOut (lookupDatum accountTx)
+          accountTx :: ChainIndexTx
+          accountTx = snd accountOutTx
+
+          maybeAccountDatum :: Maybe AccountDatum
+          maybeAccountDatum =
+            findAccountDatum
+              (toTxOut accountOut)
+              (lookupChainIndexDatum accountTx)
 
       case maybeAccountDatum of
         Just accountDatum -> do
@@ -237,9 +263,7 @@ getAccountOffChainEssentials accountSettings pkh = do
             Just
               AccountOffChainEssentials
                 { aoeAccountReference = accountReference,
-                  aoeAccountOutTx = accountOutTx,
-                  aoeAccountTx = accountTx,
-                  aoeAccountOut = accountOut,
+                  aoeAccountOutTx = (accountOut, accountTx),
                   aoeAccountDatum = accountDatum
                 }
         _ -> do
@@ -256,10 +280,18 @@ getContractOffChainEssentials accountSettings contractNFT = do
 
   case maybeContract of
     Just (contractReference, contractOutTx) -> do
-      let contractTx = txOutTxTx contractOutTx
-          contractOut = txOutTxOut contractOutTx
+      let 
+          contractOut :: ChainIndexTxOut
+          contractOut = fst contractOutTx
 
-          maybeContractDatum = findContractDatum contractOut (lookupDatum contractTx)
+          contractTx :: ChainIndexTx
+          contractTx = snd contractOutTx
+
+          maybeContractDatum :: Maybe ContractDatum
+          maybeContractDatum =
+            findContractDatum
+              (toTxOut contractOut)
+              (lookupChainIndexDatum contractTx)
 
       case maybeContractDatum of
         Just contractDatum -> do
@@ -268,13 +300,12 @@ getContractOffChainEssentials accountSettings contractNFT = do
               ContractOffChainEssentials
                 { coeContractReference = contractReference,
                   coeContractOutTx = contractOutTx,
-                  coeContractTx = txOutTxTx contractOutTx,
-                  coeContractOut = txOutTxOut contractOutTx,
                   coeContractDatum = contractDatum,
-                  coeContractSettings = ContractSettings
-                    { csPlatformSettings = platformSettings,
-                      csSignatureSymbol = sigSym
-                    },
+                  coeContractSettings =
+                    ContractSettings
+                      { csPlatformSettings = platformSettings,
+                        csSignatureSymbol = sigSym
+                      },
                   coeContractValidatorHash = contrValHash
                 }
         _ -> do
@@ -303,10 +334,18 @@ getLogicOffChainEssentials logicSettings shameToken = do
 
   case maybeLogic of
     Just (logicReference, logicOutTx) -> do
-      let logicTx = txOutTxTx logicOutTx
-          logicOut = txOutTxOut logicOutTx
+      let 
+          logicOut :: ChainIndexTxOut
+          logicOut = fst logicOutTx
 
-          maybeLogicDatum = findLogicDatum logicOut (lookupDatum logicTx)
+          logicTx :: ChainIndexTx
+          logicTx = snd logicOutTx
+
+          maybeLogicDatum :: Maybe LogicState
+          maybeLogicDatum =
+            findLogicDatum
+              (toTxOut logicOut)
+              (lookupChainIndexDatum logicTx)
 
       case maybeLogicDatum of
         Just logicDatum -> do
@@ -315,8 +354,6 @@ getLogicOffChainEssentials logicSettings shameToken = do
               LogicOffChainEssentials
                 { loeLogicReference = logicReference,
                   loeLogicOutTx = logicOutTx,
-                  loeLogicTx = txOutTxTx logicOutTx,
-                  loeLogicOut = txOutTxOut logicOutTx,
                   loeLogicDatum = logicDatum,
                   loeLogicValidatorHash = logValHash
                 }
@@ -333,10 +370,10 @@ getLogicOffChainEssentials logicSettings shameToken = do
 accountLookups ::
   AccountSettings ->
   TxOutRef ->
-  TxOutTx ->
+  ChainIndexTxOut ->
   ScriptLookups AccountType
-accountLookups as oref oTx =
-  Constraints.unspentOutputs (Map.singleton oref oTx)
+accountLookups as oref o =
+  Constraints.unspentOutputs (Map.singleton oref o)
     <> Constraints.typedValidatorLookups (typedAccountValidator as)
     <> Constraints.otherScript (accountValidator as)
 

@@ -19,7 +19,8 @@ import qualified Data.Map as Map
 import Data.Monoid as M (Last (Last), Monoid (mconcat))
 import Data.Text (Text, pack)
 import Ledger
-  ( Datum (Datum),
+  ( ChainIndexTxOut,
+    Datum (Datum),
     PubKeyHash,
     Redeemer (Redeemer),
     TxOut (txOutValue),
@@ -29,6 +30,7 @@ import Ledger
     lookupDatum,
     pubKeyHash,
     txId,
+    toTxOut
   )
 import Ledger.Constraints as Constraints
   ( ScriptLookups,
@@ -95,7 +97,7 @@ import Plutus.Contract as Contract
     select,
     submitTxConstraintsWith,
     tell,
-    utxoAt,
+    utxosTxOutTxAt,
     type (.\/),
   )
 import Plutus.Contracts.Currency as Currency
@@ -261,13 +263,13 @@ accuse accused accountSettings logicSettings contractNFT shameTokenAssetClass = 
         logicReference = loeLogicReference loe
         contractReference = coeContractReference coe
 
-        logicOut, contractOut :: TxOut
-        logicOut = loeLogicOut loe
-        contractOut = coeContractOut coe
+        logicChainIndexTxOut, contractChainIndexTxOut :: ChainIndexTxOut
+        logicChainIndexTxOut = fst (loeLogicOutTx loe)
+        contractChainIndexTxOut = fst (coeContractOutTx coe)
 
-        logicOutTx, contractOutTx :: TxOutTx
-        logicOutTx = loeLogicOutTx loe
-        contractOutTx = coeContractOutTx coe
+        logicOut, contractOut :: TxOut
+        logicOut = toTxOut logicChainIndexTxOut
+        contractOut = toTxOut contractChainIndexTxOut
 
         contractDatum :: ContractDatum
         contractDatum = coeContractDatum coe
@@ -368,8 +370,8 @@ accuse accused accountSettings logicSettings contractNFT shameTokenAssetClass = 
         lookups =
           Constraints.unspentOutputs
             ( Map.fromList
-                [ (contractReference, contractOutTx),
-                  (logicReference, logicOutTx)
+                [ (contractReference, contractChainIndexTxOut),
+                  (logicReference, logicChainIndexTxOut)
                 ]
             )
             <> Constraints.otherScript (contractValidator contractSett)
@@ -414,7 +416,8 @@ mediate verdict accountSettings logicSettings shameTokenAssetClass = do
 
   case maybeLogicOffChainEssentials of
     Just loe -> do
-      let logicDatum :: LogicState
+      let
+          logicDatum :: LogicState
           logicDatum = loeLogicDatum loe
 
       case logicDatum of
@@ -448,11 +451,11 @@ mediate verdict accountSettings logicSettings shameTokenAssetClass = do
             logicReference :: TxOutRef
             logicReference = loeLogicReference loe
 
-            logicOut :: TxOut
-            logicOut = loeLogicOut loe
+            logicChainIndexTxOut :: ChainIndexTxOut
+            logicChainIndexTxOut = fst (loeLogicOutTx loe)
 
-            logicOutTx :: TxOutTx
-            logicOutTx = loeLogicOutTx loe
+            logicOut :: TxOut
+            logicOut = toTxOut logicChainIndexTxOut
 
             newLogicDatum :: LogicState
             newLogicDatum = LSWaitingEnd contractNFT judgeInfo accusation verdict
@@ -463,7 +466,7 @@ mediate verdict accountSettings logicSettings shameTokenAssetClass = do
             lookups :: ScriptLookups LogicType
             lookups =
               Constraints.unspentOutputs
-                ( Map.fromList [(logicReference, logicOutTx)]
+                ( Map.fromList [(logicReference, logicChainIndexTxOut)]
                 )
                 <> Constraints.otherScript (logicValidator logicSettings)
                 <> Constraints.typedValidatorLookups (typedLogicValidator logicSettings)
@@ -497,12 +500,14 @@ collect accountSettings logicSettings contractNFT shameTokenAssetClass = do
 
   case (maybeContractOffChainEssentials, maybeLogicOffChainEssentials) of
     (Just coe, Just loe) -> do
-      let logicDatum :: LogicState
+      let
+          logicDatum :: LogicState
           logicDatum = loeLogicDatum loe
 
       case logicDatum of
         LSWaitingEnd contractNFT judge accusation verdict -> do
-          let sigSymbol :: CurrencySymbol
+          let
+              sigSymbol :: CurrencySymbol
               sigSymbol = asSignatureSymbol accountSettings
 
               platformSettings :: PlatformSettings
@@ -517,13 +522,13 @@ collect accountSettings logicSettings contractNFT shameTokenAssetClass = do
               contrValHash :: ValidatorHash
               contrValHash = coeContractValidatorHash coe
 
-              contractOut, logicOut :: TxOut
-              contractOut = coeContractOut coe
-              logicOut = loeLogicOut loe
+              logicChainIndexTxOut, contractChainIndexTxOut :: ChainIndexTxOut
+              logicChainIndexTxOut = fst (loeLogicOutTx loe)
+              contractChainIndexTxOut = fst (coeContractOutTx coe)
 
-              contractOutTx, logicOutTx :: TxOutTx
-              contractOutTx = coeContractOutTx coe
-              logicOutTx = loeLogicOutTx loe
+              logicOut, contractOut :: TxOut
+              logicOut = toTxOut logicChainIndexTxOut
+              contractOut = toTxOut contractChainIndexTxOut
 
               contractDatum :: ContractDatum
               contractDatum = coeContractDatum coe
@@ -622,8 +627,8 @@ collect accountSettings logicSettings contractNFT shameTokenAssetClass = do
               innocentLookups =
                 Constraints.unspentOutputs
                   ( Map.fromList
-                      [ (contractReference, contractOutTx),
-                        (logicReference, logicOutTx)
+                      [ (contractReference, contractChainIndexTxOut),
+                        (logicReference, logicChainIndexTxOut)
                       ]
                   )
                   <> Constraints.otherScript (contractValidator contractSett)
@@ -655,11 +660,12 @@ collect accountSettings logicSettings contractNFT shameTokenAssetClass = do
 
               case maybeAccountOffChainEssentials of
                 Just aoe -> do
-                  let accountOut :: TxOut
-                      accountOut = aoeAccountOut aoe
+                  let
+                      accountChainIndexTxOut :: ChainIndexTxOut
+                      accountChainIndexTxOut = fst (aoeAccountOutTx aoe)
 
-                      accountOutTx :: TxOutTx
-                      accountOutTx = aoeAccountOutTx aoe
+                      accountOut :: TxOut
+                      accountOut = toTxOut accountChainIndexTxOut
 
                       accountDatum :: AccountDatum
                       accountDatum = aoeAccountDatum aoe
@@ -674,9 +680,9 @@ collect accountSettings logicSettings contractNFT shameTokenAssetClass = do
                       guiltyLookups =
                         Constraints.unspentOutputs
                           ( Map.fromList
-                              [ (accountReference, accountOutTx),
-                                (contractReference, contractOutTx),
-                                (logicReference, logicOutTx)
+                              [ (accountReference, accountChainIndexTxOut),
+                                (contractReference, contractChainIndexTxOut),
+                                (logicReference, logicChainIndexTxOut)
                               ]
                           )
                           <> Constraints.otherScript (accountValidator accountSettings)

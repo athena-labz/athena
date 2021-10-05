@@ -36,7 +36,7 @@ import Membership.OnChain.Signature
 import Membership.PlatformSettings
 import Membership.Service
 import Membership.ShameToken
-import Plutus.Contract.Test (Wallet (Wallet), walletPubKey)
+import Plutus.Contract.Test (Wallet (Wallet), walletPubKey, knownWallet)
 import Plutus.Trace.Emulator as Emulator
   ( ContractHandle,
     EmulatorConfig (EmulatorConfig),
@@ -69,7 +69,7 @@ import Membership.OnChain.Account
 
 createAccountExample :: EmulatorTrace ()
 createAccountExample = do
-  let alice = Wallet 1
+  let alice = knownWallet 1
 
   -- Alice creates an account by paying an entrance fee
   -- This means that 100 SIG tokens are minted and transferred to the account script
@@ -80,7 +80,7 @@ createAccountExample = do
 
 createContractExample :: EmulatorTrace ()
 createContractExample = do
-  let alice = Wallet 1 -- Alice will be our fake service provider
+  let alice = knownWallet 1 -- Alice will be our fake service provider
   
   -- Alice creates an account
   createAccountTrace alice
@@ -94,7 +94,7 @@ createContractExample = do
 
 createLogicExample :: EmulatorTrace ()
 createLogicExample = do
-  let alice = Wallet 1
+  let alice = knownWallet 1
   
   -- Alice creates an account
   createAccountTrace alice
@@ -115,8 +115,8 @@ createLogicExample = do
   
 signContractExample :: EmulatorTrace ()
 signContractExample = do
-  let alice = Wallet 1
-      bob   = Wallet 2 -- Charlie will be our fake client
+  let alice = knownWallet 1
+      bob   = knownWallet 2 -- Bob will be our fake client
   
   -- Alice creates an account
   createAccountTrace alice
@@ -148,9 +148,9 @@ signContractExample = do
 
 accuseExample :: EmulatorTrace ()
 accuseExample = do
-  let alice = Wallet 1
-      bob = Wallet 2
-      charlie = Wallet 3 -- Charlie will be our judge (he's public key can be found in the contract)
+  let alice = knownWallet 1
+      bob = knownWallet 2
+      charlie = knownWallet 3 -- Charlie will be our judge (he's public key can be found in the contract)
 
   Extras.logInfo $ "Alice Public Key " ++ show (pubKeyHash $ walletPubKey alice)
   Extras.logInfo $ "Bob Public Key " ++ show (pubKeyHash $ walletPubKey bob)
@@ -217,9 +217,9 @@ accuseExample = do
 
 mediateExample :: EmulatorTrace ()
 mediateExample = do
-  let alice = Wallet 1
-      bob = Wallet 2
-      charlie = Wallet 3
+  let alice = knownWallet 1
+      bob = knownWallet 2
+      charlie = knownWallet 3
 
   Extras.logInfo $ "Alice Public Key " ++ show (pubKeyHash $ walletPubKey alice)
   Extras.logInfo $ "Bob Public Key " ++ show (pubKeyHash $ walletPubKey bob)
@@ -313,9 +313,9 @@ mediateExample = do
 
 logicCollectExample :: EmulatorTrace ()
 logicCollectExample = do
-  let alice = Wallet 1
-      bob = Wallet 2
-      charlie = Wallet 3
+  let alice = knownWallet 1
+      bob = knownWallet 2
+      charlie = knownWallet 3
 
   Extras.logInfo $ "Alice Public Key " ++ show (pubKeyHash $ walletPubKey alice)
   Extras.logInfo $ "Bob Public Key " ++ show (pubKeyHash $ walletPubKey bob)
@@ -419,9 +419,9 @@ logicCollectExample = do
 
 leaveContractExample :: EmulatorTrace ()
 leaveContractExample = do
-  let alice = Wallet 1
-      bob = Wallet 2
-      charlie = Wallet 3
+  let alice = knownWallet 1
+      bob = knownWallet 2
+      charlie = knownWallet 3
 
   Extras.logInfo $ "Alice Public Key " ++ show (pubKeyHash $ walletPubKey alice)
   Extras.logInfo $ "Bob Public Key " ++ show (pubKeyHash $ walletPubKey bob)

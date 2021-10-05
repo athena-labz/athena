@@ -19,7 +19,8 @@ import Data.Map as HaskellMap (filter, toList)
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Ledger
-  ( Datum (Datum),
+  ( ChainIndexTxOut (..),
+    Datum (Datum),
     DatumHash,
     PubKeyHash,
     Tx,
@@ -31,12 +32,14 @@ import Ledger
     txOutDatum,
     txOutTxOut,
     txOutValue,
+    toTxOut,
   )
 import Ledger.Value (AssetClass, CurrencySymbol, Value, assetClass, assetClassValueOf, getValue)
-import Membership.Contract ( Accusation, Judge, Role )
+import Membership.Contract (Accusation, Judge, Role)
 import Membership.PlatformSettings (PlatformSettings)
 import Membership.Signature (Sig, sigIn)
-import Plutus.Contract as Contract (Contract, utxoAt)
+import Plutus.ChainIndex.Tx
+import Plutus.Contract as Contract (Contract, utxosTxOutTxAt)
 import qualified PlutusTx
 import qualified PlutusTx.AssocMap as AM
 import qualified PlutusTx.AssocMap as Map
@@ -58,8 +61,8 @@ import PlutusTx.Prelude
     traceError,
     ($),
     (&&),
+    (/=),
     (<$>),
-    (/=)
   )
 import qualified PlutusTx.Ratio as R
 import qualified Prelude
@@ -141,7 +144,7 @@ PlutusTx.makeLift ''Proportion
 -- distributed, if these conditions are not met
 type Logic = Map.Map Conditions Proportion
 
--- Should contain a map corresponding every input to it's actual answer 
+-- Should contain a map corresponding every input to it's actual answer
 type Verdict = Map.Map Input Bool
 
 -- The settings essential in order for a logic script to work
@@ -165,9 +168,10 @@ PlutusTx.makeLift ''LogicSettings
 -- Waiting End means that the verdict was already sent and the involved
 -- parties can now distribute their tokens according to the logic executed
 
-data LogicState = LSWaitingStart
-                | LSWaitingVerdict AssetClass Judge Accusation
-                | LSWaitingEnd AssetClass Judge Accusation Verdict
+data LogicState
+  = LSWaitingStart
+  | LSWaitingVerdict AssetClass Judge Accusation
+  | LSWaitingEnd AssetClass Judge Accusation Verdict
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
 instance Eq LogicState where
@@ -193,9 +197,7 @@ PlutusTx.unstableMakeIsData ''LogicRedeemer
 -- The essential information off-chain code will need about logic
 data LogicOffChainEssentials = LogicOffChainEssentials
   { loeLogicReference :: TxOutRef,
-    loeLogicOutTx :: TxOutTx,
-    loeLogicTx :: Tx,
-    loeLogicOut :: TxOut,
+    loeLogicOutTx :: (ChainIndexTxOut, ChainIndexTx),
     loeLogicDatum :: LogicState,
     loeLogicValidatorHash :: ValidatorHash
   }
@@ -266,9 +268,10 @@ possibleConditions (CAll cs) ver = all (`possibleConditions` ver) cs
 -- if all of the conditions in the type's list failed
 {-# INLINEABLE conditionsFailed #-}
 conditionsFailed :: Role -> Conditions -> Verdict -> Bool
-conditionsFailed r (CCondition inp) ver = if r `elem` iRoles inp
-                                          then conditionFailed inp ver
-                                          else False
+conditionsFailed r (CCondition inp) ver =
+  if r `elem` iRoles inp
+    then conditionFailed inp ver
+    else False
 conditionsFailed r (CAny cs) ver = any (\cs' -> conditionsFailed r cs' ver) cs
 conditionsFailed r (CAll cs) ver = all (\cs' -> conditionsFailed r cs' ver) cs
 
@@ -276,15 +279,16 @@ conditionsFailed r (CAll cs) ver = all (\cs' -> conditionsFailed r cs' ver) cs
 -- guilt enabled
 {-# INLINEABLE conditionsWithGuilt #-}
 conditionsWithGuilt :: Role -> Conditions -> Verdict -> Bool
-conditionsWithGuilt r (CCondition inp) ver = if r `elem` iRoles inp
-                                             then conditionWithGuilt inp ver
-                                             else False
+conditionsWithGuilt r (CCondition inp) ver =
+  if r `elem` iRoles inp
+    then conditionWithGuilt inp ver
+    else False
 conditionsWithGuilt r (CAny cs) ver = any (\cs' -> conditionsWithGuilt r cs' ver) cs
 conditionsWithGuilt r (CAll cs) ver = all (\cs' -> conditionsWithGuilt r cs' ver) cs
 
 -- Given a logic and a verdict, makes sure all condions in that
 -- logic have been answered by the verdict
-{-# INLINABLE validVerdict #-}
+{-# INLINEABLE validVerdict #-}
 validVerdict :: Logic -> Verdict -> Bool
 validVerdict log ver = all (`possibleConditions` ver) (Map.keys log)
 
@@ -329,15 +333,18 @@ findShameTokenAssetClass cs v = do
 
 -- Get's the first UTxO sitting at a specific logic validator hash
 {-# INLINEABLE findLogic #-}
-findLogic :: AssetClass -> ValidatorHash -> Contract w s Text (Maybe (TxOutRef, TxOutTx))
+findLogic ::
+  AssetClass ->
+  ValidatorHash ->
+  Contract w s Text (Maybe (TxOutRef, (ChainIndexTxOut, ChainIndexTx)))
 findLogic shameToken logValHash = do
-  utxos <- HaskellMap.filter f <$> utxoAt (scriptHashAddress logValHash)
+  utxos <- HaskellMap.filter f <$> utxosTxOutTxAt (scriptHashAddress logValHash)
   return $ case HaskellMap.toList utxos of
     [(oref, o)] -> Just (oref, o)
     _ -> Nothing
   where
-    f :: TxOutTx -> Bool
-    f o = assetClassValueOf (txOutValue $ txOutTxOut o) shameToken == 1
+    f :: (ChainIndexTxOut, ChainIndexTx) -> Bool
+    f (cTxOut, _) = assetClassValueOf (txOutValue $ toTxOut cTxOut) shameToken == 1
 
 {-# INLINEABLE findLogicDatum #-}
 findLogicDatum :: TxOut -> (DatumHash -> Maybe Datum) -> Maybe LogicState

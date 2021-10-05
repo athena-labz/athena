@@ -14,8 +14,11 @@
 
 module Membership.Account where
 
+import Data.Aeson (FromJSON, ToJSON)
+import GHC.Generics (Generic)
 import Ledger
-  ( Datum (Datum),
+  ( ChainIndexTxOut,
+    Datum (Datum),
     DatumHash,
     PubKeyHash,
     Tx (..),
@@ -29,6 +32,7 @@ import Ledger.Typed.Scripts as Scripts (ValidatorTypes (..))
 import Ledger.Value (AssetClass, Value, assetClassValue)
 import Membership.Contract
 import Membership.PlatformSettings
+import Plutus.ChainIndex
 import qualified PlutusTx
 import qualified PlutusTx.AssocMap as M
 import PlutusTx.Prelude
@@ -39,14 +43,12 @@ import PlutusTx.Prelude
     Integer,
     Maybe (..),
     MultiplicativeSemigroup ((*)),
+    negate,
     ($),
     (&&),
-    negate
   )
 import qualified PlutusTx.Ratio as R
 import qualified Prelude
-import Data.Aeson (FromJSON, ToJSON)
-import GHC.Generics (Generic)
 
 -- The datatype that represents the account information on-chain
 data AccountDatum = AccountDatum
@@ -72,7 +74,7 @@ data AccountReturnType = ARTLeave | ARTCancel | ARTExpelled
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
 instance Eq AccountReturnType where
-  {-# INLINABLE (==) #-}
+  {-# INLINEABLE (==) #-}
   ARTLeave == ARTLeave = True
   ARTCancel == ARTCancel = True
   ARTExpelled == ARTExpelled = True
@@ -80,20 +82,19 @@ instance Eq AccountReturnType where
 
 PlutusTx.unstableMakeIsData ''AccountReturnType
 
-data AccountRedeemer = ACreateContract
-                     | ASign
-                     | ACollect PubKeyHash
-                     | AReview
-                     | AReturn AccountReturnType
+data AccountRedeemer
+  = ACreateContract
+  | ASign
+  | ACollect PubKeyHash
+  | AReview
+  | AReturn AccountReturnType
   deriving (Prelude.Show)
 
 PlutusTx.unstableMakeIsData ''AccountRedeemer
 
 data AccountOffChainEssentials = AccountOffChainEssentials
   { aoeAccountReference :: TxOutRef,
-    aoeAccountOutTx :: TxOutTx,
-    aoeAccountTx :: Tx,
-    aoeAccountOut :: TxOut,
+    aoeAccountOutTx :: (ChainIndexTxOut, ChainIndexTx),
     aoeAccountDatum :: AccountDatum
   }
   deriving (Prelude.Show, Prelude.Eq)

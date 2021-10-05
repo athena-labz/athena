@@ -36,7 +36,7 @@ import Membership.OnChain.Signature
 import Membership.PlatformSettings
 import Membership.Service
 import Membership.ShameToken
-import Plutus.Contract.Test (Wallet (Wallet), walletPubKey)
+import Plutus.Contract.Test (Wallet (Wallet), walletPubKey, knownWallet)
 import Plutus.Trace.Emulator as Emulator
   ( ContractHandle,
     EmulatorConfig (EmulatorConfig),
@@ -102,7 +102,7 @@ runLeaveContractExample :: IO ()
 runLeaveContractExample = runEmulatorTraceIO' def (abstractConfig 3) leaveContractExample
 
 abstractConfig :: Integer -> EmulatorConfig
-abstractConfig n = EmulatorConfig (Left $ Map.fromList [(Wallet w, setValue w) | w <- [1 .. n]]) def def
+abstractConfig n = EmulatorConfig (Left $ Map.fromList [(knownWallet w, setValue w) | w <- [1 .. n]]) def def
   where
     setValue :: Integer -> Value
     setValue _ =

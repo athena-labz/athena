@@ -36,7 +36,7 @@ import Membership.OnChain.Signature
 import Membership.PlatformSettings
 import Membership.Service
 import Membership.ShameToken
-import Plutus.Contract.Test (Wallet (Wallet), walletPubKey)
+import Plutus.Contract.Test (Wallet (Wallet), walletPubKey, knownWallet)
 import Plutus.Trace.Emulator as Emulator
   ( ContractHandle,
     EmulatorConfig (EmulatorConfig),
@@ -182,4 +182,4 @@ logicCollectTrace handle as ls contractNFT shame = do
   void $ Emulator.waitNSlots 3
 
 mintingTrace :: EmulatorTrace ()
-mintingTrace = createAccountsTrace [Wallet 1, Wallet 2]
+mintingTrace = createAccountsTrace [knownWallet 1, knownWallet 2]
