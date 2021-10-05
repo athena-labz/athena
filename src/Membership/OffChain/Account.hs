@@ -54,7 +54,16 @@ import Plutus.Contract as Contract
     type (.\/),
   )
 import qualified PlutusTx
-import PlutusTx.Prelude (Maybe (Just), fst, length, return, ($), (++), (<$>), (<>))
+import PlutusTx.Prelude
+  ( Maybe (Just),
+    fst,
+    length,
+    return,
+    ($),
+    (++),
+    (<$>),
+    (<>),
+  )
 import Text.Printf (printf)
 import qualified Prelude as P
 
@@ -62,21 +71,25 @@ type AccountSchema =
   Endpoint "create-account" PlatformSettings
     .\/ Endpoint "collect-fees" AccountSettings
 
+-- getAccountSettings get's the essential information from platform settings
+-- needed for the account validator
 getAccountSettings :: PlatformSettings -> AccountSettings
 getAccountSettings platformSettings =
   AccountSettings
     { asPlatformSettings = platformSettings,
       asSignatureSymbol = sigSymbol,
-      asContractValidatorHash = contrValHash,
-      asCollectors = [] -- TODO: Change that later
+      asContractValidatorHash = contrValHash
     }
   where
+    -- The token used for every transaction in the platform (DSET)
     token :: AssetClass
     token = psToken platformSettings
 
+    -- The currency symbol of all SIG tokens we build
     sigSymbol :: CurrencySymbol
     sigSymbol = signatureCurrencySymbol platformSettings
 
+    -- The contract essential information
     contrSett :: ContractSettings
     contrSett =
       ContractSettings
@@ -84,89 +97,68 @@ getAccountSettings platformSettings =
           csSignatureSymbol = sigSymbol
         }
 
+    -- The validator hash of the contract based on the settings we made
     contrValHash :: ValidatorHash
-    contrValHash = validatorHash $ contractValidator contrSett
+    contrValHash = validatorHash (contractValidator contrSett)
 
+-- Create account, mint's 100 SIG tokens with the user's public key hash
+-- embeded on and transfers it directly to a new account UTxO, therefore
+-- "creating a new account"
 createAccount :: PlatformSettings -> Contract () AccountSchema Text ()
 createAccount ps = do
+  -- The public key hash from the user who is trying to create an account
   pkh <- pubKeyHash <$> Contract.ownPubKey
 
-  let fees :: Value
-      fees = assetClassValue (psToken ps) (psEntranceFee ps)
-
+  let -- The currency symbol we'll use to create the SIG token
       sigSymbol :: CurrencySymbol
       sigSymbol = signatureCurrencySymbol ps
 
-      accValHash :: ValidatorHash
-      accValHash = accountValidatorHash accountSettings
-
-      sigTokenName :: TokenName
-      sigTokenName = makeSigToken pkh accValHash
-
+      -- The essential information we need to know in order to create an account
       accountSettings :: AccountSettings
       accountSettings = getAccountSettings ps
 
-      mintVal :: Value
-      mintVal = singleton sigSymbol sigTokenName 100
+      -- The validator hash from the all the platform accounts derived from the
+      -- given settings
+      accValHash :: ValidatorHash
+      accValHash = accountValidatorHash accountSettings
+
+      -- The token name, which is going to be used to build our SIG token
+      sigTokenName :: TokenName
+      sigTokenName = makeSigToken pkh accValHash
+
+      entranceFeeValue, sigTokensValue :: Value
+      -- The value needed to pay for the platform in order to create an account
+      entranceFeeValue = assetClassValue (psToken ps) (psEntranceFee ps)
+      -- The sig tokens which will me minted with the user's public key hash
+      -- and the account validator hash embeded
+      sigTokensValue = singleton sigSymbol sigTokenName 100
 
       lookups :: ScriptLookups AccountType
       lookups = Constraints.mintingPolicy (signaturePolicy ps)
 
       tx :: TxConstraints (RedeemerType AccountType) (DatumType AccountType)
       tx =
-        Constraints.mustMintValue mintVal
+        Constraints.mustMintValue sigTokensValue
           P.<> Constraints.mustPayToOtherScript
             accValHash
             (Datum $ PlutusTx.toBuiltinData initDatum)
-            (mintVal <> fees)
+            (sigTokensValue <> entranceFeeValue)
 
+  -- Submits the transaction to the blockchain
   ledgerTx <- submitTxConstraintsWith @AccountType lookups tx
 
+  -- Waits for the transaction to be confirmed
   Monad.void $ awaitTxConfirmed $ L.txId ledgerTx
 
-  Contract.logInfo @P.String $ printf "%s successfully created account" (P.show pkh)
+  Contract.logInfo
+    @P.String
+    $ printf "%s successfully created account" (P.show pkh)
 
+-- collect fees should transfer all fees stored inside the account scripts
+-- to the governance script
 collectFees :: AccountSettings -> Contract w s Text ()
-collectFees accountSettings = do
-  -- Get all accounts located at the address
-  accounts <- findAccounts accountSettings
-
-  case accounts of
-    [] -> logInfo @P.String "Collect Fees - No accounts found"
-    _ -> do
-      -- Submit transaction with the defined constraints
-      ledgerTx <- submitTxConstraintsWith @AccountType lookups tx
-
-      -- Wait until the transaction is confirmed
-      awaitTxConfirmed $ L.txId ledgerTx
-
-      -- Log success message
-      logInfo @P.String $
-        "Collect Fees - Successfully collected from "
-          ++ P.show (length accounts)
-          ++ " account(s)"
-      where
-        lookups :: ScriptLookups AccountType
-        lookups =
-          Constraints.unspentOutputs
-            (Map.fromList [(auiReference aui, fst (auiOutTx aui)) | aui <- accounts])
-            P.<> Constraints.otherScript (accountValidator accountSettings)
-
-        tx :: TxConstraints (RedeemerType AccountType) (DatumType AccountType)
-        tx =
-          M.mconcat
-            [ Constraints.mustSpendScriptOutput
-                (auiReference aui)
-                $ Redeemer $ PlutusTx.toBuiltinData (ACollect (auiUser aui))
-              | aui <- accounts
-            ]
-            P.<> M.mconcat
-              [ Constraints.mustPayToOtherScript
-                  (accountValidatorHash accountSettings)
-                  (Datum $ PlutusTx.toBuiltinData (auiDatum aui))
-                  (auiFees aui)
-                | aui <- accounts
-              ]
+collectFees accountSettings =
+  Contract.logError @P.String "Collect Fees - Incomplete"
 
 accountEndpoints :: Contract () AccountSchema Text ()
 accountEndpoints =
