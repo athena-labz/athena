@@ -18,7 +18,6 @@ import Data.Aeson (FromJSON, ToJSON)
 import GHC.Generics (Generic)
 import Ledger.Ada as Ada ()
 import Ledger.Constraints as Constraints ()
-import Ledger.Crypto (PubKeyHash)
 import Ledger.Scripts (ValidatorHash)
 import Ledger.Value (AssetClass, CurrencySymbol)
 import Plutus.Contract as Contract ()
@@ -118,8 +117,7 @@ PlutusTx.makeLift ''PlatformSettings
 data AccountSettings = AccountSettings
   { asPlatformSettings :: !PlatformSettings,
     asSignatureSymbol :: !CurrencySymbol,
-    asContractValidatorHash :: !ValidatorHash,
-    asCollectors :: ![PubKeyHash]
+    asContractValidatorHash :: !ValidatorHash
   }
   deriving (Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
