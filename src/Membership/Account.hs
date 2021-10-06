@@ -21,10 +21,8 @@ import Ledger
     Datum (Datum),
     DatumHash,
     PubKeyHash,
-    Tx (..),
     TxOut (..),
     TxOutRef,
-    TxOutTx,
     txOutDatum,
   )
 import Ledger.Scripts (ValidatorHash)
@@ -56,6 +54,8 @@ data AccountDatum = AccountDatum
     adReviewCredit :: Integer, -- Number of DSET tokens the user received from reviews
     adReviews :: [Review],
     adContracts :: M.Map ValidatorHash AssetClass -- A list of the contract NFTs
+    -- ! All contracts have the same validator hash, therefore I am dumb
+    -- TODO: Replace M.Map ValidatorHash AssetClass with [AssetClass]
   }
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
@@ -199,3 +199,4 @@ findAccountDatum o f = do
   dh <- txOutDatum o
   Datum d <- f dh
   PlutusTx.fromBuiltinData d
+  
