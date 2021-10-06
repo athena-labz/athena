@@ -148,6 +148,7 @@ data AccountUTxOInfo = AccountUTxOInfo
   }
   deriving (P.Show, Generic, FromJSON, ToJSON, P.Eq)
 
+-- Tries to find a datum, based on ChainIndexTx (basically a Tx) and a DatumHash
 lookupChainIndexDatum :: ChainIndexTx -> DatumHash -> Maybe Datum
 lookupChainIndexDatum ciTx dh = Map.lookup dh (ciTx ^. citxData)
 
@@ -177,14 +178,17 @@ findAccounts accountSettings = do
     sigPubKeys :: Value -> [PubKeyHash]
     sigPubKeys v = findSignatories sigSymbol v
 
-    getAccountInfo :: (TxOutRef, (ChainIndexTxOut, ChainIndexTx)) -> Maybe AccountUTxOInfo
+    getAccountInfo ::
+      (TxOutRef, (ChainIndexTxOut, ChainIndexTx)) ->
+      Maybe AccountUTxOInfo
     getAccountInfo (oref, (cTxOut, cTxTx)) = do
       pkh <-
         ( case sigPubKeys (txOutValue $ toTxOut cTxOut) of
             [p] -> Just p
             _ -> Nothing
           )
-      accountDatum <- findAccountDatum (toTxOut cTxOut) (lookupChainIndexDatum cTxTx)
+      accountDatum <-
+        findAccountDatum (toTxOut cTxOut) (lookupChainIndexDatum cTxTx)
 
       let reviewCreditValue :: Value
           reviewCreditValue =
@@ -234,6 +238,8 @@ findAccount user accountSettings = do
         (txOutValue $ toTxOut cTxOut)
         == [user]
 
+-- Get's the important information about an account based on the account's user
+-- and it's settings
 getAccountOffChainEssentials ::
   AccountSettings ->
   PubKeyHash ->
@@ -244,8 +250,7 @@ getAccountOffChainEssentials accountSettings pkh = do
 
   case maybeAccount of
     Just (accountReference, accountOutTx) -> do
-      let 
-          accountOut :: ChainIndexTxOut
+      let accountOut :: ChainIndexTxOut
           accountOut = fst accountOutTx
 
           accountTx :: ChainIndexTx
@@ -273,15 +278,19 @@ getAccountOffChainEssentials accountSettings pkh = do
       logError @String "Get Account Off-Chain Essentials - Account not found"
       return Nothing
 
-getContractOffChainEssentials :: AccountSettings -> AssetClass -> Contract w s Text (Maybe ContractOffChainEssentials)
+-- Get's the contract important information based on it's NFT identifier asset
+-- class and it's settings
+getContractOffChainEssentials ::
+  AccountSettings ->
+  AssetClass ->
+  Contract w s Text (Maybe ContractOffChainEssentials)
 getContractOffChainEssentials accountSettings contractNFT = do
   -- Tries to get the contract corresponding to this NFT
   maybeContract <- findContract contractNFT contrValHash
 
   case maybeContract of
     Just (contractReference, contractOutTx) -> do
-      let 
-          contractOut :: ChainIndexTxOut
+      let contractOut :: ChainIndexTxOut
           contractOut = fst contractOutTx
 
           contractTx :: ChainIndexTx
@@ -324,7 +333,10 @@ getContractOffChainEssentials accountSettings contractNFT = do
     sigSym :: CurrencySymbol
     sigSym = asSignatureSymbol accountSettings
 
-getLogicOffChainEssentials :: LogicSettings -> AssetClass -> Contract w s Text (Maybe LogicOffChainEssentials)
+getLogicOffChainEssentials ::
+  LogicSettings ->
+  AssetClass ->
+  Contract w s Text (Maybe LogicOffChainEssentials)
 getLogicOffChainEssentials logicSettings shameToken = do
   -- The signer public key hash
   pkh <- pubKeyHash <$> Contract.ownPubKey
@@ -334,8 +346,7 @@ getLogicOffChainEssentials logicSettings shameToken = do
 
   case maybeLogic of
     Just (logicReference, logicOutTx) -> do
-      let 
-          logicOut :: ChainIndexTxOut
+      let logicOut :: ChainIndexTxOut
           logicOut = fst logicOutTx
 
           logicTx :: ChainIndexTx
@@ -381,10 +392,12 @@ spendAccount ::
   TxOutRef ->
   AccountRedeemer ->
   TxConstraints (RedeemerType AccountType) (DatumType AccountType)
-spendAccount oref r = Constraints.mustSpendScriptOutput oref (Redeemer $ PlutusTx.toBuiltinData r)
+spendAccount oref r =
+  Constraints.mustSpendScriptOutput oref (Redeemer $ PlutusTx.toBuiltinData r)
 
 spendContract ::
   TxOutRef ->
   ContractRedeemer ->
   TxConstraints (RedeemerType ContractType) (DatumType ContractType)
-spendContract oref r = Constraints.mustSpendScriptOutput oref (Redeemer $ PlutusTx.toBuiltinData r)
+spendContract oref r =
+  Constraints.mustSpendScriptOutput oref (Redeemer $ PlutusTx.toBuiltinData r)
