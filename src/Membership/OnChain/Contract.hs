@@ -16,6 +16,7 @@ module Membership.OnChain.Contract where
 
 import Ledger
   ( Address,
+    POSIXTime,
     PubKeyHash (..),
     ScriptContext (scriptContextTxInfo),
     TxInfo (txInfoValidRange),
@@ -39,7 +40,7 @@ import Ledger.Value
   ( AssetClass,
     CurrencySymbol (..),
     TokenName,
-    Value (Value),
+    Value,
     assetClass,
     assetClassValue,
     flattenValue,
@@ -217,6 +218,14 @@ abstractValidator validatorName expectedDatum expectedValueDifference ctx =
       txOutValue ownOutput <> negate (txOutValue ownInput)
         == expectedValueDifference
 
+{-# INLINEABLE signTraceIfFalse #-}
+signTraceIfFalse :: BuiltinString -> Bool -> Bool
+signTraceIfFalse msg = traceIfFalse ("Contract Sign - " <> msg)
+
+{-# INLINEABLE signTraceError #-}
+signTraceError :: forall a. BuiltinString -> a
+signTraceError msg = traceError ("Contract Sign - " <> msg)
+
 -- Signing should only validate if
 --    * The contract role map increases correctly with
 --        * The added user having signed the transaction
@@ -233,20 +242,22 @@ abstractValidator validatorName expectedDatum expectedValueDifference ctx =
 handleSigning :: ContractSettings -> ContractEssentials -> ContractDatum -> ScriptContext -> Bool
 handleSigning cst ce inputDatum ctx =
   validateContract cst ctx
-    && traceIfFalse "Contract Signing - Invalid Contract Value" validValue
-    && traceIfFalse "Contract Signing - Invalid Contract Datum" validDatum
+    && signTraceIfFalse "Invalid Contract Value" validValue
+    && signTraceIfFalse "Invalid Contract Datum" validDatum
   where
     info :: TxInfo
     info = scriptContextTxInfo ctx
 
+    -- The contract input and output UTxOs
     ownInput, ownOutput :: TxOut
     ownInput = fst $ strictFindOutAndIn ctx
     ownOutput = snd $ strictFindOutAndIn ctx
 
+    -- The data from our contract output
     outputDatum :: ContractDatum
     outputDatum = case findContractDatum ownOutput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Contract Signing - No Output Datum found"
+      Nothing -> signTraceError "No Output Datum found"
 
     -- The public key hash derived from the SIG token found
     pkh :: PubKeyHash
@@ -260,10 +271,10 @@ handleSigning cst ce inputDatum ctx =
         | pkh' == pkh ->
           if pkh `elem` jsPubKeyHashes (cdJudges inputDatum)
             then Mediator
-            else traceError "Contract Signing - Mediator not in the list"
+            else signTraceError "Mediator not in the list"
       Just (pkh', r)
         | pkh' == pkh -> r
-      _ -> traceError "Contract Signing - No role added"
+      _ -> signTraceError "No role added"
 
     -- The collateral hold in this contract
     trustValue :: Value
@@ -286,90 +297,112 @@ handleSigning cst ce inputDatum ctx =
     expectedValueDifference = case userRole of
       Client -> ceSigValue ce <> trustValue <> priceValue
       Mediator -> ceSigValue ce <> trustValue
-      Publisher -> traceError "Contract Signing - Publisher cannot sign the contract again"
+      Publisher -> signTraceError "Publisher cannot sign the contract again"
 
     validValue :: Bool
     validValue =
       txOutValue ownOutput <> negate (txOutValue ownInput)
         == expectedValueDifference
 
+    -- Makes sure our output contract data receives the new user inside it's
+    -- role map
     validDatum :: Bool
     validDatum = outputDatum == addUser pkh userRole inputDatum
+
+{-# INLINEABLE accuseTraceIfFalse #-}
+accuseTraceIfFalse :: BuiltinString -> Bool -> Bool
+accuseTraceIfFalse msg = traceIfFalse ("Contract Accusation - " <> msg)
+
+{-# INLINEABLE accuseTraceError #-}
+accuseTraceError :: forall a. BuiltinString -> a
+accuseTraceError msg = traceError ("Contract Accusation - " <> msg)
 
 {-# INLINEABLE handleAccusation #-}
 handleAccusation ::
   ContractSettings ->
   ContractDatum ->
-  (PubKeyHash, PubKeyHash) ->
+  Accusation ->
   ScriptContext ->
   Bool
-handleAccusation cst inputDatum (accuser, accused) ctx =
+handleAccusation cst inputDatum accusation ctx =
   validateContract cst ctx
-    && traceIfFalse "Contract Accusation - Invalid Contract Value" validContractValue
-    && traceIfFalse "Contract Accusation - Invalid Contract Datum" validContractDatum
-    && traceIfFalse "Contract Accusation - Invalid Logic" validLogicScript
-    && traceIfFalse
-      "Contract Accusation - Logic Script did not receive collateral"
+    && accuseTraceIfFalse "Invalid Accusation" validAccusation
+    && accuseTraceIfFalse "Invalid Contract Value" validContractValue
+    && accuseTraceIfFalse "Invalid Contract Datum" validContractDatum
+    && accuseTraceIfFalse "Invalid Logic" validLogicScript
+    && accuseTraceIfFalse
+      "Logic Script did not receive collateral"
       validLogicScriptValue
-    && traceIfFalse "Contract Accusation - Transaction not signed by accuser" signedByAccuser
+    && accuseTraceIfFalse "Transaction not signed by accuser" signedByAccuser
   where
     info :: TxInfo
     info = scriptContextTxInfo ctx
 
+    -- The contract input and output UTxOs
     ownInput, ownOutput :: TxOut
     ownInput = fst $ strictFindOutAndIn ctx
     ownOutput = snd $ strictFindOutAndIn ctx
-  
+
+    -- The data from our contract output
     outputDatum :: ContractDatum
     outputDatum = case findContractDatum ownOutput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Contract Accusation - No output datum found"
+      Nothing -> accuseTraceError "No output datum found"
 
     signatureSymbol, shameTokenSymbol :: CurrencySymbol
-    shameTokenSymbol = psShameTokenSymbol $ csPlatformSettings cst
+    shameTokenSymbol = psShameTokenSymbol (csPlatformSettings cst)
     signatureSymbol = csSignatureSymbol cst
 
+    -- When we create a contract we must specify the logic validator hash which
+    -- will be responsible for handling accusations, mediations and distributing
+    -- the trust tokens accordingly. This is the logic we specified
     logicScriptValHash :: ValidatorHash
     logicScriptValHash = cdLogicScript inputDatum
 
+    -- The logic input and output UTxOs
     logicScriptInput, logicScriptOutput :: TxOut
     logicScriptInput = case strictFindInputWithValHash logicScriptValHash info of
       Just o -> o
-      Nothing -> traceError "Contract Accusation - Couldn't find an unique logic script input"
+      Nothing -> accuseTraceError "Couldn't find an unique logic script input"
     logicScriptOutput = case strictFindOutputWithValHash logicScriptValHash info of
       Just o -> o
-      Nothing -> traceError "Contract Accusation - Couldn't find an unique logic script output"
+      Nothing -> accuseTraceError "Couldn't find an unique logic script output"
 
+    -- A digestable shame token representation, with it's essential information
+    -- easy to manipulate
     st :: ShameToken
     st = case findShameToken shameTokenSymbol (txOutValue logicScriptInput) of
       Just st' -> st'
-      Nothing -> traceError "Contract Accusation - Couldn't find a shame token in the logic script input"
-    
+      Nothing -> accuseTraceError "Couldn't find a shame token in the logic script input"
+
     shameTokenAssetClass :: AssetClass
     shameTokenAssetClass = assetClass shameTokenSymbol (stTokenName st)
 
+    -- All the sig tokens which can be found inside our contract input UTxO
     sigs :: [Sig]
     sigs = findSignatures signatureSymbol (txOutValue ownInput)
 
-    -- A nice data type to represent the accuser and accuse sig tokens
+    accuser, accused :: PubKeyHash
+    accuser = fst (aAccuser accusation)
+    accused = fst (aAccused accusation)
+
+    accuserRole, accusedRole :: Role
+    accuserRole = snd (aAccuser accusation)
+    accusedRole = snd (aAccused accusation)
+
+    accusationTime :: POSIXTime
+    accusationTime = aTime accusation
+
     accuserSig, accusedSig, judgeSig :: Sig
     accuserSig = case findSig accuser sigs of
       Just s -> s
-      Nothing -> traceError "Contract Accusation - Accuser SIG token missing"
+      Nothing -> accuseTraceError "Accuser SIG token missing"
     accusedSig = case findSig accused sigs of
       Just s -> s
-      Nothing -> traceError "Contract Accusation - Accused SIG token missing"
+      Nothing -> accuseTraceError "Accused SIG token missing"
     judgeSig = case firstValidJudge (jsPubKeyHashes $ cdJudges inputDatum) sigs of
       Just s -> sig s (sScript accuserSig)
-      Nothing -> traceError "Contract Accusation - No available judge"
-
-    accuserRole, accusedRole :: Role
-    accuserRole = case Map.lookup accuser (cdRoleMap inputDatum) of
-      Just r -> r
-      Nothing -> traceError "Contract Accusation - Accuser not registered"
-    accusedRole = case Map.lookup accused (cdRoleMap inputDatum) of
-      Just r -> r
-      Nothing -> traceError "Contract Accusation - Accused not registered"
+      Nothing -> accuseTraceError "No available judge"
 
     accusedSigValue, judgeSigValue :: Value
     accusedSigValue = signatureValue' signatureSymbol accusedSig
@@ -377,12 +410,34 @@ handleAccusation cst inputDatum (accuser, accused) ctx =
 
     judgeValue, trustValue, shameTokenValue :: Value
     -- The price a judge will receive after mediating the conflict
-    judgeValue = assetClassValue (psToken $ csPlatformSettings cst) (jsPrice $ cdJudges inputDatum)
+    judgeValue =
+      assetClassValue
+        (psToken $ csPlatformSettings cst)
+        (jsPrice $ cdJudges inputDatum)
     -- The value that serves as collateral in case someone breaks the rules
-    trustValue = assetClassValue (psToken $ csPlatformSettings cst) (sTrust $ cdService inputDatum)
+    trustValue =
+      assetClassValue
+        (psToken $ csPlatformSettings cst)
+        (sTrust $ cdService inputDatum)
     -- The value that uniquely identifies the logic script
     shameTokenValue = assetClassValue shameTokenAssetClass 1
 
+    -- The public key hashes from the accuser and accused inside the accusation
+    -- we received should have SIG tokens inside this contract
+    validAccusation :: Bool
+    validAccusation = case (foundAccuserRole, foundAccusedRole) of
+      (Just acr, Just acd) ->
+        acr == accuserRole
+          && acd == accusedRole
+          && accusationTime `member` txInfoValidRange info
+      _ -> False
+      where
+        foundAccuserRole, foundAccusedRole :: Maybe Role
+        foundAccuserRole = Map.lookup accuser (cdRoleMap inputDatum)
+        foundAccusedRole = Map.lookup accused (cdRoleMap inputDatum)
+
+    -- Our contract should lose exatcly the judge and accused trust values and
+    -- sig tokens
     validContractValue :: Bool
     validContractValue =
       txOutValue ownOutput <> negate (txOutValue ownInput)
@@ -390,55 +445,16 @@ handleAccusation cst inputDatum (accuser, accused) ctx =
 
     -- If the output Datum matches the expected values
     validContractDatum :: Bool
-    validContractDatum =
-      validJudges && validLogic && validService && validRoleMap && validAccusations
-          && traceIfFalse
-            "Contract Accusation - Datum accusation was not added correctly"
-            validAccusations
-        where
-          validJudges :: Bool
-          validJudges = traceIfFalse
-            "Contract Accusation - Datum judges are not the same"
-            (cdJudges inputDatum == cdJudges outputDatum)
+    validContractDatum = outputDatum == accuseUser accusation inputDatum
 
-          validLogic :: Bool
-          validLogic = traceIfFalse
-            "Contract Accusation - Datum logic scripts are not the same"
-            (cdLogicScript inputDatum == cdLogicScript outputDatum)
-
-          validService :: Bool
-          validService = traceIfFalse
-            "Contract Accusation - Datum services are not the same"
-            (cdService inputDatum == cdService outputDatum)
-
-          validRoleMap :: Bool
-          validRoleMap = traceIfFalse
-            "Contract Accusation - Datum role maps are not the same"
-            (cdRoleMap inputDatum == cdRoleMap outputDatum)
-
-          validAccusations :: Bool
-          validAccusations = traceIfFalse
-            "Contract Accusation - Datum accusation was not added correctly"
-            (case cdAccusations outputDatum of
-              ((
-                Accusation
-                (accuser', accuserRole')
-                (accused', accusedRole')
-                accusationTime
-               ) : accusations) ->
-                accusationTime `member` txInfoValidRange info -- Accusation is being made now
-                  && accuser == accuser'
-                  && accuserRole == accuserRole'
-                  && accused == accused'
-                  && accusedRole == accusedRole'
-                  && accusations == cdAccusations inputDatum
-              _ -> False)
-
+    -- If the logic input and output UTxOs contain the shame token value
     validLogicScript :: Bool
     validLogicScript =
       txOutValue logicScriptInput `geq` shameTokenValue
         && txOutValue logicScriptOutput `geq` shameTokenValue
 
+    -- If the logic script received exactly the trust tokens from the judge and
+    -- accused, their SIG tokens and the judge expected reward
     validLogicScriptValue :: Bool
     validLogicScriptValue =
       txOutValue logicScriptOutput <> negate (txOutValue logicScriptInput)
@@ -452,6 +468,14 @@ handleAccusation cst inputDatum (accuser, accused) ctx =
     signedByAccuser :: Bool
     signedByAccuser = txSignedBy info accuser
 
+{-# INLINEABLE mediateTraceIfFalse #-}
+mediateTraceIfFalse :: BuiltinString -> Bool -> Bool
+mediateTraceIfFalse msg = traceIfFalse ("Contract Mediation - " <> msg)
+
+{-# INLINEABLE mediateTraceError #-}
+mediateTraceError :: forall a. BuiltinString -> a
+mediateTraceError msg = traceError ("Contract Mediation - " <> msg)
+
 {-# INLINEABLE handleMediation #-}
 handleMediation ::
   ContractSettings ->
@@ -460,37 +484,44 @@ handleMediation ::
   Bool
 handleMediation cst inputDatum ctx =
   validateContract cst ctx
-    && traceIfFalse "Contract Mediation - Invalid Contract" validContract
-    && traceIfFalse "Contract Mediation - Invalid Logic" validLogic
-    && traceIfFalse "Contract Mediation - Invalid contract value" validContractValue
-    && traceIfFalse "Contract Mediation - Invalid contract datum" validContractDatum
+    && mediateTraceIfFalse "Invalid Contract" validContract
+    && mediateTraceIfFalse "Invalid Logic" validLogic
+    && mediateTraceIfFalse "Invalid contract value" validContractValue
+    && mediateTraceIfFalse "Invalid contract datum" validContractDatum
   where
     info :: TxInfo
     info = scriptContextTxInfo ctx
 
+    -- The contract input and output UTxOs
     ownInput, ownOutput :: TxOut
     ownInput = fst $ strictFindOutAndIn ctx
     ownOutput = snd $ strictFindOutAndIn ctx
 
+    -- The data from our contract output
     outputDatum :: ContractDatum
     outputDatum = case findContractDatum ownOutput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Contract Mediation - No output datum found"
+      Nothing -> mediateTraceError "No output datum found"
 
     logicValHash :: ValidatorHash
     logicValHash = cdLogicScript inputDatum
 
+    -- The input UTxO from the logic script we are consuming
     logicInput :: TxOut
     logicInput = case strictFindInputWithValHash logicValHash info of
       Just out -> out
-      Nothing -> traceError "Contract Mediation - Couldn't find an unique logic script input"
+      Nothing -> mediateTraceError "Couldn't find an unique logic script input"
 
+    -- The data / state in which this logic is right now
+    -- Because we are trying to complete the mediation (distributing the tokens),
+    -- we expect it to be in the LSWaitingEnd state
     logicDatum :: LogicState
     logicDatum = case findLogicDatum logicInput (`findDatum` info) of
       Just (LSWaitingEnd nft jdg acc ver) -> LSWaitingEnd nft jdg acc ver
-      Just _ -> traceError "Contract Mediation - Wrong logic state"
-      Nothing -> traceError "Contract Mediation - Logic datum not found"
+      Just _ -> mediateTraceError "Wrong logic state"
+      Nothing -> mediateTraceError "Logic datum not found"
 
+    -- The NFT used to identify our contract
     contractNFT :: AssetClass
     contractNFT = case logicDatum of
       (LSWaitingEnd nft _ _ _) -> nft
@@ -498,10 +529,13 @@ handleMediation cst inputDatum ctx =
     contractNFTValue :: Value
     contractNFTValue = assetClassValue contractNFT 1
 
+    -- The information about the user who mediated this conflict, such as his
+    -- public key hash and when he did it
     judgeInfo :: Judge
     judgeInfo = case logicDatum of
       (LSWaitingEnd _ jdg _ _) -> jdg
 
+    -- The accusation which was judged
     accusation :: Accusation
     accusation = case logicDatum of
       (LSWaitingEnd _ _ acc _) -> acc
@@ -518,10 +552,11 @@ handleMediation cst inputDatum ctx =
     sigs :: [Sig]
     sigs = findSignatures sigSymbol (txOutValue ownOutput)
 
+    -- The validator hash from the platform accounts
     accountValHash :: ValidatorHash
     accountValHash = case sigs of
       (x : _) -> sScript x
-      [] -> traceError "Contract Mediate - No SIGs found"
+      [] -> mediateTraceError "No SIGs found"
 
     judgeSig, accusedSig :: Sig
     judgeSig = sig judge accountValHash
@@ -530,21 +565,28 @@ handleMediation cst inputDatum ctx =
     judgeSigValue, accusedSigValue, trustValue :: Value
     judgeSigValue = signatureValue' sigSymbol judgeSig
     accusedSigValue = signatureValue' sigSymbol accusedSig
-    trustValue = assetClassValue (psToken $ csPlatformSettings cst) (sTrust $ cdService inputDatum)
+    trustValue =
+      assetClassValue
+        (psToken $ csPlatformSettings cst)
+        (sTrust $ cdService inputDatum)
 
+    -- If our service is one-time (therefore has a price), the accuser
+    -- is a client and the accused is a publisher, the client should
+    -- receive his money back, that's what priceValue accounts for
     priceValue :: Value
     priceValue = case sType (cdService inputDatum) of
       OneTime v _
         | (snd (aAccuser accusation) == Client)
             && (snd (aAccused accusation) == Publisher) ->
           v
-      _ -> mempty
+      _ -> mempty -- Means "no value"
 
+    -- If our accused was forced to leave the contract
     guilty :: Bool
     guilty
       | ownValueDifference == innocentValue = False
       | ownValueDifference == guiltyValue = True
-      | otherwise = traceError "Contract Mediation - Invalid contract value"
+      | otherwise = mediateTraceError "Invalid contract value"
       where
         ownValueDifference :: Value
         ownValueDifference = txOutValue ownOutput <> negate (txOutValue ownInput)
@@ -564,7 +606,7 @@ handleMediation cst inputDatum ctx =
       (psShameTokenSymbol $ csPlatformSettings cst)
       (txOutValue logicInput) of
       Just ac -> ac
-      Nothing -> traceError "Contract Mediation - Shame Token could not be found"
+      Nothing -> mediateTraceError "Shame Token could not be found"
 
     shameTokenValue :: Value
     shameTokenValue = assetClassValue shameTokenAssetClass 1
@@ -578,31 +620,48 @@ handleMediation cst inputDatum ctx =
     sameService :: Bool
     sameService = cdService inputDatum == cdService outputDatum
 
+    -- If our new role map removed the accused (if he was guilty)
     validRoleMap :: Bool
     validRoleMap =
       if guilty
         then cdRoleMap outputDatum == Map.delete accused (cdRoleMap inputDatum)
         else cdRoleMap outputDatum == cdRoleMap inputDatum
 
+    -- Since the accusation has been dealt with, it should be removed from the
+    -- contract data
+    validAccusation :: Bool
+    validAccusation =
+      cdAccusations outputDatum
+        == cdAccusations (removeAccusation accusation inputDatum)
+
+    -- If our contract contains in both input and output it's NFT
     validContract :: Bool
     validContract =
       txOutValue ownInput `geq` contractNFTValue
         && txOutValue ownOutput `geq` contractNFTValue
 
+    -- The "guilty" variable is already checking that for us
     validContractValue :: Bool
-    validContractValue = True -- The "guilty" variable is already checking that for us
+    validContractValue = True
+
     validLogic :: Bool
     validLogic = txOutValue logicInput `geq` shameTokenValue
 
     validContractDatum :: Bool
     validContractDatum =
-      traceIfFalse "Contract Accusation - Datum judges changed" sameJudges
-        && traceIfFalse "Contract Accusation - Datum logic script changed" sameLogicScript
-        && traceIfFalse "Contract Accusation - Datum service changed" sameService
-        && traceIfFalse "Contract Accusation - Invalid datum role map" validRoleMap
-        && traceIfFalse
-          "Contract Accusation - Datum accusation was not removed correctly"
-          (cdAccusations outputDatum == cdAccusations (removeAccusation accusation inputDatum))
+      mediateTraceIfFalse "Datum judges changed" sameJudges
+        && mediateTraceIfFalse "Datum logic script changed" sameLogicScript
+        && mediateTraceIfFalse "Datum service changed" sameService
+        && mediateTraceIfFalse "Invalid datum role map" validRoleMap
+        && mediateTraceIfFalse "Invalid datum accusations" validAccusation
+
+{-# INLINEABLE cancelTraceIfFalse #-}
+cancelTraceIfFalse :: BuiltinString -> Bool -> Bool
+cancelTraceIfFalse msg = traceIfFalse ("Contract Cancel - " <> msg)
+
+{-# INLINEABLE cancelTraceError #-}
+cancelTraceError :: forall a. BuiltinString -> a
+cancelTraceError msg = traceError ("Contract Cancel - " <> msg)
 
 -- Cancellation should only validate if
 --    * The contract is valid
@@ -619,10 +678,10 @@ handleCancellation ::
   Bool
 handleCancellation cst inputDatum ctx =
   validateContract cst ctx
-    && traceIfFalse "Contract Cancellation - Invalid Account" validAccount
-    && traceIfFalse "Contract Cancellation - Account did not receive SIG token" validAccountValue
-    && traceIfFalse "Contract Cancellation - Invalid Contract Value" validContractValue
-    && traceIfFalse "Contract Cancellation - Invalid Contract Datum" validContractDatum
+    && cancelTraceIfFalse "Invalid Account" validAccount
+    && cancelTraceIfFalse "Account did not receive SIG token" validAccountValue
+    && cancelTraceIfFalse "Invalid Contract Value" validContractValue
+    && cancelTraceIfFalse "Invalid Contract Datum" validContractDatum
   where
     info :: TxInfo
     info = scriptContextTxInfo ctx
@@ -630,22 +689,27 @@ handleCancellation cst inputDatum ctx =
     sigSymbol :: CurrencySymbol
     sigSymbol = csSignatureSymbol cst
 
+    -- The contract input and output UTxOs
     ownInput, ownOutput :: TxOut
     ownInput = fst $ strictFindOutAndIn ctx
     ownOutput = snd $ strictFindOutAndIn ctx
 
+    -- The data from our contract output
     outputDatum :: ContractDatum
     outputDatum = case findContractDatum ownOutput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Contract Cancellation - No Output Datum found"
+      Nothing -> cancelTraceError "No Output Datum found"
 
+    -- All the SIG wrappers inside our contract
     sigs :: [Sig]
     sigs = findSignatures sigSymbol (txOutValue ownInput)
 
+    -- The SIG wrapper from the person who signed this (the one who wants to
+    -- cancel the contract)
     ownSig :: Sig
     ownSig = case whoSigned' info sigs of
       Just s -> s
-      Nothing -> traceError "Contract Cancellation - Sig not found"
+      Nothing -> cancelTraceError "Sig not found"
 
     pkh :: PubKeyHash
     pkh = sUser ownSig
@@ -656,31 +720,47 @@ handleCancellation cst inputDatum ctx =
     sigValue :: Value
     sigValue = signatureValue' sigSymbol ownSig
 
+    -- The account input and output UTxOs from the user who want's to cancel
+    -- the contract
     accountInput, accountOutput :: TxOut
     accountInput = case strictFindInputWithValHash accValHash info of
       Just o -> o
-      Nothing -> traceError "Contract Cancellation - Couldn't find an unique account input"
+      Nothing -> cancelTraceError "Couldn't find an unique account input"
     accountOutput = case strictFindOutputWithValHash accValHash info of
       Just o -> o
-      Nothing -> traceError "Contract Cancellation - Couldn't find an unique account output"
+      Nothing -> cancelTraceError "Couldn't find an unique account output"
 
+    -- Make sure the account input and output has our user's SIG token (it's
+    -- actually his account)
     validAccount :: Bool
     validAccount =
       txOutValue accountInput `geq` sigValue
         && txOutValue accountOutput `geq` sigValue
 
+    -- Make sure the account receives our user SIG token back
     validAccountValue :: Bool
     validAccountValue =
       txOutValue accountOutput <> negate (txOutValue accountInput)
         == sigValue
 
+    -- Ensure our contract datum had the user removed from the role map
     validContractDatum :: Bool
     validContractDatum = outputDatum == removeUser pkh inputDatum
-    
+
+    -- Make sure our contract lost exactly one SIG token (from the person who
+    -- signed this transaction)
     validContractValue :: Bool
     validContractValue =
       txOutValue ownOutput <> negate (txOutValue ownInput)
         == negate sigValue
+
+{-# INLINEABLE leaveTraceIfFalse #-}
+leaveTraceIfFalse :: BuiltinString -> Bool -> Bool
+leaveTraceIfFalse msg = traceIfFalse ("Contract Leave - " <> msg)
+
+{-# INLINEABLE leaveTraceError #-}
+leaveTraceError :: forall a. BuiltinString -> a
+leaveTraceError msg = traceError ("Contract Leave - " <> msg)
 
 {-# INLINEABLE handleLeave #-}
 handleLeave ::
@@ -690,15 +770,11 @@ handleLeave ::
   Bool
 handleLeave cst inputDatum ctx =
   validateContract cst ctx
-    && traceIfFalse "Contract Leave - Invalid Contract Value" validContractValue
-    && traceIfFalse "Contract Leave - Invalid Contract Datum" validContractDatum
-    && traceIfFalse "Contract Leave - Invalid account" validAccount
-    && traceIfFalse
-      "Contract Leave - Account did not receive SIG token"
-      validAccountValue
-    && traceIfFalse
-      "Contract Leave - Not allowed to leave the contract now"
-      allowedToLeave
+    && leaveTraceIfFalse "Invalid Contract Value" validContractValue
+    && leaveTraceIfFalse "Invalid Contract Datum" validContractDatum
+    && leaveTraceIfFalse "Invalid account" validAccount
+    && leaveTraceIfFalse "Account did not receive SIG token" validAccountValue
+    && leaveTraceIfFalse "Not allowed to leave the contract now" allowedToLeave
   where
     info :: TxInfo
     info = scriptContextTxInfo ctx
@@ -709,73 +785,93 @@ handleLeave cst inputDatum ctx =
     platformSettings :: PlatformSettings
     platformSettings = csPlatformSettings cst
 
+    -- The contract input and output UTxOs
     ownInput, ownOutput :: TxOut
     ownInput = fst $ strictFindOutAndIn ctx
     ownOutput = snd $ strictFindOutAndIn ctx
 
+    -- The data from our contract output
     outputDatum :: ContractDatum
     outputDatum = case findContractDatum ownOutput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Contract Leave - No Output Datum found"
-    
+      Nothing -> leaveTraceError "No Output Datum found"
+
+    -- All the SIG wrappers inside our contract
     sigs :: [Sig]
     sigs = findSignatures sigSymbol (txOutValue ownInput)
 
+    -- The SIG wrapper from the user who signed this (the one who wants to
+    -- leave the contract)
     ownSig :: Sig
     ownSig = case whoSigned' info sigs of
       Just s -> s
-      Nothing -> traceError "Contract Leave - Sig not found"
+      Nothing -> leaveTraceError "Sig not found"
 
     pkh :: PubKeyHash
     pkh = sUser ownSig
 
+    -- The platform account validator hash, derived from the user SIG token
     accValHash :: ValidatorHash
     accValHash = sScript ownSig
 
+    -- The current role from the user who want's to leave
     userRole :: Role
     userRole = case Map.lookup pkh (cdRoleMap inputDatum) of
       Just r -> r
-      Nothing -> traceError "Contract Leave - User not registered"
+      Nothing -> leaveTraceError "User not registered"
 
+    -- The account input and output UTxOs from the user who want's to leave
+    -- the contract
     accountInput, accountOutput :: TxOut
     accountInput = case strictFindInputWithValHash accValHash info of
       Just o -> o
-      Nothing -> traceError "Contract Leaving - Couldn't find an unique account input"
+      Nothing -> leaveTraceError "Couldn't find an unique account input"
     accountOutput = case strictFindOutputWithValHash accValHash info of
       Just o -> o
-      Nothing -> traceError "Contract Leaving - Couldn't find an unique account output"
+      Nothing -> leaveTraceError "Couldn't find an unique account output"
 
     trustValue, priceValue, sigValue :: Value
+
     -- The collateral held in this contract
     trustValue = assetClassValue (psToken $ csPlatformSettings cst) (sTrust $ cdService inputDatum)
-    -- The price that will be paid to the service provider if everything goes well
-    -- If this is a constant contract, there is no price
+
+    -- The price of the service (if we are the publisher and the contract is of
+    -- type one-time)
     priceValue = case sType $ cdService inputDatum of
       OneTime v _
         | userRole == Publisher -> v
       _ -> mempty
+
     sigValue = signatureValue' sigSymbol ownSig
+
     transactionFeeValue =
       assetClassValue
         (psToken platformSettings)
         (psTxFee platformSettings)
 
+    -- Did the publisher leave the contract already?
     publisherPresent :: Bool
     publisherPresent = sigIn (sPublisher $ cdService inputDatum) sigs
 
+    -- Makes sure our contract lost exactly the value of the user trust, his SIG
+    -- token and the price (if he's a publisher)
     validContractValue :: Bool
     validContractValue =
       txOutValue ownOutput <> negate (txOutValue ownInput)
         == negate (trustValue <> sigValue <> priceValue)
 
+    -- The new contract datum must have the user removed from the role map
     validContractDatum :: Bool
     validContractDatum = outputDatum == removeUser pkh inputDatum
 
+    -- Makes sure the account has our user's sig value in both input and output
     validAccount :: Bool
     validAccount =
       txOutValue accountInput `geq` sigValue
         && txOutValue accountOutput `geq` sigValue
 
+    -- Makes sure the account received exactly our user's SIG value and the
+    -- expected transaction fee
     validAccountValue :: Bool
     validAccountValue =
       txOutValue accountOutput <> negate (txOutValue accountInput)
@@ -784,14 +880,19 @@ handleLeave cst inputDatum ctx =
     accusations :: [Accusation]
     accusations = cdAccusations inputDatum
 
+    -- Makes sure our user is actually allowed to leave
+    -- In any type, we must always verify that our user is not involved in any
+    -- accusation (this includes he being a mediator)
+    -- If our contract is constant that's it, but if our contract is one-time,
+    -- we must also, either the deadline must have passed or the publisher
+    -- cancelled the contract already
     allowedToLeave :: Bool
     allowedToLeave =
-      case sType $ cdService inputDatum of
-        OneTime _ dln
-          | not (involvedInAccusation pkh accusations) ->
-            (from dln `contains` txInfoValidRange info)
-              || not publisherPresent
-        CConstant -> not (involvedInAccusation pkh accusations)
+      not (involvedInAccusation pkh accusations)
+        && case sType $ cdService inputDatum of
+          OneTime _ dln ->
+            (from dln `contains` txInfoValidRange info) || not publisherPresent
+          CConstant -> True
 
 {-# INLINEABLE handleReview #-}
 handleReview ::
@@ -809,7 +910,7 @@ mkContractValidator cst dat CSign ctx = handleSigning cst ce dat ctx
   where
     ce :: ContractEssentials
     ce = getContractEssentials "Contract Signature" cst ctx
-mkContractValidator cst dat (CAccuse acr acd) ctx = handleAccusation cst dat (acr, acd) ctx
+mkContractValidator cst dat (CAccuse acc) ctx = handleAccusation cst dat acc ctx
 mkContractValidator cst dat CMediate ctx = handleMediation cst dat ctx
 mkContractValidator cst dat CCancel ctx = handleCancellation cst dat ctx
 mkContractValidator cst dat CLeave ctx = handleLeave cst dat ctx
