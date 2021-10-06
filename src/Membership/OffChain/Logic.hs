@@ -330,18 +330,26 @@ accuse
           maybeAccusedRole :: Maybe Role
           maybeAccusedRole = AM.lookup accused (cdRoleMap contractDatum)
 
+          -- If we have both accused and accuser roles, construct an accusation,
+          -- which is a data type that holds their public key hashes, roles and
+          -- when the accusation was sent
+          maybeAccusation :: Maybe Accusation
+          maybeAccusation = do
+            accuserRole <- maybeAccuserRole
+            accusedRole <- maybeAccusedRole
+            return $
+              Accusation
+                { aAccuser = (accuser, accuserRole),
+                  aAccused = (accused, accusedRole),
+                  aTime = curTime
+                }
+
           -- If we have both accuser and accused role, construct a new datum,
           -- adding a new accusation to the list
           maybeNewContractDatum :: Maybe ContractDatum
           maybeNewContractDatum = do
-            accuserRole <- maybeAccuserRole
-            accusedRole <- maybeAccusedRole
-            return $
-              accuseUser
-                (accuser, accuserRole)
-                (accused, accusedRole)
-                curTime
-                contractDatum
+            accusation <- maybeAccusation
+            return $ accuseUser accusation contractDatum
 
           -- The information needed to transact with a contract
           contractSett :: ContractSettings
@@ -376,20 +384,6 @@ accuse
                 { jPubKeyHash = judgePKH,
                   jPrice = jsPrice judges,
                   jMaxDuration = jsMaxDuration judges
-                }
-
-          -- If we have both accused and accuser roles, construct an accusation,
-          -- which is a data type that holds their public key hashes, roles and
-          -- when the accusation was sent
-          maybeAccusation :: Maybe Accusation
-          maybeAccusation = do
-            accuserRole <- maybeAccuserRole
-            accusedRole <- maybeAccusedRole
-            return $
-              Accusation
-                { aAccuser = (accuser, accuserRole),
-                  aAccused = (accused, accusedRole),
-                  aTime = curTime
                 }
 
           -- The state in which our resulting logic ouput should be. This can
@@ -470,7 +464,7 @@ accuse
               Constraints.mustBeSignedBy accuser
                 <> Constraints.mustSpendScriptOutput
                   contractReference
-                  (Redeemer $ PlutusTx.toBuiltinData $ CAccuse accuser accused)
+                  (Redeemer $ PlutusTx.toBuiltinData $ CAccuse accusation)
                 <> Constraints.mustSpendScriptOutput
                   logicReference
                   (Redeemer $ PlutusTx.toBuiltinData $ LRAccuse accusation)
