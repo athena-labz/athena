@@ -58,6 +58,7 @@ import qualified PlutusTx
 import PlutusTx.Prelude
   ( AdditiveSemigroup ((+)),
     Bool (..),
+    BuiltinString,
     Eq ((==)),
     Integer,
     Maybe (..),
@@ -81,16 +82,45 @@ import PlutusTx.Prelude
 
 -- TODO: Verify validity and consistency of SIG tokens
 
+{-# INLINEABLE accuseTraceIfFalse #-}
+accuseTraceIfFalse :: BuiltinString -> Bool -> Bool
+accuseTraceIfFalse msg = traceIfFalse ("Logic Accuse - " <> msg)
+
+{-# INLINEABLE accuseTraceError #-}
+accuseTraceError :: forall a. BuiltinString -> a
+accuseTraceError msg = traceError ("Logic Accuse - " <> msg)
+
+{-# INLINEABLE mediateTraceIfFalse #-}
+mediateTraceIfFalse :: BuiltinString -> Bool -> Bool
+mediateTraceIfFalse msg = traceIfFalse ("Logic Mediate - " <> msg)
+
+{-# INLINEABLE mediateTraceError #-}
+mediateTraceError :: forall a. BuiltinString -> a
+mediateTraceError msg = traceError ("Logic Mediate - " <> msg)
+
+{-# INLINEABLE consumeTraceIfFalse #-}
+consumeTraceIfFalse :: BuiltinString -> Bool -> Bool
+consumeTraceIfFalse msg = traceIfFalse ("Logic Consume - " <> msg)
+
+{-# INLINEABLE consumeTraceError #-}
+consumeTraceError :: forall a. BuiltinString -> a
+consumeTraceError msg = traceError ("Logic Consume - " <> msg)
+
 -- The validator that is triggered when a user want's to accuse someone
 {-# INLINEABLE mkLogicValidator #-}
-mkLogicValidator :: LogicSettings -> LogicState -> LogicRedeemer -> ScriptContext -> Bool
+mkLogicValidator ::
+  LogicSettings ->
+  LogicState ->
+  LogicRedeemer ->
+  ScriptContext ->
+  Bool
 mkLogicValidator logicSettings LSWaitingStart (LRAccuse accusation) ctx =
-  traceIfFalse "Logic Accusation - Not signed by accuser" signedByAccuser
-    && traceIfFalse "Logic Accusation - Accuser cannot accuse himself" accuserIsNotAccused
-    && traceIfFalse "Logic Accusation - Invalid logic" validLogic
-    && traceIfFalse "Logic Accusation - Invalid logic datum" validLogicDatum
-    && traceIfFalse "Logic Accusation - Invalid logic value" validLogicValue
-    && traceIfFalse "Logic Accusation - Invalid contract" validContract
+  accuseTraceIfFalse "Not signed by accuser" signedByAccuser
+    && accuseTraceIfFalse "Accuser cannot accuse himself" accuserIsNotAccused
+    && accuseTraceIfFalse "Invalid logic" validLogic
+    && accuseTraceIfFalse "Invalid logic datum" validLogicDatum
+    && accuseTraceIfFalse "Invalid logic value" validLogicValue
+    && accuseTraceIfFalse "Invalid contract" validContract
   where
     info :: TxInfo
     info = scriptContextTxInfo ctx
@@ -105,7 +135,7 @@ mkLogicValidator logicSettings LSWaitingStart (LRAccuse accusation) ctx =
     logicDatum :: LogicState
     logicDatum = case findLogicDatum ownOutput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Logic Accusation - Logic Datum could not be found"
+      Nothing -> accuseTraceError "Logic Datum could not be found"
 
     -- The asset class from the shame token taken from our input
     shameToken :: AssetClass
@@ -114,34 +144,38 @@ mkLogicValidator logicSettings LSWaitingStart (LRAccuse accusation) ctx =
         (psShameTokenSymbol $ lsPlatformSettings logicSettings)
         (txOutValue ownInput) of
         Just ac -> ac
-        Nothing -> traceError "Logic Accusation - Shame Token could not be found"
+        Nothing -> accuseTraceError "Shame Token could not be found"
 
     -- A value (with amount of one) based on the shame token found in our input
     shameTokenValue :: Value
     shameTokenValue = assetClassValue shameToken 1
 
+    -- The validator hash from the platform contracts
+    contrValHash :: ValidatorHash
+    contrValHash = lsContract logicSettings
+
     -- Tries to find the contract input and output based on the contract
     -- validator hash in our logic settings
     contractInput, contractOutput :: TxOut
-    contractInput = case strictFindInputWithValHash (lsContract logicSettings) info of
+    contractInput = case strictFindInputWithValHash contrValHash info of
       Just o -> o
-      Nothing -> traceError "Logic Accusation - Couldn't find an unique contract input"
-    contractOutput = case strictFindOutputWithValHash (lsContract logicSettings) info of
+      Nothing -> accuseTraceError "Couldn't find an unique contract input"
+    contractOutput = case strictFindOutputWithValHash contrValHash info of
       Just o -> o
-      Nothing -> traceError "Logic Accusation - Couldn't find an unique contract output"
+      Nothing -> accuseTraceError "Couldn't find an unique contract output"
 
     -- If the contract input was found, tries to get the contract datum
     contractDatum :: ContractDatum
     contractDatum = case findContractDatum contractInput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Logic Accusation - Contract Datum could not be found"
+      Nothing -> accuseTraceError "Contract Datum could not be found"
 
     -- Searches for the nft that identifies our contract inside the contract
     -- input value
     contractNFTAssetClass :: AssetClass
     contractNFTAssetClass = case findContractNFT $ txOutValue contractInput of
       Just ac -> ac
-      Nothing -> traceError "Logic Accusation - Could not find contract nft"
+      Nothing -> accuseTraceError "Could not find contract nft"
 
     contractNFT :: Value
     contractNFT = assetClassValue contractNFTAssetClass 1
@@ -179,7 +213,7 @@ mkLogicValidator logicSettings LSWaitingStart (LRAccuse accusation) ctx =
     ownSig :: Sig
     ownSig = case findSig pkh contractSigs of
       Just s -> s
-      Nothing -> traceError "Logic Accusation - SIG token missing"
+      Nothing -> accuseTraceError "SIG token missing"
 
     -- The account validator hash according to the SIG token
     accountValHash :: ValidatorHash
@@ -189,7 +223,7 @@ mkLogicValidator logicSettings LSWaitingStart (LRAccuse accusation) ctx =
     judgePKH :: PubKeyHash
     judgePKH = case firstValidJudge (jsPubKeyHashes judges) contractSigs of
       Just pkh' -> pkh'
-      Nothing -> traceError "Logic Accusation - No available judge"
+      Nothing -> accuseTraceError "No available judge"
 
     -- Join all important information about our judge (his pubkeyhash,
     -- price and deadline) into one variable
@@ -265,39 +299,45 @@ mkLogicValidator
   (LSWaitingVerdict contractNFT judge accusation)
   (LRMediate verdict)
   ctx =
-    traceIfFalse "Logic Mediate - Invalid logic" validLogic
-      && traceIfFalse "Logic Mediate - Invalid logic datum" validLogicDatum
-      && traceIfFalse "Logic Mediate - Invalid logic value" validLogicValue
-      && traceIfFalse "Logic Mediate - Deadline passed" withinDeadline
-      && traceIfFalse "Logic Mediate - Not signed by judge" signedByJudge
-      && traceIfFalse "Logic Mediate - Invalid verdict" possibleVerdict
+    mediateTraceIfFalse "Invalid logic" validLogic
+      && mediateTraceIfFalse "Invalid logic datum" validLogicDatum
+      && mediateTraceIfFalse "Invalid logic value" validLogicValue
+      && mediateTraceIfFalse "Deadline passed" withinDeadline
+      && mediateTraceIfFalse "Not signed by judge" signedByJudge
+      && mediateTraceIfFalse "Invalid verdict" possibleVerdict
     where
       info :: TxInfo
       info = scriptContextTxInfo ctx
 
+      -- The logic input and output (which will be in the
+      -- blockchain if this transaction is validated)
       ownInput, ownOutput :: TxOut
       ownInput = fst $ strictFindOutAndIn ctx
       ownOutput = snd $ strictFindOutAndIn ctx
 
+      -- The future logic datum (logic state) if this tx is validated
       logicDatum :: LogicState
       logicDatum = case findLogicDatum ownOutput (`findDatum` info) of
         Just dat -> dat
-        Nothing -> traceError "Logic Mediate - Logic Datum could not be found"
+        Nothing -> mediateTraceError "Logic Datum could not be found"
 
+      -- The token used to identify our logic script
       shameToken :: AssetClass
       shameToken =
         case findShameTokenAssetClass
           (psShameTokenSymbol $ lsPlatformSettings logicSettings)
           (txOutValue ownInput) of
           Just ac -> ac
-          Nothing -> traceError "Logic Mediate - Shame Token could not be found"
+          Nothing -> mediateTraceError "Shame Token could not be found"
 
       shameTokenValue :: Value
       shameTokenValue = assetClassValue shameToken 1
 
+      -- The maximum time our judge has to make a verdict
       deadline :: POSIXTime
       deadline = aTime accusation + jMaxDuration judge
 
+      -- Make sure our logic input and output has the shame token
       validLogic :: Bool
       validLogic =
         txOutValue ownInput `geq` shameTokenValue
@@ -305,8 +345,10 @@ mkLogicValidator
 
       -- TODO: In the future there should be an appeal option and the judge
       -- TODO: should only be allowed to leave when a certain deadline has passed
+      -- Make sure the new logic datum has the right state and the right values
       validLogicDatum :: Bool
-      validLogicDatum = logicDatum == LSWaitingEnd contractNFT judge accusation verdict
+      validLogicDatum =
+        logicDatum == LSWaitingEnd contractNFT judge accusation verdict
 
       -- In this case, we only care about the verdict sent, the logic
       -- value shouldn't change
@@ -334,15 +376,17 @@ mkLogicValidator
   (LSWaitingEnd contractNFT judge accusation verdict)
   LRConsume
   ctx =
-    traceIfFalse "Logic Consume - Invalid logic" validLogic
-      && traceIfFalse "Logic Consume - Logic UTxO did not disappear" logicDisappeared
-      && traceIfFalse "Logic Consume - Invalid contract" validContract
-      && traceIfFalse "Logic Consume - Invalid contract value" validContractValue
-      && traceIfFalse "Logic Consume - Invalid tokens distribution" validDistribution
-      && traceIfFalse "Logic Consume - Invalid accused account" validAccount
-      && traceIfFalse "Logic Consume - Accused account did not receive shame token" validAccountValue
-      && traceIfFalse "Logic Consume - Invalid accused account datum" validAccountDatum
-      && traceIfFalse "Logic Consume - You need to wait" validTime
+    consumeTraceIfFalse "Invalid logic" validLogic
+      && consumeTraceIfFalse "Logic UTxO did not disappear" logicDisappeared
+      && consumeTraceIfFalse "Invalid contract" validContract
+      && consumeTraceIfFalse "Invalid contract value" validContractValue
+      && consumeTraceIfFalse "Invalid tokens distribution" validDistribution
+      && consumeTraceIfFalse "Invalid accused account" validAccount
+      && consumeTraceIfFalse
+        "Accused account did not receive shame token"
+        validAccountValue
+      && consumeTraceIfFalse "Invalid accused account datum" validAccountDatum
+      && consumeTraceIfFalse "You need to wait" validTime
     where
       info :: TxInfo
       info = scriptContextTxInfo ctx
@@ -351,12 +395,15 @@ mkLogicValidator
       platformToken :: AssetClass
       platformToken = psToken $ lsPlatformSettings logicSettings
 
+      -- A data type that maps conditions to proportions, so if the verdict
+      -- triggers a condition, it's proportion is the one going to be considered
       logic :: Logic
       logic = lsLogic logicSettings
 
+      -- The logic UTxO we are consuming
       ownInput :: TxOut
       ownInput = case findOwnInput ctx of
-        Nothing -> traceError "Logic Consume - Logic input missing"
+        Nothing -> consumeTraceError "Logic input missing"
         Just i -> txInInfoResolved i
 
       shameToken :: AssetClass
@@ -365,23 +412,25 @@ mkLogicValidator
           (psShameTokenSymbol $ lsPlatformSettings logicSettings)
           (txOutValue ownInput) of
           Just ac -> ac
-          Nothing -> traceError "Logic Consume - Shame Token could not be found"
+          Nothing -> consumeTraceError "Shame Token could not be found"
 
       shameTokenValue :: Value
       shameTokenValue = assetClassValue shameToken 1
 
+      -- The input and output from the contract which activated the logic script
       contractInput, contractOutput :: TxOut
       contractInput = case strictFindInputWithValHash (lsContract logicSettings) info of
         Just o -> o
-        Nothing -> traceError "Logic Consume - Couldn't find an unique contract input"
+        Nothing -> consumeTraceError "Couldn't find an unique contract input"
       contractOutput = case strictFindOutputWithValHash (lsContract logicSettings) info of
         Just o -> o
-        Nothing -> traceError "Logic Consume - Couldn't find an unique contract output"
+        Nothing -> consumeTraceError "Couldn't find an unique contract output"
 
+      -- The data from the contract input
       contractDatum :: ContractDatum
       contractDatum = case findContractDatum contractInput (`findDatum` info) of
         Just dat -> dat
-        Nothing -> traceError "Logic Consume - Contract Datum could not be found"
+        Nothing -> consumeTraceError "Contract Datum could not be found"
 
       contractNFTValue :: Value
       contractNFTValue = assetClassValue contractNFT 1
@@ -394,13 +443,13 @@ mkLogicValidator
       judgeSig :: Sig
       judgeSig = case find (\s -> sUser s == jPubKeyHash judge) sigs of
         Just s -> s
-        Nothing -> traceError "Logic Consume - Judge sig not found"
+        Nothing -> consumeTraceError "Judge sig not found"
 
       -- Tries to find the accused SIG within "sigs"
       accusedSig :: Sig
       accusedSig = case find (\s -> sUser s == fst (aAccused accusation)) sigs of
         Just s -> s
-        Nothing -> traceError "Logic Consume - Accused sig not found"
+        Nothing -> consumeTraceError "Accused sig not found"
 
       -- Derives the account validator hash based on the judge SIG
       accountValHash :: ValidatorHash
@@ -488,14 +537,14 @@ mkLogicValidator
 
       validGuiltyDistribution :: Proportion -> Bool
       validGuiltyDistribution p =
-        traceIfFalse
-          "Logic Consume - Wrong accuser distribution"
+        consumeTraceIfFalse
+          "Wrong accuser distribution"
           (paidToAccuser `geq` expectedPaidToAccuser)
-          && traceIfFalse
-            "Logic Consume - Wrong Accused distribution"
+          && consumeTraceIfFalse
+            "Wrong Accused distribution"
             (paidToAccused `geq` expectedPaidToAccused)
-          && traceIfFalse
-            "Logic Consume - Wrong Judge distribution"
+          && consumeTraceIfFalse
+            "Wrong Judge distribution"
             (paidToJudge `geq` expectedPaidToJudge)
         where
           paidToAccuser :: Value
@@ -578,7 +627,7 @@ mkLogicValidator
           txOutValue ai `geq` accusedSigValue
             && txOutValue ao `geq` accusedSigValue
         _ ->
-          not failed || traceError "Logic Consume - Could not find accused account"
+          not failed || consumeTraceError "Could not find accused account"
 
       -- Our account should receive
       validAccountValue :: Bool
@@ -586,8 +635,8 @@ mkLogicValidator
         (Just ai, Just ao)
           | guilty -> txOutValue ao <> negate (txOutValue ai) == accusedSigValue <> shameTokenValue
           | failed -> txOutValue ao <> negate (txOutValue ai) == accusedSigValue
-          | otherwise -> traceError "Logic Consume - Can not consume account for innocent user"
-        _ -> not failed || traceError "Logic Consume - Could not find accused account"
+          | otherwise -> consumeTraceError "Can not consume account for innocent user"
+        _ -> not failed || consumeTraceError "Could not find accused account"
 
       validAccountDatum :: Bool
       validAccountDatum = case (maybeInputAccountDatum, maybeOutputAccountDatum) of
@@ -596,7 +645,7 @@ mkLogicValidator
             == declaredGuiltyCAS
               (psCASMap $ lsPlatformSettings logicSettings)
               (removeContract inputAccountDatum (lsContract logicSettings))
-        _ -> not failed || traceError "Logic Consume - Could not find accused account datum"
+        _ -> not failed || consumeTraceError "Could not find accused account datum"
 
       -- Should be the deadline that a user has to appeal
       deadline :: POSIXTime
