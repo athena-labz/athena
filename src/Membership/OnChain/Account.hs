@@ -537,13 +537,10 @@ validateReturn accountSettings ARTExpelled inputAccountDatum ctx =
     shameTokenValue :: Value
     shameTokenValue = assetClassValue shameTokenAssetClass 1
 
-    -- Makes sure the contract is valid (contains the NFT identifier) and that
-    -- it has been signed by our expelled user
+    -- Makes sure the contract is valid (contains the NFT identifier)
     validContract :: Bool
     validContract = case findContractNFT (txOutValue contractInput) of
-      Just ac ->
-        ac == contractNFT
-          && txOutValue contractInput `geq` sigValue
+      Just ac -> ac == contractNFT
       Nothing -> False
 
     -- Makes sure our logic contains the shame token
@@ -597,8 +594,7 @@ validateReturn accountSettings ARTExpelled inputAccountDatum ctx =
 --       The CAS should increase or decrease according to the CASMap and the type;
 --       The contract consumed should be removed from the list;
 validateReturn accountSettings returnType inputDatum ctx =
-  leaveTraceIfFalse "Not signed by account owner" (txSignedBy info pkh)
-    && leaveTraceIfFalse "Invalid Account" validAccount
+    leaveTraceIfFalse "Invalid Account" validAccount
     && leaveTraceIfFalse "Invalid Account Value" validAccountValue
     && leaveTraceIfFalse "Invalid Account Datum" validAccountDatum
     && leaveTraceIfFalse "Invalid Contract" validContract
