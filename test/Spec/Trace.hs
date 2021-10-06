@@ -106,10 +106,9 @@ cancelTrace ::
   ContractHandle (Last AssetClass) ContractSchema Text ->
   AccountSettings ->
   AssetClass ->
-  Bool ->
   EmulatorTrace ()
-cancelTrace handle as contractNFT invInAcc = do
-  callEndpoint @"cancel" handle (invInAcc, as, contractNFT)
+cancelTrace handle as contractNFT = do
+  callEndpoint @"cancel" handle (as, contractNFT)
   void $ Emulator.waitNSlots 3
 
 leaveTrace ::
