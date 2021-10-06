@@ -210,7 +210,7 @@ PlutusTx.unstableMakeIsData ''Review
 
 data ContractRedeemer
   = CSign -- Someone want's to make part of this contract
-  | CAccuse PubKeyHash PubKeyHash -- Some user allegadily broke the rules
+  | CAccuse Accusation -- Some user allegadily broke the rules
   | CMediate
   | CCancel -- A user want's to leave this contract before the service being completed
   | CLeave -- A user want's to leave this contract after everything has been dealt with
@@ -219,7 +219,7 @@ data ContractRedeemer
 instance Eq ContractRedeemer where
   {-# INLINEABLE (==) #-}
   CSign == CSign = True
-  CAccuse acr acd == CAccuse acr' acd' = acr == acr' && acd == acd'
+  CAccuse acc == CAccuse acc' = acc == acc'
   CCancel == CCancel = True
   CLeave == CLeave = True
   _ == _ = False
@@ -313,16 +313,14 @@ removeUser pkh oldContractDatum =
 -- the list of the old datum, returning the new one
 {-# INLINEABLE accuseUser #-}
 accuseUser ::
-  (PubKeyHash, Role) ->
-  (PubKeyHash, Role) ->
-  POSIXTime ->
+  Accusation ->
   ContractDatum ->
   ContractDatum
-accuseUser accuser accused currentTime oldContractDatum =
+accuseUser acc oldContractDatum =
   ContractDatum
     { cdJudges = cdJudges oldContractDatum,
       cdLogicScript = cdLogicScript oldContractDatum,
-      cdAccusations = Accusation accuser accused currentTime : cdAccusations oldContractDatum,
+      cdAccusations = acc : cdAccusations oldContractDatum,
       cdService = cdService oldContractDatum,
       cdRoleMap = cdRoleMap oldContractDatum
     }
