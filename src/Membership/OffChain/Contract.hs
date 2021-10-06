@@ -464,8 +464,8 @@ cancelContract accountSettings contractNFT = do
         accountChainIndexTxOut = fst (aoeAccountOutTx aoe)
         contractChainIndexTxOut = fst (coeContractOutTx coe)
 
-        -- A version of the UTxOs we are consuming easy to be read and
-        -- manipulated
+        -- A version of the UTxOs we are consuming easy to read and
+        -- manipulate
         accountOut, contractOut :: TxOut
         accountOut = toTxOut accountChainIndexTxOut
         contractOut = toTxOut contractChainIndexTxOut
@@ -481,7 +481,7 @@ cancelContract accountSettings contractNFT = do
         -- The value corresponding to a single SIG token from the user who
         -- invoked this transaction and want's to leave the contract
         sigValue :: Value
-        sigValue = singleton sigSym (makeSigToken pkh accValHash) 1
+        sigValue = singleton sigSymbol (makeSigToken pkh accValHash) 1
 
         -- The resulting contract and account values
         -- In this case the contract SIG token is simply being transfered to the
@@ -496,7 +496,7 @@ cancelContract accountSettings contractNFT = do
         contractSett =
           ContractSettings
             { csPlatformSettings = platformSettings,
-              csSignatureSymbol = sigSym
+              csSignatureSymbol = sigSymbol
             }
 
         -- The data that will be given to the newly created contract UTxO
