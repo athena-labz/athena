@@ -553,8 +553,8 @@ cancelContract accountSettings contractNFT = do
 -- not supposed to deliver any service and is not supposed to judge any
 -- conflict. He can, therefore, return with his trust tokens, his SIG and,
 -- if he is a publisher, the price value
-leaveContract :: AccountSettings -> AssetClass -> Contract w s Text ()
-leaveContract accountSettings contractNFT = do
+leaveContract :: AccountSettings -> Review -> AssetClass -> Contract w s Text ()
+leaveContract accountSettings review contractNFT = do
   -- The signer public key hash
   pkh <- pubKeyHash <$> Contract.ownPubKey
 
@@ -587,6 +587,19 @@ leaveContract accountSettings contractNFT = do
         -- The information needed in all the platform
         platformSettings :: PlatformSettings
         platformSettings = asPlatformSettings accountSettings
+
+        reviewPercentage :: R.Rational
+        reviewPercentage = psReviewPercentageOfTrust platformSettings
+
+        trustAmount :: Integer
+        trustAmount = sTrust (cdService contractDatum)
+
+        reviewAmount :: Integer
+        reviewAmount =
+          R.round $
+            (rScore review R.% 50)
+              * reviewPercentage
+              * R.fromInteger trustAmount
 
         -- The script validator hashes from the platform accounts and contracts
         accValHash, contrValHash :: ValidatorHash
@@ -624,12 +637,13 @@ leaveContract accountSettings contractNFT = do
 
         -- The values, which will either be sent or consumed by the contract
         -- and account
-        sigValue, trustValue, txFeesValue :: Value
+        sigValue, trustValue, reviewValue, txFeesValue :: Value
         sigValue = singleton sigSymbol (makeSigToken pkh accValHash) 1
         trustValue =
           assetClassValue
             (psToken platformSettings)
             (sTrust $ cdService contractDatum)
+        reviewValue = assetClassValue (psToken platformSettings) reviewAmount
         txFeesValue =
           assetClassValue
             (psToken platformSettings)
@@ -648,6 +662,7 @@ leaveContract accountSettings contractNFT = do
         accountValue =
           txOutValue accountOut
             <> sigValue
+            <> reviewValue
             <> txFeesValue
 
         -- The data that will be given to the newly created contract UTxO
@@ -660,10 +675,17 @@ leaveContract accountSettings contractNFT = do
         -- of contracts and the CAS is being increased because everything went
         -- well
         newAccountDatum :: AccountDatum
-        newAccountDatum =
-          leaveContractCAS
-            (psCASMap platformSettings)
-            (removeContract accountDatum contrValHash)
+        newAccountDatum = addReviewAD
+          where
+            removeContractAD :: AccountDatum
+            removeContractAD = removeContract accountDatum contrValHash
+
+            leaveContractCASAD :: AccountDatum
+            leaveContractCASAD =
+              leaveContractCAS (psCASMap platformSettings) removeContractAD
+
+            addReviewAD :: AccountDatum
+            addReviewAD = addReview leaveContractCASAD review
 
         lookups :: ScriptLookups ContractType
         lookups =
@@ -686,7 +708,7 @@ leaveContract accountSettings contractNFT = do
               (Redeemer $ PlutusTx.toBuiltinData (AReturn ARTLeave))
             <> Constraints.mustSpendScriptOutput
               contractReference
-              (Redeemer $ PlutusTx.toBuiltinData CLeave)
+              (Redeemer $ PlutusTx.toBuiltinData (CLeave review))
             <> Constraints.mustPayToTheScript newContractDatum contractValue
             <> Constraints.mustPayToOtherScript
               accValHash
@@ -697,33 +719,20 @@ leaveContract accountSettings contractNFT = do
         "Leave Contract - "
           ++ "Account or Contract Essentials failed"
 
-reviewContract ::
-  Integer ->
-  BuiltinByteString ->
-  AccountSettings ->
-  AssetClass ->
-  Contract w s Text ()
-reviewContract review description accountSettings contractNFT = do
-  logInfo @String "Review Contract - Incomplete"
-
 type ContractSchema =
   Endpoint "create-contract" (AccountSettings, ContractDatum)
     .\/ Endpoint "sign" (Role, AccountSettings, AssetClass)
     .\/ Endpoint "cancel" (AccountSettings, AssetClass)
-    .\/ Endpoint "leave" (AccountSettings, AssetClass)
-    .\/ Endpoint
-          "review"
-          (Integer, BuiltinByteString, AccountSettings, AssetClass)
+    .\/ Endpoint "leave" (AccountSettings, Review, AssetClass)
 
 contractEndpoints :: Contract (Last AssetClass) ContractSchema Text ()
 contractEndpoints =
   forever $
     handleError logError $
       awaitPromise $
-        create' `select` sign' `select` cancel' `select` leave' `select` review'
+        create' `select` sign' `select` cancel' `select` leave'
   where
     create' = endpoint @"create-contract" $ \(as, dat) -> createContract as dat
     sign' = endpoint @"sign" $ \(r, as, ac) -> signContract r as ac
     cancel' = endpoint @"cancel" $ \(as, ac) -> cancelContract as ac
-    leave' = endpoint @"leave" $ uncurry leaveContract
-    review' = endpoint @"review" $ \(rev, des, as, ac) -> reviewContract rev des as ac
+    leave' = endpoint @"leave" $ \(as, rev, ac) -> leaveContract as rev ac

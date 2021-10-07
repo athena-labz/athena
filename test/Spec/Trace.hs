@@ -114,21 +114,11 @@ cancelTrace handle as contractNFT = do
 leaveTrace ::
   ContractHandle (Last AssetClass) ContractSchema Text ->
   AccountSettings ->
+  Review ->
   AssetClass ->
   EmulatorTrace ()
-leaveTrace handle as contractNFT = do
-  callEndpoint @"leave" handle (as, contractNFT)
-  void $ Emulator.waitNSlots 3
-
-reviewTrace ::
-  ContractHandle (Last AssetClass) ContractSchema Text ->
-  AccountSettings ->
-  AssetClass ->
-  Integer ->
-  BuiltinByteString ->
-  EmulatorTrace ()
-reviewTrace handle as contractNFT rev des = do
-  callEndpoint @"review" handle (rev, des, as, contractNFT)
+leaveTrace handle as review contractNFT = do
+  callEndpoint @"leave" handle (as, review, contractNFT)
   void $ Emulator.waitNSlots 3
 
 createLogicTrace ::

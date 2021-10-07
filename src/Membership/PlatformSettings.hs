@@ -24,9 +24,9 @@ import Plutus.Contract as Contract ()
 import Plutus.Contract.StateMachine ()
 import qualified PlutusTx
 import PlutusTx.Prelude (Eq, Integer, (&&), (==))
+import qualified PlutusTx.Ratio as R
 import Prelude (Show (..))
 import qualified Prelude
-import qualified PlutusTx.Ratio as R
 
 -- CASMap is a data type that contains every possible percentage of difference in CAS
 
@@ -34,16 +34,16 @@ import qualified PlutusTx.Ratio as R
 -- only allow the contract creation if the CAS score in the output datum receives an
 -- increase of 5% (it's actually a more complex formula, but the idea is the same)
 data CASMap = CASMap
-  { casContractCreation :: R.Rational
-  , casContractSigning :: R.Rational
-  , casDeclaredGuilty :: R.Rational
-  , casLeaveContract :: R.Rational
-  , casCancelContract :: R.Rational
+  { casContractCreation :: R.Rational,
+    casContractSigning :: R.Rational,
+    casDeclaredGuilty :: R.Rational,
+    casLeaveContract :: R.Rational,
+    casCancelContract :: R.Rational
   }
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
 instance Eq CASMap where
-  {-# INLINABLE (==) #-}
+  {-# INLINEABLE (==) #-}
   (CASMap cc cs dg lc clc) == (CASMap cc' cs' dg' lc' clc') =
     cc == cc' && cs == cs' && dg == dg' && lc == lc' && clc == clc'
 
@@ -51,22 +51,23 @@ PlutusTx.unstableMakeIsData ''CASMap
 PlutusTx.makeLift ''CASMap
 
 -- The CASMap that should be used in this official DigiServices version
-{-# INLINABLE currentCASMap #-}
+{-# INLINEABLE currentCASMap #-}
 currentCASMap :: CASMap
-currentCASMap = CASMap
-  { casContractCreation = 5 R.% 1000 -- 0.5%
-  , casContractSigning = 1 R.% 1000 -- 0.1%
-  , casDeclaredGuilty = (-5) R.% 100 -- -5%
-  , casLeaveContract = 1 R.% 1000 -- 0.1%
-  , casCancelContract = (-2) R.% 100 -- -2%
-  }
+currentCASMap =
+  CASMap
+    { casContractCreation = 5 R.% 1000, -- 0.5%
+      casContractSigning = 1 R.% 1000, -- 0.1%
+      casDeclaredGuilty = (-5) R.% 100, -- -5%
+      casLeaveContract = 1 R.% 1000, -- 0.1%
+      casCancelContract = (-2) R.% 100 -- -2%
+    }
 
 -- The platform settings are the global variables that will
 -- be used all over the platform. It has the following arguments:
 
 -- The version is important to differentiate the multiple
 -- versions of DigiServices, of course, it's not enough
--- and user's should always compare the hashes 
+-- and user's should always compare the hashes
 
 -- The token is the asset class corresponding to DSET, which is
 -- used for every operation inside the platform
@@ -82,6 +83,7 @@ currentCASMap = CASMap
 data PlatformSettings = PlatformSettings
   { psVersion :: !Integer,
     psToken :: !AssetClass,
+    psReviewPercentageOfTrust :: !R.Rational,
     psShameTokenSymbol :: !CurrencySymbol,
     psCASMap :: !CASMap,
     psEntranceFee :: !Integer,
@@ -91,13 +93,15 @@ data PlatformSettings = PlatformSettings
 
 instance Eq PlatformSettings where
   {-# INLINEABLE (==) #-}
-  PlatformSettings ver tok sts cm ef txf == PlatformSettings ver' tok' sts' cm' ef' txf' =
-    ver == ver'
-      && tok == tok'
-      && sts == sts'
-      && cm == cm'
-      && ef == ef'
-      && txf == txf'
+  PlatformSettings ver tok rpt sts cm ef txf
+    == PlatformSettings ver' tok' rpt' sts' cm' ef' txf' =
+      ver == ver'
+        && tok == tok'
+        && rpt == rpt'
+        && sts == sts'
+        && cm == cm'
+        && ef == ef'
+        && txf == txf'
 
 PlutusTx.makeLift ''PlatformSettings
 

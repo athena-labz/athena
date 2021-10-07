@@ -77,9 +77,11 @@ import PlutusTx.Prelude
     traceIfFalse,
     ($),
     (&&),
+    (*),
     (.),
     (||),
   )
+import qualified PlutusTx.Ratio as R
 
 {-# INLINEABLE getContractEssentials #-}
 getContractEssentials :: BuiltinString -> ContractSettings -> ScriptContext -> ContractEssentials
@@ -765,11 +767,13 @@ leaveTraceError msg = traceError ("Contract Leave - " <> msg)
 {-# INLINEABLE handleLeave #-}
 handleLeave ::
   ContractSettings ->
+  Review ->
   ContractDatum ->
   ScriptContext ->
   Bool
-handleLeave cst inputDatum ctx =
+handleLeave cst review inputDatum ctx =
   validateContract cst ctx
+    && leaveTraceIfFalse "Invalid Review" (validReview review)
     && leaveTraceIfFalse "Invalid Contract Value" validContractValue
     && leaveTraceIfFalse "Invalid Contract Datum" validContractDatum
     && leaveTraceIfFalse "Invalid account" validAccount
@@ -784,6 +788,22 @@ handleLeave cst inputDatum ctx =
 
     platformSettings :: PlatformSettings
     platformSettings = csPlatformSettings cst
+
+    platformToken :: AssetClass
+    platformToken = psToken (csPlatformSettings cst)
+
+    reviewPercentage :: R.Rational
+    reviewPercentage = psReviewPercentageOfTrust platformSettings
+
+    trustAmount :: Integer
+    trustAmount = sTrust (cdService inputDatum)
+
+    reviewAmount :: Integer
+    reviewAmount =
+      R.round $
+        (rScore review R.% 50)
+          * reviewPercentage
+          * R.fromInteger trustAmount
 
     -- The contract input and output UTxOs
     ownInput, ownOutput :: TxOut
@@ -830,10 +850,10 @@ handleLeave cst inputDatum ctx =
       Just o -> o
       Nothing -> leaveTraceError "Couldn't find an unique account output"
 
-    trustValue, priceValue, sigValue :: Value
+    trustValue, priceValue, reviewValue, sigValue :: Value
 
     -- The collateral held in this contract
-    trustValue = assetClassValue (psToken $ csPlatformSettings cst) (sTrust $ cdService inputDatum)
+    trustValue = assetClassValue platformToken trustAmount
 
     -- The price of the service (if we are the publisher and the contract is of
     -- type one-time)
@@ -841,6 +861,9 @@ handleLeave cst inputDatum ctx =
       OneTime v _
         | userRole == Publisher -> v
       _ -> mempty
+
+    -- The value that will be paid to represent the review
+    reviewValue = assetClassValue platformToken reviewAmount
 
     sigValue = signatureValue' sigSymbol ownSig
 
@@ -875,7 +898,7 @@ handleLeave cst inputDatum ctx =
     validAccountValue :: Bool
     validAccountValue =
       txOutValue accountOutput <> negate (txOutValue accountInput)
-        == sigValue <> transactionFeeValue
+        == sigValue <> transactionFeeValue <> reviewValue
 
     accusations :: [Accusation]
     accusations = cdAccusations inputDatum
@@ -913,12 +936,14 @@ mkContractValidator cst dat CSign ctx = handleSigning cst ce dat ctx
 mkContractValidator cst dat (CAccuse acc) ctx = handleAccusation cst dat acc ctx
 mkContractValidator cst dat CMediate ctx = handleMediation cst dat ctx
 mkContractValidator cst dat CCancel ctx = handleCancellation cst dat ctx
-mkContractValidator cst dat CLeave ctx = handleLeave cst dat ctx
+mkContractValidator cst dat (CLeave rev) ctx = handleLeave cst rev dat ctx
 
 typedContractValidator :: ContractSettings -> Scripts.TypedValidator ContractType
 typedContractValidator ps =
   Scripts.mkTypedValidator @ContractType
-    ($$(PlutusTx.compile [||mkContractValidator||]) `PlutusTx.applyCode` PlutusTx.liftCode ps)
+    ( $$(PlutusTx.compile [||mkContractValidator||])
+        `PlutusTx.applyCode` PlutusTx.liftCode ps
+    )
     $$(PlutusTx.compile [||wrap||])
   where
     wrap = Scripts.wrapValidator @ContractDatum @ContractRedeemer

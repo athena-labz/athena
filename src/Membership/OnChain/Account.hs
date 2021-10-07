@@ -45,6 +45,7 @@ import Membership.Account
     AccountReturnType (..),
     AccountType,
     addContract,
+    addReview,
     cancelContractCAS,
     contractCreationCAS,
     declaredGuiltyCAS,
@@ -56,6 +57,7 @@ import Membership.Account
 import Membership.Contract
   ( Accusation (..),
     ContractDatum (..),
+    Review (..),
     findContractDatum,
     findContractNFT,
     isInitial,
@@ -87,6 +89,8 @@ import PlutusTx.Prelude
     Semigroup ((<>)),
     find,
     fst,
+    head,
+    mempty,
     negate,
     otherwise,
     return,
@@ -95,11 +99,11 @@ import PlutusTx.Prelude
     traceIfFalse,
     ($),
     (&&),
+    (*),
     (.),
     (||),
   )
-
--- import Prelude (Semigroup (..))
+import qualified PlutusTx.Ratio as R
 
 -- The token name our contract NFTs will have
 {-# INLINEABLE contractNFTTokenName #-}
@@ -594,7 +598,7 @@ validateReturn accountSettings ARTExpelled inputAccountDatum ctx =
 --       The CAS should increase or decrease according to the CASMap and the type;
 --       The contract consumed should be removed from the list;
 validateReturn accountSettings returnType inputDatum ctx =
-    leaveTraceIfFalse "Invalid Account" validAccount
+  leaveTraceIfFalse "Invalid Account" validAccount
     && leaveTraceIfFalse "Invalid Account Value" validAccountValue
     && leaveTraceIfFalse "Invalid Account Datum" validAccountDatum
     && leaveTraceIfFalse "Invalid Contract" validContract
@@ -654,10 +658,43 @@ validateReturn accountSettings returnType inputDatum ctx =
       Just out -> out
       Nothing -> leaveTraceError "No contract being consumed"
 
+    -- The datum from the contract we are consuming
+    contractDatum :: ContractDatum
+    contractDatum = case findContractDatum contractInput (`findDatum` info) of
+      Just dat -> dat
+      Nothing -> expelledTraceError "Contract Datum could not be found"
+
     contractNFT :: AssetClass
     contractNFT = case M.lookup contrValHash (adContracts inputDatum) of
       Just ac -> ac
       Nothing -> leaveTraceError "Contract not registered"
+
+    review :: Maybe Review
+    review = case returnType of
+      ARTLeave -> case adReviews accountDatum of
+        re : res
+          | res == adReviews inputDatum -> Just re
+          | otherwise -> leaveTraceError "Review not added correctly to Datum"
+        [] -> leaveTraceError "Review not added to Datum"
+      ARTCancel -> Nothing
+
+    reviewValue :: Value
+    reviewValue = case review of
+      Nothing -> mempty
+      Just re -> assetClassValue (psToken platformSettings) reviewAmount
+        where
+          reviewPercentage :: R.Rational
+          reviewPercentage = psReviewPercentageOfTrust platformSettings
+
+          trustAmount :: Integer
+          trustAmount = sTrust (cdService contractDatum)
+
+          reviewAmount :: Integer
+          reviewAmount =
+            R.round $
+              (rScore re R.% 50)
+                * reviewPercentage
+                * R.fromInteger trustAmount
 
     -- Makes sure our account is valid by seeing if the SIG tokens owner signed
     -- this transaction and the validator hash embeded on the SIG token
@@ -665,23 +702,35 @@ validateReturn accountSettings returnType inputDatum ctx =
     validAccount :: Bool
     validAccount = txSignedBy info pkh && sScript ownSig == ownHash ctx
 
-    -- Makes sure the account received exactly one sig value back and the
-    -- corresponding transaction fees
+    -- Makes sure the account received exactly one sig value back, the
+    -- corresponding transaction fees and the review value
     validAccountValue :: Bool
     validAccountValue =
       txOutValue ownOutput <> negate (txOutValue ownInput)
-        == sigValue <> transactionFeeValue
+        == sigValue <> transactionFeeValue <> reviewValue
 
     -- Makes sure the account datum receives the corresponding CAS decrease or
     -- increase and that the contract identifier is removed from the list
     validAccountDatum :: Bool
     validAccountDatum = case returnType of
-      ARTLeave ->
-        accountDatum
-          == leaveContractCAS casMap (removeContract inputDatum contrValHash)
-      ARTCancel ->
-        accountDatum
-          == cancelContractCAS casMap (removeContract inputDatum contrValHash)
+      ARTLeave -> accountDatum == addReviewAD
+        where
+          leaveContractCASAD :: AccountDatum
+          leaveContractCASAD =
+            leaveContractCAS casMap removeContractAD
+
+          addReviewAD :: AccountDatum
+          addReviewAD = case review of
+            Just re -> addReview leaveContractCASAD re
+            Nothing -> leaveTraceError "Review not added to Datum"
+      ARTCancel -> accountDatum == cancelContractCASAD
+        where
+          cancelContractCASAD :: AccountDatum
+          cancelContractCASAD =
+            cancelContractCAS casMap removeContractAD
+      where
+        removeContractAD :: AccountDatum
+        removeContractAD = removeContract inputDatum contrValHash
 
     -- Makes sure the contract is valid (contains the NFT identifier) and that
     -- it has been signed by our expelled user

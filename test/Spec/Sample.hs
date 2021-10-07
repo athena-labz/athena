@@ -118,6 +118,7 @@ platformSettings =
   PlatformSettings
     { psVersion = 1,
       psToken = platformToken,
+      psReviewPercentageOfTrust = 5 R.% 100,
       psShameTokenSymbol = shameTokenCurrencySymbol,
       psCASMap = currentCASMap,
       psEntranceFee = sampleEntranceFee,
@@ -235,3 +236,10 @@ sampleContractDatum =
       cdService = sampleService,
       cdRoleMap = M.fromList [(pubKeyHash $ walletPubKey $ knownWallet 1, Publisher)]
     }
+
+{-# INLINABLE sampleReview #-}
+sampleReview :: Review
+sampleReview = Review
+  { rScore = 15, -- 1.5 Stars
+    rDescription = "Horrible service"
+  }

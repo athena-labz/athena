@@ -526,12 +526,14 @@ leaveContractExample = do
           leaveTrace
             bobContractHandler
             accountSettings
+            sampleReview
             contractNFT
           
           -- Charlie might do the same
           leaveTrace
             charlieContractHandler
             accountSettings
+            sampleReview
             contractNFT
 
     Nothing -> Extras.logError @String "Error creating account"

@@ -26,11 +26,9 @@ import Ledger
     POSIXTimeRange,
     PubKeyHash,
     TokenName,
-    Tx,
     TxInfo,
     TxOut (TxOut, txOutValue),
     TxOutRef,
-    TxOutTx (txOutTxOut),
     ValidatorHash,
     contains,
     scriptHashAddress,
@@ -52,7 +50,7 @@ import Membership.PlatformSettings (ContractSettings)
 import Membership.Service (Service (..))
 import Membership.Signature (Sig, sigTokenToUser)
 import Membership.Utils (tripleSnd)
-import Plutus.ChainIndex.Tx
+import Plutus.ChainIndex.Tx (ChainIndexTx)
 import Plutus.Contract as Contract (Contract, utxosTxOutTxAt)
 import qualified PlutusTx
 import qualified PlutusTx.AssocMap as M
@@ -74,7 +72,9 @@ import PlutusTx.Prelude
     (&&),
     (.),
     (/=),
+    (<),
     (<$>),
+    (>),
     (||),
   )
 import qualified Prelude
@@ -193,17 +193,15 @@ instance Eq ContractDatum where
 PlutusTx.unstableMakeIsData ''ContractDatum
 
 data Review = Review
-  { rScore :: Integer,
-    rTokensAmount :: Integer,
+  { rScore :: Integer, -- 0 to 50 (meaning 0.0 or 5.0 stars)
     rDescription :: BuiltinByteString
   }
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
 instance Eq Review where
   {-# INLINEABLE (==) #-}
-  Review sc ta dsc == Review sc' ta' dsc' =
+  Review sc dsc == Review sc' dsc' =
     sc == sc'
-      && ta == ta'
       && dsc == dsc'
 
 PlutusTx.unstableMakeIsData ''Review
@@ -213,7 +211,7 @@ data ContractRedeemer
   | CAccuse Accusation -- Some user allegadily broke the rules
   | CMediate
   | CCancel -- A user want's to leave this contract before the service being completed
-  | CLeave -- A user want's to leave this contract after everything has been dealt with
+  | CLeave Review -- A user want's to leave this contract after everything has been dealt with
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
 instance Eq ContractRedeemer where
@@ -221,7 +219,7 @@ instance Eq ContractRedeemer where
   CSign == CSign = True
   CAccuse acc == CAccuse acc' = acc == acc'
   CCancel == CCancel = True
-  CLeave == CLeave = True
+  CLeave r == CLeave r' = r == r'
   _ == _ = False
 
 PlutusTx.unstableMakeIsData ''ContractRedeemer
@@ -281,6 +279,12 @@ contractNFTTokenName = TokenName contractNFTName
 {-# INLINEABLE digiContract #-}
 digiContract :: ContractDatum -> TxOut -> DigiContract
 digiContract cd (TxOut _ v _) = (cd, v)
+
+{-# INLINABLE validReview #-}
+validReview :: Review -> Bool
+validReview review =
+  (rScore review > 0)
+    && (rScore review < 50)
 
 -- Given a user, a role and an old datum, add this user to
 -- the role map and return a new datum
