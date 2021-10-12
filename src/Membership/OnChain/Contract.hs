@@ -46,6 +46,7 @@ import Ledger.Value
     flattenValue,
     geq,
   )
+import Membership.Account
 import Membership.Contract
 import Membership.Logic
 import Membership.OnChain.Utils
@@ -767,17 +768,21 @@ leaveTraceError msg = traceError ("Contract Leave - " <> msg)
 {-# INLINEABLE handleLeave #-}
 handleLeave ::
   ContractSettings ->
-  Review ->
+  Maybe Review ->
   ContractDatum ->
   ScriptContext ->
   Bool
-handleLeave cst review inputDatum ctx =
+handleLeave cst maybeReview inputDatum ctx =
   validateContract cst ctx
-    && leaveTraceIfFalse "Invalid Review" (validReview review)
+    && leaveTraceIfFalse "Invalid Review" validReview'
     && leaveTraceIfFalse "Invalid Contract Value" validContractValue
     && leaveTraceIfFalse "Invalid Contract Datum" validContractDatum
-    && leaveTraceIfFalse "Invalid account" validAccount
-    && leaveTraceIfFalse "Account did not receive SIG token" validAccountValue
+    && leaveTraceIfFalse
+      "Invalid account"
+      validOwnAccount
+    && leaveTraceIfFalse
+      "Account did not receive SIG token"
+      validOwnAccountValue
     && leaveTraceIfFalse "Not allowed to leave the contract now" allowedToLeave
   where
     info :: TxInfo
@@ -792,18 +797,8 @@ handleLeave cst review inputDatum ctx =
     platformToken :: AssetClass
     platformToken = psToken (csPlatformSettings cst)
 
-    reviewPercentage :: R.Rational
-    reviewPercentage = psReviewPercentageOfTrust platformSettings
-
     trustAmount :: Integer
     trustAmount = sTrust (cdService inputDatum)
-
-    reviewAmount :: Integer
-    reviewAmount =
-      R.round $
-        (rScore review R.% 50)
-          * reviewPercentage
-          * R.fromInteger trustAmount
 
     -- The contract input and output UTxOs
     ownInput, ownOutput :: TxOut
@@ -842,15 +837,15 @@ handleLeave cst review inputDatum ctx =
 
     -- The account input and output UTxOs from the user who want's to leave
     -- the contract
-    accountInput, accountOutput :: TxOut
-    accountInput = case strictFindInputWithValHash accValHash info of
+    ownAccountInput, ownAccountOutput :: TxOut
+    ownAccountInput = case findInputAccountFrom sigSymbol accValHash pkh info of
       Just o -> o
-      Nothing -> leaveTraceError "Couldn't find an unique account input"
-    accountOutput = case strictFindOutputWithValHash accValHash info of
+      Nothing -> leaveTraceError "Couldn't find user account input"
+    ownAccountOutput = case findOutputAccountFrom sigSymbol accValHash pkh info of
       Just o -> o
-      Nothing -> leaveTraceError "Couldn't find an unique account output"
+      Nothing -> leaveTraceError "Couldn't find user account output"
 
-    trustValue, priceValue, reviewValue, sigValue :: Value
+    trustValue, priceValue, sigValue :: Value
 
     -- The collateral held in this contract
     trustValue = assetClassValue platformToken trustAmount
@@ -862,9 +857,6 @@ handleLeave cst review inputDatum ctx =
         | userRole == Publisher -> v
       _ -> mempty
 
-    -- The value that will be paid to represent the review
-    reviewValue = assetClassValue platformToken reviewAmount
-
     sigValue = signatureValue' sigSymbol ownSig
 
     transactionFeeValue =
@@ -875,6 +867,59 @@ handleLeave cst review inputDatum ctx =
     -- Did the publisher leave the contract already?
     publisherPresent :: Bool
     publisherPresent = sigIn (sPublisher $ cdService inputDatum) sigs
+
+    -- If the role of our user is "Client", he must leave a review on the
+    -- Publisher's account, so we verify that the publisher account receives the
+    -- review value. If the role is Publisher or Mediator, we don't need any
+    -- review
+    validReview' :: Bool
+    validReview'
+      | userRole == Client = case maybeReview of
+        Nothing -> leaveTraceError "Client must leave a review"
+        Just review ->
+          validReview review
+            && validReviewedAccount
+            && validReviewedAccountValue
+          where
+            reviewed :: PubKeyHash
+            reviewed = sPublisher (cdService outputDatum)
+
+            reviewedAccountInput, reviewedAccountOutput :: TxOut
+            reviewedAccountInput =
+              case findInputAccountFrom sigSymbol accValHash reviewed info of
+                Just o -> o
+                Nothing -> leaveTraceError "Couldn't find user account input"
+            reviewedAccountOutput =
+              case findOutputAccountFrom sigSymbol accValHash reviewed info of
+                Just o -> o
+                Nothing -> leaveTraceError "Couldn't find user account output"
+
+            reviewPercentage :: R.Rational
+            reviewPercentage = psReviewPercentageOfTrust platformSettings
+
+            reviewAmount :: Integer
+            reviewAmount =
+              R.round $
+                (rScore review R.% 50)
+                  * reviewPercentage
+                  * R.fromInteger trustAmount
+            
+            reviewedSigValue, reviewValue :: Value
+            reviewedSigValue = signatureValue sigSymbol reviewed accValHash
+            -- The value that will be paid to represent the review
+            reviewValue = assetClassValue platformToken reviewAmount
+
+            validReviewedAccount :: Bool
+            validReviewedAccount = 
+              txOutValue reviewedAccountInput `geq` reviewedSigValue
+                && txOutValue reviewedAccountOutput `geq` reviewedSigValue
+            
+            validReviewedAccountValue :: Bool
+            validReviewedAccountValue =
+              txOutValue reviewedAccountOutput
+                <> negate (txOutValue reviewedAccountInput)
+                == reviewValue
+      | otherwise = True
 
     -- Makes sure our contract lost exactly the value of the user trust, his SIG
     -- token and the price (if he's a publisher)
@@ -888,17 +933,17 @@ handleLeave cst review inputDatum ctx =
     validContractDatum = outputDatum == removeUser pkh inputDatum
 
     -- Makes sure the account has our user's sig value in both input and output
-    validAccount :: Bool
-    validAccount =
-      txOutValue accountInput `geq` sigValue
-        && txOutValue accountOutput `geq` sigValue
+    validOwnAccount :: Bool
+    validOwnAccount =
+      txOutValue ownAccountInput `geq` sigValue
+        && txOutValue ownAccountOutput `geq` sigValue
 
     -- Makes sure the account received exactly our user's SIG value and the
     -- expected transaction fee
-    validAccountValue :: Bool
-    validAccountValue =
-      txOutValue accountOutput <> negate (txOutValue accountInput)
-        == sigValue <> transactionFeeValue <> reviewValue
+    validOwnAccountValue :: Bool
+    validOwnAccountValue =
+      txOutValue ownAccountOutput <> negate (txOutValue ownAccountInput)
+        == sigValue <> transactionFeeValue
 
     accusations :: [Accusation]
     accusations = cdAccusations inputDatum
@@ -916,16 +961,6 @@ handleLeave cst review inputDatum ctx =
           OneTime _ dln ->
             (from dln `contains` txInfoValidRange info) || not publisherPresent
           CConstant -> True
-
-{-# INLINEABLE handleReview #-}
-handleReview ::
-  ContractSettings ->
-  Review ->
-  PubKeyHash ->
-  ContractDatum ->
-  ScriptContext ->
-  Bool
-handleReview _ _ _ _ _ = traceError "Contract Review - Incomplete"
 
 {-# INLINEABLE mkContractValidator #-}
 mkContractValidator :: ContractSettings -> ContractDatum -> ContractRedeemer -> ScriptContext -> Bool

@@ -50,6 +50,8 @@ import Membership.Account
     contractCreationCAS,
     declaredGuiltyCAS,
     findAccountDatum,
+    findInputAccountFrom,
+    findOutputAccountFrom,
     leaveContractCAS,
     removeContract,
     signContractCAS,
@@ -61,6 +63,7 @@ import Membership.Contract
     findContractDatum,
     findContractNFT,
     isInitial,
+    validReview,
   )
 import Membership.Logic
   ( LogicState (..),
@@ -415,14 +418,6 @@ validateSign accountSettings inputDatum ctx =
           == outputDatum
       Nothing -> signTraceError "Contract NFT not found"
 
-{-# INLINEABLE validateCollect #-}
-validateCollect :: AccountSettings -> PubKeyHash -> ScriptContext -> Bool
-validateCollect _ _ _ = traceError "Validate Collect - Incomplete"
-
-{-# INLINEABLE validateReview #-}
-validateReview :: AccountSettings -> AccountDatum -> ScriptContext -> Bool
-validateReview _ _ _ = traceError "Validate Review - Incomplete"
-
 {-# INLINEABLE expelledTraceIfFalse #-}
 expelledTraceIfFalse :: BuiltinString -> Bool -> Bool
 expelledTraceIfFalse msg = traceIfFalse ("Account Expelled - " <> msg)
@@ -442,10 +437,11 @@ leaveTraceError msg = traceError ("Account Leave - " <> msg)
 validateReturn ::
   AccountSettings ->
   AccountReturnType ->
+  PubKeyHash ->
   AccountDatum ->
   ScriptContext ->
   Bool
-validateReturn accountSettings ARTExpelled inputAccountDatum ctx =
+validateReturn accountSettings ARTExpelled pkh inputAccountDatum ctx =
   expelledTraceIfFalse "Invalid Contract" validContract
     && expelledTraceIfFalse "Invalid Logic" validLogic
     && expelledTraceIfFalse "Invalid Logic State" validLogicState
@@ -475,12 +471,8 @@ validateReturn accountSettings ARTExpelled inputAccountDatum ctx =
     -- the user who is being expelled)
     expelledSig :: Sig
     expelledSig = case findSignatures sigSymbol (txOutValue ownInput) of
-      [s] -> s
-      _ -> expelledTraceError "Should only have one SIG"
-
-    -- The public key hash from the user who is being expelled
-    pkh :: PubKeyHash
-    pkh = sUser expelledSig
+      [s] | sUser s == pkh -> s
+      _ -> expelledTraceError "Invalid SIG tokens"
 
     sigValue :: Value
     sigValue = signatureValue' sigSymbol expelledSig
@@ -597,7 +589,7 @@ validateReturn accountSettings ARTExpelled inputAccountDatum ctx =
 --    The datum should be the same, except:
 --       The CAS should increase or decrease according to the CASMap and the type;
 --       The contract consumed should be removed from the list;
-validateReturn accountSettings returnType inputDatum ctx =
+validateReturn accountSettings returnType pkh inputDatum ctx =
   leaveTraceIfFalse "Invalid Account" validAccount
     && leaveTraceIfFalse "Invalid Account Value" validAccountValue
     && leaveTraceIfFalse "Invalid Account Datum" validAccountDatum
@@ -615,8 +607,12 @@ validateReturn accountSettings returnType inputDatum ctx =
 
     -- Our account input and output UTxO
     ownInput, ownOutput :: TxOut
-    ownInput = fst $ strictFindOutAndIn ctx
-    ownOutput = snd $ strictFindOutAndIn ctx
+    ownInput = case findInputAccountFrom sigSymbol (ownHash ctx) pkh info of
+      Just o -> o
+      Nothing -> leaveTraceError "Couldn't find user account input"
+    ownOutput = case findOutputAccountFrom sigSymbol (ownHash ctx) pkh info of
+      Just o -> o
+      Nothing -> leaveTraceError "Couldn't find user account output"
 
     -- The data contained inside our account output UTxO
     accountDatum :: AccountDatum
@@ -632,12 +628,8 @@ validateReturn accountSettings returnType inputDatum ctx =
     -- (only one user, but can have an amount greater than one)
     ownSig :: Sig
     ownSig = case findSignatures sigSymbol (txOutValue ownInput) of
-      [s] -> s
+      [s] | sUser s == pkh -> s
       _ -> leaveTraceError "Should only have one SIG"
-
-    -- The public key hash from this account owner
-    pkh :: PubKeyHash
-    pkh = sUser ownSig
 
     sigValue :: Value
     sigValue = signatureValue' sigSymbol ownSig
@@ -658,43 +650,10 @@ validateReturn accountSettings returnType inputDatum ctx =
       Just out -> out
       Nothing -> leaveTraceError "No contract being consumed"
 
-    -- The datum from the contract we are consuming
-    contractDatum :: ContractDatum
-    contractDatum = case findContractDatum contractInput (`findDatum` info) of
-      Just dat -> dat
-      Nothing -> expelledTraceError "Contract Datum could not be found"
-
     contractNFT :: AssetClass
     contractNFT = case M.lookup contrValHash (adContracts inputDatum) of
       Just ac -> ac
       Nothing -> leaveTraceError "Contract not registered"
-
-    review :: Maybe Review
-    review = case returnType of
-      ARTLeave -> case adReviews accountDatum of
-        re : res
-          | res == adReviews inputDatum -> Just re
-          | otherwise -> leaveTraceError "Review not added correctly to Datum"
-        [] -> leaveTraceError "Review not added to Datum"
-      ARTCancel -> Nothing
-
-    reviewValue :: Value
-    reviewValue = case review of
-      Nothing -> mempty
-      Just re -> assetClassValue (psToken platformSettings) reviewAmount
-        where
-          reviewPercentage :: R.Rational
-          reviewPercentage = psReviewPercentageOfTrust platformSettings
-
-          trustAmount :: Integer
-          trustAmount = sTrust (cdService contractDatum)
-
-          reviewAmount :: Integer
-          reviewAmount =
-            R.round $
-              (rScore re R.% 50)
-                * reviewPercentage
-                * R.fromInteger trustAmount
 
     -- Makes sure our account is valid by seeing if the SIG tokens owner signed
     -- this transaction and the validator hash embeded on the SIG token
@@ -707,22 +666,17 @@ validateReturn accountSettings returnType inputDatum ctx =
     validAccountValue :: Bool
     validAccountValue =
       txOutValue ownOutput <> negate (txOutValue ownInput)
-        == sigValue <> transactionFeeValue <> reviewValue
+        == sigValue <> transactionFeeValue
 
     -- Makes sure the account datum receives the corresponding CAS decrease or
     -- increase and that the contract identifier is removed from the list
     validAccountDatum :: Bool
     validAccountDatum = case returnType of
-      ARTLeave -> accountDatum == addReviewAD
+      ARTLeave -> accountDatum == leaveContractCASAD
         where
           leaveContractCASAD :: AccountDatum
           leaveContractCASAD =
             leaveContractCAS casMap removeContractAD
-
-          addReviewAD :: AccountDatum
-          addReviewAD = case review of
-            Just re -> addReview leaveContractCASAD re
-            Nothing -> leaveTraceError "Review not added to Datum"
       ARTCancel -> accountDatum == cancelContractCASAD
         where
           cancelContractCASAD :: AccountDatum
@@ -739,6 +693,118 @@ validateReturn accountSettings returnType inputDatum ctx =
       Just ac -> ac == contractNFT
       Nothing -> False
 
+{-# INLINEABLE reviewTraceIfFalse #-}
+reviewTraceIfFalse :: BuiltinString -> Bool -> Bool
+reviewTraceIfFalse msg = traceIfFalse ("Account Review - " <> msg)
+
+{-# INLINEABLE reviewTraceError #-}
+reviewTraceError :: forall a. BuiltinString -> a
+reviewTraceError msg = traceError ("Account Review - " <> msg)
+
+validateReview ::
+  AccountSettings ->
+  Review ->
+  PubKeyHash ->
+  AccountDatum ->
+  ScriptContext ->
+  Bool
+validateReview accountSettings review reviewed inputDatum ctx =
+  reviewTraceIfFalse "Invalid Review" validReview'
+    && reviewTraceIfFalse "Invalid Contract" validContract
+    && reviewTraceIfFalse "Invalid Account" validAccount
+    && reviewTraceIfFalse "Invalid Account Value" validAccountValue
+    && reviewTraceIfFalse "Invalid Account Datum" validAccountDatum
+  where
+    info :: TxInfo
+    info = scriptContextTxInfo ctx
+
+    platformSettings :: PlatformSettings
+    platformSettings = asPlatformSettings accountSettings
+
+    -- Our account input and output UTxO
+    revInput, revOutput :: TxOut
+    revInput = case findInputAccountFrom sigSymbol (ownHash ctx) reviewed info of
+      Just o -> o
+      Nothing -> leaveTraceError "Couldn't find user account input"
+    revOutput = case findOutputAccountFrom sigSymbol (ownHash ctx) reviewed info of
+      Just o -> o
+      Nothing -> leaveTraceError "Couldn't find user account output"
+
+    -- The data contained inside our account output UTxO
+    accountDatum :: AccountDatum
+    accountDatum = case findAccountDatum revOutput (`findDatum` info) of
+      Just ad -> ad
+      Nothing -> leaveTraceError "Could not find account output datum"
+
+    sigSymbol :: CurrencySymbol
+    sigSymbol = asSignatureSymbol accountSettings
+
+    reviewer :: PubKeyHash
+    -- The user who is reviewing this account
+    reviewer = rReviewer review
+
+    reviewerSigValue, reviewedSigValue :: Value
+    reviewerSigValue = signatureValue sigSymbol reviewer (ownHash ctx)
+    reviewedSigValue = signatureValue sigSymbol reviewed (ownHash ctx)
+
+    -- The validator hash from the platform contracts
+    contrValHash :: ValidatorHash
+    contrValHash = asContractValidatorHash accountSettings
+
+    -- The UTxO from the contract we are leaving
+    contractInput :: TxOut
+    contractInput = case strictFindInputWithValHash contrValHash info of
+      Just out -> out
+      Nothing -> leaveTraceError "No contract being consumed"
+
+    -- The datum from the contract we are consuming
+    contractDatum :: ContractDatum
+    contractDatum = case findContractDatum contractInput (`findDatum` info) of
+      Just dat -> dat
+      Nothing -> expelledTraceError "Contract Datum could not be found"
+
+    reviewValue :: Value
+    reviewValue = assetClassValue (psToken platformSettings) reviewAmount
+      where
+        reviewPercentage :: R.Rational
+        reviewPercentage = psReviewPercentageOfTrust platformSettings
+
+        trustAmount :: Integer
+        trustAmount = sTrust (cdService contractDatum)
+
+        reviewAmount :: Integer
+        reviewAmount =
+          R.round $
+            (rScore review R.% 50)
+              * reviewPercentage
+              * R.fromInteger trustAmount
+
+    validReview' :: Bool
+    validReview' = validReview review && txSignedBy info reviewer
+
+    validContract :: Bool
+    validContract =
+      txOutValue contractInput `geq` reviewerSigValue
+        && sPublisher (cdService contractDatum) == reviewed
+
+    validAccount :: Bool
+    validAccount =
+      txOutValue revInput `geq` reviewedSigValue
+        && txOutValue revOutput `geq` reviewedSigValue
+
+    validAccountValue :: Bool
+    validAccountValue =
+      txOutValue revOutput <> negate (txOutValue revInput)
+        == reviewValue
+
+    -- TODO: Increase or decrease CAS based on review
+    validAccountDatum :: Bool
+    validAccountDatum = accountDatum == addReview inputDatum review
+
+{-# INLINEABLE validateCollect #-}
+validateCollect :: AccountSettings -> PubKeyHash -> ScriptContext -> Bool
+validateCollect _ _ _ = traceError "Validate Collect - Incomplete"
+
 {-# INLINEABLE mkAccountValidator #-}
 mkAccountValidator ::
   AccountSettings ->
@@ -749,7 +815,9 @@ mkAccountValidator ::
 mkAccountValidator as dat ACreateContract ctx = validateCreateContract as dat ctx
 mkAccountValidator as dat ASign ctx = validateSign as dat ctx
 mkAccountValidator as _ (ACollect pkh) ctx = validateCollect as pkh ctx
-mkAccountValidator as dat (AReturn t) ctx = validateReturn as t dat ctx
+mkAccountValidator as dat (AReturn t pkh) ctx = validateReturn as t pkh dat ctx
+mkAccountValidator as dat (AReview rev pkh) ctx =
+  validateReview as rev pkh dat ctx
 
 typedAccountValidator :: AccountSettings -> Scripts.TypedValidator AccountType
 typedAccountValidator as =

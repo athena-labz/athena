@@ -66,21 +66,36 @@ import qualified Prelude
 import Spec.Sample
 import Membership.OnChain.Account
 
-createAccountTrace :: Wallet -> EmulatorTrace ()
-createAccountTrace w = do
-  h <- activateContractWallet w accountEndpoints
-  callEndpoint @"create-account" h platformSettings
+createAccountTrace ::
+  ContractHandle () AccountSchema Text ->
+  PlatformSettings ->
+  EmulatorTrace ()
+createAccountTrace handle ps = do
+  callEndpoint @"create-account" handle ps
 
-createAccountsTrace :: [Wallet] -> EmulatorTrace ()
-createAccountsTrace [] = void $ Emulator.waitNSlots 5
-createAccountsTrace (w : ws) = do
-  createAccountTrace w
-  createAccountsTrace ws
+createAccountsTrace ::
+  [ContractHandle () AccountSchema Text] ->
+  PlatformSettings ->
+  EmulatorTrace ()
+createAccountsTrace [] _ = void $ Emulator.waitNSlots 5
+createAccountsTrace (h : hs) ps = do
+  createAccountTrace h ps
+  createAccountsTrace hs ps
 
-collectFeesTrace :: ContractHandle () AccountSchema Text -> AccountSettings -> EmulatorTrace ()
+collectFeesTrace ::
+  ContractHandle () AccountSchema Text ->
+  AccountSettings ->
+  EmulatorTrace ()
 collectFeesTrace handle as = do
   callEndpoint @"collect-fees" handle as
   void $ Emulator.waitNSlots 3
+
+accountInfoTrace ::
+  ContractHandle () AccountSchema Text ->
+  AccountSettings ->
+  EmulatorTrace ()
+accountInfoTrace handle as = do
+  callEndpoint @"account-info" handle as
 
 createContractTrace :: AccountSettings -> ContractDatum -> Wallet -> EmulatorTrace (Maybe AssetClass)
 createContractTrace as cd w = do
@@ -114,11 +129,21 @@ cancelTrace handle as contractNFT = do
 leaveTrace ::
   ContractHandle (Last AssetClass) ContractSchema Text ->
   AccountSettings ->
-  Review ->
   AssetClass ->
   EmulatorTrace ()
-leaveTrace handle as review contractNFT = do
-  callEndpoint @"leave" handle (as, review, contractNFT)
+leaveTrace handle as contractNFT = do
+  callEndpoint @"leave" handle (as, contractNFT)
+  void $ Emulator.waitNSlots 3
+
+clientLeaveTrace ::
+  ContractHandle (Last AssetClass) ContractSchema Text ->
+  AccountSettings ->
+  AssetClass ->
+  Review ->
+  PubKeyHash ->
+  EmulatorTrace ()
+clientLeaveTrace handle as contractNFT review pkh = do
+  callEndpoint @"client-leave" handle (as, contractNFT, review, pkh)
   void $ Emulator.waitNSlots 3
 
 createLogicTrace ::
@@ -169,6 +194,3 @@ logicCollectTrace ::
 logicCollectTrace handle as ls contractNFT shame = do
   callEndpoint @"collect" handle (as, ls, contractNFT, shame)
   void $ Emulator.waitNSlots 3
-
-mintingTrace :: EmulatorTrace ()
-mintingTrace = createAccountsTrace [knownWallet 1, knownWallet 2]

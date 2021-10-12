@@ -29,6 +29,7 @@ import Membership.Logic
 import Membership.OffChain.Account
 import Membership.OffChain.Contract
 import Membership.OffChain.Logic
+import Membership.OnChain.Account
 import Membership.OnChain.Contract
 import Membership.OnChain.Logic
 import Membership.OnChain.ShameToken
@@ -36,7 +37,7 @@ import Membership.OnChain.Signature
 import Membership.PlatformSettings
 import Membership.Service
 import Membership.ShameToken
-import Plutus.Contract.Test (Wallet (Wallet), walletPubKey, knownWallet)
+import Plutus.Contract.Test (Wallet (Wallet), knownWallet, walletPubKey)
 import Plutus.Trace.Emulator as Emulator
   ( ContractHandle,
     EmulatorConfig (EmulatorConfig),
@@ -60,30 +61,39 @@ import PlutusTx.Prelude
     (-),
   )
 import qualified PlutusTx.Ratio as R
+import Spec.Sample
+import Spec.Trace
 import Test.Tasty ()
 import Prelude (IO, Show (..), String)
 import qualified Prelude
-import Spec.Trace
-import Spec.Sample
-import Membership.OnChain.Account
 
 createAccountExample :: EmulatorTrace ()
 createAccountExample = do
   let alice = knownWallet 1
 
+  -- Alice activates her accountEndpoints handler (this is completely off-chain)
+  aliceAccountHandler <- activateContractWallet alice accountEndpoints
+
   -- Alice creates an account by paying an entrance fee
   -- This means that 100 SIG tokens are minted and transferred to the account script
   -- These tokens contain Alice's public key hash and now she can execute a series of
   -- actions with this account by requesting the script to transfer these tokens
-  createAccountTrace alice
+  createAccountTrace aliceAccountHandler platformSettings
+
   void $ Emulator.waitNSlots 1
+
+  -- Display Alice's account information
+  accountInfoTrace aliceAccountHandler accountSettings
 
 createContractExample :: EmulatorTrace ()
 createContractExample = do
   let alice = knownWallet 1 -- Alice will be our fake service provider
-  
-  -- Alice creates an account
-  createAccountTrace alice
+
+  -- Alice activates her accountEndpoints handler (this is completely off-chain)
+  aliceAccountHandler <- activateContractWallet alice accountEndpoints
+
+  createAccountTrace aliceAccountHandler platformSettings
+
   void $ Emulator.waitNSlots 1
 
   -- Alice now creates a new contract
@@ -92,12 +102,17 @@ createContractExample = do
   createContractTrace accountSettings sampleContractDatum alice
   void $ Emulator.waitNSlots 1
 
+  -- Display Alice's account information
+  accountInfoTrace aliceAccountHandler accountSettings
+
 createLogicExample :: EmulatorTrace ()
 createLogicExample = do
   let alice = knownWallet 1
-  
-  -- Alice creates an account
-  createAccountTrace alice
+
+  aliceAccountHandler <- activateContractWallet alice accountEndpoints
+
+  createAccountTrace aliceAccountHandler platformSettings
+
   void $ Emulator.waitNSlots 1
 
   -- Alice creates a new contract, her role is, therefore, "Publisher"
@@ -111,18 +126,25 @@ createLogicExample = do
       -- This is what will be used to make accusations, it will also distribute the collateral
       -- according to the logic defined and the verdict from the judge
       void $ createLogicTrace accountSettings logicSettings key alice
+
+      -- Display Alice's account information
+      accountInfoTrace aliceAccountHandler accountSettings
     Nothing -> Extras.logError @String "Error creating account"
-  
+
 signContractExample :: EmulatorTrace ()
 signContractExample = do
   let alice = knownWallet 1
-      bob   = knownWallet 2 -- Bob will be our fake client
-  
-  -- Alice creates an account
-  createAccountTrace alice
+      bob = knownWallet 2 -- Bob will be our fake client
 
-  -- Bob creates an account
-  createAccountTrace bob
+  -- Alice and Bob activate their accountEndpoints handler
+  -- (this is completely off-chain)
+  aliceAccountHandler <- activateContractWallet alice accountEndpoints
+
+  bobAccountHandler <- activateContractWallet bob accountEndpoints
+
+  createAccountsTrace
+    [aliceAccountHandler, bobAccountHandler]
+    platformSettings
 
   void $ Emulator.waitNSlots 1
 
@@ -144,6 +166,12 @@ signContractExample = do
 
       -- Bob signs Alice's contract as a Client
       signTrace bobContractHandler accountSettings contractNFT Client
+
+      -- Display Alice's account information
+      accountInfoTrace aliceAccountHandler accountSettings
+
+      -- Display Bob's account information
+      accountInfoTrace bobAccountHandler accountSettings
     Nothing -> Extras.logError @String "Error creating account"
 
 accuseExample :: EmulatorTrace ()
@@ -151,19 +179,21 @@ accuseExample = do
   let alice = knownWallet 1
       bob = knownWallet 2
       charlie = knownWallet 3 -- Charlie will be our judge (he's public key can be found in the contract)
-
   Extras.logInfo $ "Alice Public Key " ++ show (pubKeyHash $ walletPubKey alice)
   Extras.logInfo $ "Bob Public Key " ++ show (pubKeyHash $ walletPubKey bob)
   Extras.logInfo $ "Charlie Public Key " ++ show (pubKeyHash $ walletPubKey charlie)
-  
-  -- Alice creates an account
-  createAccountTrace alice
 
-  -- Bob creates an account
-  createAccountTrace bob
+  -- Alice, Bob and Charlie activate their accountEndpoints handler
+  -- (this is completely off-chain)
+  aliceAccountHandler <- activateContractWallet alice accountEndpoints
 
-  -- Charlie creates an account
-  createAccountTrace charlie
+  bobAccountHandler <- activateContractWallet bob accountEndpoints
+
+  charlieAccountHandler <- activateContractWallet charlie accountEndpoints
+
+  createAccountsTrace
+    [aliceAccountHandler, bobAccountHandler, charlieAccountHandler]
+    platformSettings
 
   void $ Emulator.waitNSlots 1
 
@@ -198,7 +228,6 @@ accuseExample = do
         -- If the Alice transaction succeded, we can get the shame token
         -- returned to execute multiple actions with the logic script
         Just shameToken -> do
-
           -- Now that we are going to transact with the logic script,
           -- Bob needs a logic handler
           bobLogicHandler <- activateContractWallet bob logicEndpoints
@@ -213,6 +242,12 @@ accuseExample = do
             logicSettings
             contractNFT
             shameToken
+
+          -- Display Alice's account information
+          accountInfoTrace aliceAccountHandler accountSettings
+
+          -- Display Bob's account information
+          accountInfoTrace bobAccountHandler accountSettings
     Nothing -> Extras.logError @String "Error creating account"
 
 mediateExample :: EmulatorTrace ()
@@ -224,15 +259,18 @@ mediateExample = do
   Extras.logInfo $ "Alice Public Key " ++ show (pubKeyHash $ walletPubKey alice)
   Extras.logInfo $ "Bob Public Key " ++ show (pubKeyHash $ walletPubKey bob)
   Extras.logInfo $ "Charlie Public Key " ++ show (pubKeyHash $ walletPubKey charlie)
-  
-  -- Alice creates an account
-  createAccountTrace alice
 
-  -- Bob creates an account
-  createAccountTrace bob
+  -- Alice, Bob and Charlie activate their accountEndpoints handler
+  -- (this is completely off-chain)
+  aliceAccountHandler <- activateContractWallet alice accountEndpoints
 
-  -- Charlie creates an account
-  createAccountTrace charlie
+  bobAccountHandler <- activateContractWallet bob accountEndpoints
+
+  charlieAccountHandler <- activateContractWallet charlie accountEndpoints
+
+  createAccountsTrace
+    [aliceAccountHandler, bobAccountHandler, charlieAccountHandler]
+    platformSettings
 
   void $ Emulator.waitNSlots 1
 
@@ -267,7 +305,6 @@ mediateExample = do
         -- If the Alice transaction succeded, we can get the shame token
         -- returned to execute multiple actions with the logic script
         Just shameToken -> do
-
           -- Now that we are going to transact with the logic script,
           -- Bob needs a logic handler
           bobLogicHandler <- activateContractWallet bob logicEndpoints
@@ -282,7 +319,7 @@ mediateExample = do
             logicSettings
             contractNFT
             shameToken
-          
+
           -- For Charlie to mediate this conflict, he also needs a logic handler
           charlieLogicHandler <- activateContractWallet charlie logicEndpoints
 
@@ -308,7 +345,16 @@ mediateExample = do
             accountSettings
             logicSettings
             shameToken
+        
 
+          -- Display Alice's account information
+          accountInfoTrace aliceAccountHandler accountSettings
+
+          -- Display Bob's account information
+          accountInfoTrace bobAccountHandler accountSettings
+          
+          -- Display Charlie's account information
+          accountInfoTrace charlieAccountHandler accountSettings
     Nothing -> Extras.logError @String "Error creating account"
 
 logicCollectExample :: EmulatorTrace ()
@@ -320,15 +366,18 @@ logicCollectExample = do
   Extras.logInfo $ "Alice Public Key " ++ show (pubKeyHash $ walletPubKey alice)
   Extras.logInfo $ "Bob Public Key " ++ show (pubKeyHash $ walletPubKey bob)
   Extras.logInfo $ "Charlie Public Key " ++ show (pubKeyHash $ walletPubKey charlie)
-  
-  -- Alice creates an account
-  createAccountTrace alice
 
-  -- Bob creates an account
-  createAccountTrace bob
+  -- Alice, Bob and Charlie activate their accountEndpoints handler
+  -- (this is completely off-chain)
+  aliceAccountHandler <- activateContractWallet alice accountEndpoints
 
-  -- Charlie creates an account
-  createAccountTrace charlie
+  bobAccountHandler <- activateContractWallet bob accountEndpoints
+
+  charlieAccountHandler <- activateContractWallet charlie accountEndpoints
+
+  createAccountsTrace
+    [aliceAccountHandler, bobAccountHandler, charlieAccountHandler]
+    platformSettings
 
   void $ Emulator.waitNSlots 1
 
@@ -363,7 +412,6 @@ logicCollectExample = do
         -- If the Alice transaction succeded, we can get the shame token
         -- returned to execute multiple actions with the logic script
         Just shameToken -> do
-
           -- Now that we are going to transact with the logic script,
           -- Bob needs a logic handler
           bobLogicHandler <- activateContractWallet bob logicEndpoints
@@ -378,7 +426,7 @@ logicCollectExample = do
             logicSettings
             contractNFT
             shameToken
-          
+
           -- For Charlie to mediate this conflict, he also needs a logic handler
           charlieLogicHandler <- activateContractWallet charlie logicEndpoints
 
@@ -404,7 +452,7 @@ logicCollectExample = do
             accountSettings
             logicSettings
             shameToken
-          
+
           -- Bob activates the logic script distribution after the conflict has
           -- been mediated, since he will earn Alice's trust tokens
           -- Alice is out of the contract becasue was declared guilty by the logic script
@@ -414,7 +462,16 @@ logicCollectExample = do
             logicSettings
             contractNFT
             shameToken
+        
 
+          -- Display Alice's account information
+          accountInfoTrace aliceAccountHandler accountSettings
+
+          -- Display Bob's account information
+          accountInfoTrace bobAccountHandler accountSettings
+          
+          -- Display Charlie's account information
+          accountInfoTrace charlieAccountHandler accountSettings
     Nothing -> Extras.logError @String "Error creating account"
 
 leaveContractExample :: EmulatorTrace ()
@@ -426,15 +483,18 @@ leaveContractExample = do
   Extras.logInfo $ "Alice Public Key " ++ show (pubKeyHash $ walletPubKey alice)
   Extras.logInfo $ "Bob Public Key " ++ show (pubKeyHash $ walletPubKey bob)
   Extras.logInfo $ "Charlie Public Key " ++ show (pubKeyHash $ walletPubKey charlie)
-  
-  -- Alice creates an account
-  createAccountTrace alice
 
-  -- Bob creates an account
-  createAccountTrace bob
+  -- Alice, Bob and Charlie activate their accountEndpoints handler
+  -- (this is completely off-chain)
+  aliceAccountHandler <- activateContractWallet alice accountEndpoints
 
-  -- Charlie creates an account
-  createAccountTrace charlie
+  bobAccountHandler <- activateContractWallet bob accountEndpoints
+
+  charlieAccountHandler <- activateContractWallet charlie accountEndpoints
+
+  createAccountsTrace
+    [aliceAccountHandler, bobAccountHandler, charlieAccountHandler]
+    platformSettings
 
   void $ Emulator.waitNSlots 1
 
@@ -452,7 +512,7 @@ leaveContractExample = do
       -- Bob should only sign the contract if the logic script was
       -- already created, so he can know the inputs are fair
 
-      -- Bob activates his contractEndpoints handler (this is completely off-chain)
+      -- Bob activates his contractEndpoints handler
       bobContractHandler <- activateContractWallet bob contractEndpoints
 
       -- Charlie also activates his contract handler, so he can sign the contract
@@ -469,7 +529,6 @@ leaveContractExample = do
         -- If the Alice transaction succeded, we can get the shame token
         -- returned to execute multiple actions with the logic script
         Just shameToken -> do
-
           -- Now that we are going to transact with the logic script,
           -- Bob needs a logic handler
           bobLogicHandler <- activateContractWallet bob logicEndpoints
@@ -484,7 +543,7 @@ leaveContractExample = do
             logicSettings
             contractNFT
             shameToken
-          
+
           -- For Charlie to mediate this conflict, he also needs a logic handler
           charlieLogicHandler <- activateContractWallet charlie logicEndpoints
 
@@ -510,7 +569,7 @@ leaveContractExample = do
             accountSettings
             logicSettings
             shameToken
-          
+
           -- Bob activates the logic script distribution after the conflict has
           -- been mediated, since he will earn Alice's trust tokens
           -- Alice is out of the contract becasue was declared guilty by the logic script
@@ -520,20 +579,29 @@ leaveContractExample = do
             logicSettings
             contractNFT
             shameToken
-          
+
           -- After Bob had a really bad experience with Alice, he might want to
           -- leave the contract and get his collateral back
-          leaveTrace
+          clientLeaveTrace
             bobContractHandler
             accountSettings
-            sampleReview
             contractNFT
-          
+            (sampleReview (pubKeyHash $ walletPubKey bob))
+            (pubKeyHash $ walletPubKey alice)
+
+
           -- Charlie might do the same
           leaveTrace
             charlieContractHandler
             accountSettings
-            sampleReview
             contractNFT
 
+          -- Display Alice's account information
+          accountInfoTrace aliceAccountHandler accountSettings
+
+          -- Display Bob's account information
+          accountInfoTrace bobAccountHandler accountSettings
+          
+          -- Display Charlie's account information
+          accountInfoTrace charlieAccountHandler accountSettings
     Nothing -> Extras.logError @String "Error creating account"

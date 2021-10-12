@@ -21,8 +21,13 @@ import Ledger
     Datum (Datum),
     DatumHash,
     PubKeyHash,
+    TxInfo,
     TxOut (..),
     TxOutRef,
+    toValidatorHash,
+    txInInfoResolved,
+    txInfoInputs,
+    txInfoOutputs,
     txOutDatum,
   )
 import Ledger.Scripts (ValidatorHash)
@@ -30,7 +35,9 @@ import Ledger.Typed.Scripts as Scripts (ValidatorTypes (..))
 import Ledger.Value (AssetClass, Value, assetClassValue)
 import Membership.Contract
 import Membership.PlatformSettings
+import Membership.Signature
 import Plutus.ChainIndex
+import Plutus.V1.Ledger.Value (CurrencySymbol (..))
 import qualified PlutusTx
 import qualified PlutusTx.AssocMap as M
 import PlutusTx.Prelude
@@ -41,9 +48,12 @@ import PlutusTx.Prelude
     Integer,
     Maybe (..),
     MultiplicativeSemigroup ((*)),
+    find,
+    map,
     negate,
     ($),
     (&&),
+    (.),
   )
 import qualified PlutusTx.Ratio as R
 import qualified Prelude
@@ -86,8 +96,8 @@ data AccountRedeemer
   = ACreateContract
   | ASign
   | ACollect PubKeyHash
-  | AReview
-  | AReturn AccountReturnType
+  | AReview Review PubKeyHash
+  | AReturn AccountReturnType PubKeyHash
   deriving (Prelude.Show)
 
 PlutusTx.unstableMakeIsData ''AccountRedeemer
@@ -98,6 +108,27 @@ data AccountOffChainEssentials = AccountOffChainEssentials
     aoeAccountDatum :: AccountDatum
   }
   deriving (Prelude.Show, Prelude.Eq)
+
+data AccountInfo = AccountInfo
+  { aiCAS :: Integer,
+    aiReviews :: [Review],
+    aiActiveContracts :: [AssetClass],
+    aiReviewBalance :: Integer,
+    aiFees :: Integer
+  }
+  deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
+
+instance Eq AccountInfo where
+  {-# INLINEABLE (==) #-}
+  AccountInfo cas rev atvCtr rBlc fees
+    == AccountInfo cas' rev' atvCtr' rBlc' fees' =
+      cas == cas'
+        && rev == rev'
+        && atvCtr == atvCtr'
+        && rBlc == rBlc'
+        && fees == fees'
+
+PlutusTx.unstableMakeIsData ''AccountInfo
 
 data AccountType
 
@@ -199,4 +230,19 @@ findAccountDatum o f = do
   dh <- txOutDatum o
   Datum d <- f dh
   PlutusTx.fromBuiltinData d
-  
+
+{-# INLINABLE findInputAccountFrom #-}
+findInputAccountFrom :: CurrencySymbol -> ValidatorHash -> PubKeyHash -> TxInfo -> Maybe TxOut
+findInputAccountFrom cs vh pkh info = find predicate ((map txInInfoResolved . txInfoInputs) info)
+  where
+    predicate (TxOut addr val _) =
+      toValidatorHash addr == Just vh
+        && findSignatures cs val == [sig pkh vh]
+
+{-# INLINABLE findOutputAccountFrom #-}
+findOutputAccountFrom :: CurrencySymbol -> ValidatorHash -> PubKeyHash -> TxInfo -> Maybe TxOut
+findOutputAccountFrom cs vh pkh info = find predicate (txInfoOutputs info)
+  where
+    predicate (TxOut addr val _) =
+      toValidatorHash addr == Just vh
+        && findSignatures cs val == [sig pkh vh]

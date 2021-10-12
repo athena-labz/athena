@@ -580,6 +580,9 @@ collect ::
   AssetClass ->
   Contract w s Text ()
 collect accountSettings logicSettings contractNFT shameTokenAssetClass = do
+  -- The signer public key hash
+  pkh <- pubKeyHash <$> Contract.ownPubKey
+
   -- Tries to get the contract off-chain essentials
   maybeContractOffChainEssentials <-
     getContractOffChainEssentials accountSettings contractNFT
@@ -665,7 +668,9 @@ collect accountSettings logicSettings contractNFT shameTokenAssetClass = do
                       distributionConstraints
                         <> Constraints.mustSpendScriptOutput
                           accountReference
-                          (Redeemer $ PlutusTx.toBuiltinData (AReturn ARTExpelled))
+                          (Redeemer $
+                            PlutusTx.toBuiltinData
+                              (AReturn ARTExpelled (fst $ aAccused accusation)))
                         <> Constraints.mustSpendScriptOutput
                           contractReference
                           (Redeemer $ PlutusTx.toBuiltinData CMediate)

@@ -238,8 +238,9 @@ sampleContractDatum =
     }
 
 {-# INLINABLE sampleReview #-}
-sampleReview :: Review
-sampleReview = Review
-  { rScore = 15, -- 1.5 Stars
+sampleReview :: PubKeyHash -> Review
+sampleReview pkh = Review
+  { rReviewer = pkh,
+    rScore = 15, -- 1.5 Stars
     rDescription = "Horrible service"
   }

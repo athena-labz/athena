@@ -57,6 +57,7 @@ import Ledger.Value
   )
 import Membership.Account
 import Membership.Contract
+import Membership.OffChain.Account (getAccountInfo)
 import Membership.OffChain.Utils
 import Membership.OnChain.Account
 import Membership.OnChain.Contract
@@ -92,7 +93,7 @@ import qualified PlutusTx
 import qualified PlutusTx.AssocMap as AM
 import PlutusTx.Prelude
   ( AdditiveGroup ((-)),
-    Bool,
+    Bool (..),
     BuiltinByteString,
     Eq ((==)),
     Integer,
@@ -118,7 +119,9 @@ import PlutusTx.Prelude
   )
 import qualified PlutusTx.Ratio as R
 import Wallet.Emulator.Wallet ()
-import Prelude (Semigroup (..), Show (..), String, uncurry)
+import Prelude
+  (Semigroup (..), Show (..), String, not, take, uncurry, (&&))
+import Plutus.ChainIndex.DbStore (checkedSqliteDb)
 
 -- Based on the given initial contract datum, createContract mints a new NFT,
 -- and transfers it to the platform contract script address, creating a new UTxO
@@ -352,7 +355,7 @@ signContract userRole accountSettings contractNFT = do
             <> sigValue
             <> priceValue
         -- The account, in the other hand, is losing one SIG token and earning
-        -- the transaction fees. Which can not be used by the account owner, but 
+        -- the transaction fees. Which can not be used by the account owner, but
         -- instead can be transfered to the "governance script", which should
         -- administrate the platform funds
         accountValue =
@@ -532,7 +535,7 @@ cancelContract accountSettings contractNFT = do
           Constraints.mustBeSignedBy pkh
             <> Constraints.mustSpendScriptOutput
               accountReference
-              (Redeemer $ PlutusTx.toBuiltinData (AReturn ARTCancel))
+              (Redeemer $ PlutusTx.toBuiltinData (AReturn ARTCancel pkh))
             <> Constraints.mustSpendScriptOutput
               contractReference
               (Redeemer $ PlutusTx.toBuiltinData CCancel)
@@ -553,8 +556,8 @@ cancelContract accountSettings contractNFT = do
 -- not supposed to deliver any service and is not supposed to judge any
 -- conflict. He can, therefore, return with his trust tokens, his SIG and,
 -- if he is a publisher, the price value
-leaveContract :: AccountSettings -> Review -> AssetClass -> Contract w s Text ()
-leaveContract accountSettings review contractNFT = do
+leaveContract :: AccountSettings -> AssetClass -> Contract w s Text ()
+leaveContract accountSettings contractNFT = do
   -- The signer public key hash
   pkh <- pubKeyHash <$> Contract.ownPubKey
 
@@ -570,15 +573,18 @@ leaveContract accountSettings review contractNFT = do
   -- If they all were, completes the transaction. Otherwise, logs an error and
   -- leaves.
   case (maybeAccountOffChainEssentials, maybeContractOffChainEssentials) of
-    (Just aoe, Just coe) -> do
-      -- Submit transaction
-      ledgerTx <- submitTxConstraintsWith @ContractType lookups tx
+    (Just aoe, Just coe)
+      | not offChainVerification ->
+        logError @String "Leave Contract Verification failed"
+      | otherwise -> do
+        -- Submit transaction
+        ledgerTx <- submitTxConstraintsWith @ContractType lookups tx
 
-      -- Wait until transaction is confirmed
-      awaitTxConfirmed $ txId ledgerTx
+        -- Wait until transaction is confirmed
+        awaitTxConfirmed $ txId ledgerTx
 
-      logInfo @String $
-        "Leave Contract - Successfully left contract " ++ show contractNFT
+        logInfo @String $
+          "Leave Contract - Successfully left contract " ++ show contractNFT
       where
         -- The currency symbol used in every SIG token
         sigSymbol :: CurrencySymbol
@@ -588,18 +594,8 @@ leaveContract accountSettings review contractNFT = do
         platformSettings :: PlatformSettings
         platformSettings = asPlatformSettings accountSettings
 
-        reviewPercentage :: R.Rational
-        reviewPercentage = psReviewPercentageOfTrust platformSettings
-
         trustAmount :: Integer
         trustAmount = sTrust (cdService contractDatum)
-
-        reviewAmount :: Integer
-        reviewAmount =
-          R.round $
-            (rScore review R.% 50)
-              * reviewPercentage
-              * R.fromInteger trustAmount
 
         -- The script validator hashes from the platform accounts and contracts
         accValHash, contrValHash :: ValidatorHash
@@ -631,19 +627,27 @@ leaveContract accountSettings review contractNFT = do
         contractDatum :: ContractDatum
         contractDatum = coeContractDatum coe
 
+        userRole :: Maybe Role
+        userRole = AM.lookup pkh (cdRoleMap contractDatum)
+
+        -- Make sure our transaction won't fail
+        offChainVerification :: Bool
+        offChainVerification =
+          (userRole == Just Publisher)
+            || (userRole == Just Mediator)
+
         -- The information needed to transact with a contract
         contractSett :: ContractSettings
         contractSett = coeContractSettings coe
 
         -- The values, which will either be sent or consumed by the contract
         -- and account
-        sigValue, trustValue, reviewValue, txFeesValue :: Value
+        sigValue, trustValue, txFeesValue :: Value
         sigValue = singleton sigSymbol (makeSigToken pkh accValHash) 1
         trustValue =
           assetClassValue
             (psToken platformSettings)
             (sTrust $ cdService contractDatum)
-        reviewValue = assetClassValue (psToken platformSettings) reviewAmount
         txFeesValue =
           assetClassValue
             (psToken platformSettings)
@@ -662,7 +666,6 @@ leaveContract accountSettings review contractNFT = do
         accountValue =
           txOutValue accountOut
             <> sigValue
-            <> reviewValue
             <> txFeesValue
 
         -- The data that will be given to the newly created contract UTxO
@@ -675,7 +678,7 @@ leaveContract accountSettings review contractNFT = do
         -- of contracts and the CAS is being increased because everything went
         -- well
         newAccountDatum :: AccountDatum
-        newAccountDatum = addReviewAD
+        newAccountDatum = leaveContractCASAD
           where
             removeContractAD :: AccountDatum
             removeContractAD = removeContract accountDatum contrValHash
@@ -683,9 +686,6 @@ leaveContract accountSettings review contractNFT = do
             leaveContractCASAD :: AccountDatum
             leaveContractCASAD =
               leaveContractCAS (psCASMap platformSettings) removeContractAD
-
-            addReviewAD :: AccountDatum
-            addReviewAD = addReview leaveContractCASAD review
 
         lookups :: ScriptLookups ContractType
         lookups =
@@ -705,10 +705,10 @@ leaveContract accountSettings review contractNFT = do
           Constraints.mustBeSignedBy pkh
             <> Constraints.mustSpendScriptOutput
               accountReference
-              (Redeemer $ PlutusTx.toBuiltinData (AReturn ARTLeave))
+              (Redeemer $ PlutusTx.toBuiltinData (AReturn ARTLeave pkh))
             <> Constraints.mustSpendScriptOutput
               contractReference
-              (Redeemer $ PlutusTx.toBuiltinData (CLeave review))
+              (Redeemer $ PlutusTx.toBuiltinData (CLeave Nothing))
             <> Constraints.mustPayToTheScript newContractDatum contractValue
             <> Constraints.mustPayToOtherScript
               accValHash
@@ -719,20 +719,266 @@ leaveContract accountSettings review contractNFT = do
         "Leave Contract - "
           ++ "Account or Contract Essentials failed"
 
+-- Leaves a contract in the right time. Differently from cancelContract,
+-- a user that uses leaveContract is not involved in any accusation, is
+-- not supposed to deliver any service and is not supposed to judge any
+-- conflict. He can, therefore, return with his trust tokens, his SIG and,
+-- if he is a publisher, the price value
+leaveContractAsClient ::
+  AccountSettings ->
+  AssetClass ->
+  Review ->
+  PubKeyHash ->
+  Contract w s Text ()
+leaveContractAsClient accountSettings contractNFT review reviewed = do
+  -- The signer public key hash
+  pkh <- pubKeyHash <$> Contract.ownPubKey
+
+  -- Tries to get the account off-chain essentials from the our user
+  maybeOwnAccountOffChainEssentials <-
+    getAccountOffChainEssentials accountSettings pkh
+
+  -- Tries to get the account off-chain essentials from the user we are
+  -- reviewing
+  maybeRevAccountOffChainEssentials <-
+    getAccountOffChainEssentials accountSettings reviewed
+
+  -- Tries to get the contract off-chain essentials
+  maybeContractOffChainEssentials <-
+    getContractOffChainEssentials accountSettings contractNFT
+
+  -- Verifies if both account and contract important information were gathered.
+  -- If they all were, completes the transaction. Otherwise, logs an error and
+  -- leaves.
+  case (
+      maybeOwnAccountOffChainEssentials,
+      maybeRevAccountOffChainEssentials,
+      maybeContractOffChainEssentials
+    ) of
+    (Just oAoe, Just rAoe, Just coe)
+      | not offChainVerification ->
+        logError @String "Leave Contract Verification failed"
+      | otherwise -> do
+        -- Submit transaction
+        ledgerTx <- submitTxConstraintsWith @ContractType lookups tx
+
+        -- Wait until transaction is confirmed
+        awaitTxConfirmed $ txId ledgerTx
+
+        logInfo @String $
+          "Leave Contract - Successfully left contract " ++ show contractNFT
+      where
+        -- The currency symbol used in every SIG token
+        sigSymbol :: CurrencySymbol
+        sigSymbol = asSignatureSymbol accountSettings
+
+        -- The information needed in all the platform
+        platformSettings :: PlatformSettings
+        platformSettings = asPlatformSettings accountSettings
+
+        reviewPercentage :: R.Rational
+        reviewPercentage = psReviewPercentageOfTrust platformSettings
+
+        trustAmount :: Integer
+        trustAmount = sTrust (cdService contractDatum)
+
+        reviewAmount :: Integer
+        reviewAmount =
+          R.round $
+            (rScore review R.% 50)
+              * reviewPercentage
+              * R.fromInteger trustAmount
+
+        -- The script validator hashes from the platform accounts and contracts
+        accValHash, contrValHash :: ValidatorHash
+        accValHash = accountValidatorHash accountSettings
+        contrValHash = coeContractValidatorHash coe
+
+        -- A reference to the account and contract UTxO we are trying to consume
+        ownAccountReference, revAccountReference, contractReference :: TxOutRef
+        ownAccountReference = aoeAccountReference oAoe
+        revAccountReference = aoeAccountReference rAoe
+        contractReference = coeContractReference coe
+
+        -- A version of the UTxOs we are consuming easy to be digested by the
+        -- blockchain
+        ownAccountChainIndexTxOut, revAccountChainIndexTxOut :: ChainIndexTxOut
+        ownAccountChainIndexTxOut = fst (aoeAccountOutTx oAoe)
+        revAccountChainIndexTxOut = fst (aoeAccountOutTx rAoe)
+
+        contractChainIndexTxOut :: ChainIndexTxOut
+        contractChainIndexTxOut = fst (coeContractOutTx coe)
+
+        -- A version of the UTxOs we are consuming easy to be read and
+        -- manipulated
+        ownAccountOut, revAccountOut, contractOut :: TxOut
+        ownAccountOut = toTxOut ownAccountChainIndexTxOut
+        revAccountOut = toTxOut revAccountChainIndexTxOut
+        contractOut = toTxOut contractChainIndexTxOut
+
+        -- The data from the account we are consuming
+        ownAccountDatum, revAccountDatum :: AccountDatum
+        ownAccountDatum = aoeAccountDatum oAoe
+        revAccountDatum = aoeAccountDatum rAoe
+
+        -- The data from the contract we are consuming
+        contractDatum :: ContractDatum
+        contractDatum = coeContractDatum coe
+
+        userRole :: Maybe Role
+        userRole = AM.lookup pkh (cdRoleMap contractDatum)
+
+        -- Make sure our transaction won't fail
+        offChainVerification :: Bool
+        offChainVerification =
+          (userRole == Just Client)
+            && validReview review
+            && reviewed == sPublisher (cdService contractDatum)
+
+        -- The information needed to transact with a contract
+        contractSett :: ContractSettings
+        contractSett = coeContractSettings coe
+
+        -- The values, which will either be sent or consumed by the contract
+        -- and account
+        sigValue, trustValue, reviewValue, txFeesValue :: Value
+        sigValue = singleton sigSymbol (makeSigToken pkh accValHash) 1
+        trustValue =
+          assetClassValue
+            (psToken platformSettings)
+            (sTrust $ cdService contractDatum)
+        reviewValue = assetClassValue (psToken platformSettings) reviewAmount
+        txFeesValue =
+          assetClassValue
+            (psToken platformSettings)
+            (psTxFee platformSettings)
+
+        -- The resulting value from contract and account
+        contractValue, ownAccountValue, revAccountValue :: Value
+        -- In this case our contract loses the user's SIG token and his
+        -- collateral, since everything went well for him
+        contractValue =
+          txOutValue contractOut
+            <> negate trustValue
+            <> negate sigValue
+        -- The account value, simmilarly to the other transactions, loses get's
+        -- the SIG token back and earn transaction fees
+        ownAccountValue =
+          txOutValue ownAccountOut
+            <> sigValue
+            <> txFeesValue
+        revAccountValue = txOutValue revAccountOut <> reviewValue
+        -- TODO: Make sure the remaining is burnt
+
+        -- The data that will be given to the newly created contract UTxO
+        -- In this case, the user is being removed from the contract role map
+        newContractDatum :: ContractDatum
+        newContractDatum = removeUser pkh contractDatum
+
+        newOwnAccountDatum :: AccountDatum
+        newOwnAccountDatum = leaveContractCASAD
+          where
+            removeContractAD :: AccountDatum
+            removeContractAD = removeContract ownAccountDatum contrValHash
+
+            leaveContractCASAD :: AccountDatum
+            leaveContractCASAD =
+              leaveContractCAS (psCASMap platformSettings) removeContractAD
+
+        newRevAccountDatum :: AccountDatum
+        newRevAccountDatum = addReviewAD
+          where
+            addReviewAD :: AccountDatum
+            addReviewAD = addReview revAccountDatum review
+
+        lookups :: ScriptLookups ContractType
+        lookups =
+          Constraints.unspentOutputs
+            ( Map.fromList
+                [ (ownAccountReference, ownAccountChainIndexTxOut),
+                  (revAccountReference, revAccountChainIndexTxOut),
+                  (contractReference, contractChainIndexTxOut)
+                ]
+            )
+            <> Constraints.otherScript (accountValidator accountSettings)
+            <> Constraints.otherScript (contractValidator contractSett)
+            <> Constraints.typedValidatorLookups
+              (typedContractValidator contractSett)
+
+        tx :: TxConstraints (RedeemerType ContractType) (DatumType ContractType)
+        tx =
+          Constraints.mustBeSignedBy pkh
+            <> Constraints.mustSpendScriptOutput
+              ownAccountReference
+              (Redeemer $ PlutusTx.toBuiltinData (AReturn ARTLeave pkh))
+            <> Constraints.mustSpendScriptOutput
+              revAccountReference
+              (Redeemer $ PlutusTx.toBuiltinData (AReview review reviewed))
+            <> Constraints.mustSpendScriptOutput
+              contractReference
+              (Redeemer $ PlutusTx.toBuiltinData (CLeave (Just review)))
+            <> Constraints.mustPayToTheScript newContractDatum contractValue
+            <> Constraints.mustPayToOtherScript
+              accValHash
+              (Datum $ PlutusTx.toBuiltinData newOwnAccountDatum)
+              ownAccountValue
+            <> Constraints.mustPayToOtherScript
+              accValHash
+              (Datum $ PlutusTx.toBuiltinData newRevAccountDatum)
+              revAccountValue
+    _ ->
+      logError @String $
+        "Leave Contract - "
+          ++ "Account or Contract Essentials failed"
+
 type ContractSchema =
   Endpoint "create-contract" (AccountSettings, ContractDatum)
     .\/ Endpoint "sign" (Role, AccountSettings, AssetClass)
     .\/ Endpoint "cancel" (AccountSettings, AssetClass)
-    .\/ Endpoint "leave" (AccountSettings, Review, AssetClass)
+    .\/ Endpoint "leave" (AccountSettings, AssetClass)
+    .\/ Endpoint "client-leave" (AccountSettings, AssetClass, Review, PubKeyHash)
+
+contractEndpointWrapper ::
+  AccountSettings ->
+  Contract (Last AssetClass) ContractSchema Text () ->
+  Contract (Last AssetClass) ContractSchema Text ()
+contractEndpointWrapper as contr = do
+  -- Execute the given contract
+  contr
+
+  -- The signer public key hash
+  pkh <- pubKeyHash <$> Contract.ownPubKey
+
+  let pkhFormatted :: String
+      pkhFormatted = take 5 (show pkh) ++ "..."
+
+  -- The new account information of our user
+  maybeAccountInfo <- getAccountInfo as pkh
+
+  case maybeAccountInfo of
+    Just ai ->
+      logInfo @String $
+        "Current User (" ++ pkhFormatted ++ ") Account Info: " ++ show ai
+    Nothing -> logError @String "User Account Not Found"
 
 contractEndpoints :: Contract (Last AssetClass) ContractSchema Text ()
 contractEndpoints =
   forever $
     handleError logError $
       awaitPromise $
-        create' `select` sign' `select` cancel' `select` leave'
+        create'
+          `select` sign'
+          `select` cancel'
+          `select` leave'
+          `select` leaveAsClient'
   where
-    create' = endpoint @"create-contract" $ \(as, dat) -> createContract as dat
-    sign' = endpoint @"sign" $ \(r, as, ac) -> signContract r as ac
-    cancel' = endpoint @"cancel" $ \(as, ac) -> cancelContract as ac
-    leave' = endpoint @"leave" $ \(as, rev, ac) -> leaveContract as rev ac
+    create' = endpoint @"create-contract" $ \(as, dat) ->
+      contractEndpointWrapper as (createContract as dat)
+    sign' = endpoint @"sign" $ \(r, as, ac) ->
+      contractEndpointWrapper as (signContract r as ac)
+    cancel' = endpoint @"cancel" $ \(as, ac) ->
+      contractEndpointWrapper as (cancelContract as ac)
+    leave' = endpoint @"leave" $ \(as, ac) ->
+      contractEndpointWrapper as (leaveContract as ac)
+    leaveAsClient' = endpoint @"client-leave" $ \(as, ac, rev, pkh) ->
+      contractEndpointWrapper as (leaveContractAsClient as ac rev pkh)

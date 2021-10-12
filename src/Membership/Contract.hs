@@ -193,15 +193,17 @@ instance Eq ContractDatum where
 PlutusTx.unstableMakeIsData ''ContractDatum
 
 data Review = Review
-  { rScore :: Integer, -- 0 to 50 (meaning 0.0 or 5.0 stars)
+  { rReviewer :: PubKeyHash,
+    rScore :: Integer, -- 0 to 50 (meaning 0.0 or 5.0 stars)
     rDescription :: BuiltinByteString
   }
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
 instance Eq Review where
   {-# INLINEABLE (==) #-}
-  Review sc dsc == Review sc' dsc' =
-    sc == sc'
+  Review rvw sc dsc == Review rvw' sc' dsc' =
+    rvw == rvw'
+      && sc == sc'
       && dsc == dsc'
 
 PlutusTx.unstableMakeIsData ''Review
@@ -211,7 +213,7 @@ data ContractRedeemer
   | CAccuse Accusation -- Some user allegadily broke the rules
   | CMediate
   | CCancel -- A user want's to leave this contract before the service being completed
-  | CLeave Review -- A user want's to leave this contract after everything has been dealt with
+  | CLeave (Maybe Review) -- A user want's to leave this contract after everything has been dealt with
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
 instance Eq ContractRedeemer where

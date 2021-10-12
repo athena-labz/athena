@@ -56,7 +56,7 @@ tripleThd :: (a, b, c) -> c
 tripleThd (_, _, c) = c
 
 -- Given two AssocMaps, tries to get a key from the fisrt map which is not in the second
--- If it's able to find it, returns a pair (key, value) 
+-- If it's able to find it, returns a pair (key, value)
 {-# INLINEABLE subtractMaps #-}
 subtractMaps :: forall k v. (Eq k) => Map.Map k v -> Map.Map k v -> Maybe (k, v)
 subtractMaps m m' = do
