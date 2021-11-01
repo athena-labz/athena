@@ -14,6 +14,7 @@ library
                      , Spec.Sample
                      , Spec.Example
                      , Spec.Trace
+                     , Spec.Test
                      , Membership.PlatformSettings
                      , Membership.Account
                      , Membership.Contract
@@ -48,9 +49,36 @@ library
                      , plutus-tx
                      , plutus-use-cases
                      , prettyprinter
-                     , QuickCheck
+                     , HUnit
                      , tasty
                      , tasty-quickcheck
                      , text
   default-language:    Haskell2010
   ghc-options:         -Wall -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas -fno-strictness -fno-spec-constr -fno-specialise
+
+test-suite digiservices-tests
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  hs-source-dirs: test
+  other-modules:       Spec.Example
+                     , Spec.Run
+                     , Spec.Sample
+                     , Spec.Trace
+                     , Spec.Test
+  default-language: Haskell2010
+  ghc-options:         -Wall -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas
+  build-depends:       base ^>=4.14.1.0
+                     , containers
+                     , data-default
+                     , freer-extras
+                     , lens
+                     , plutus-contract
+                     , plutus-ledger
+                     , digiservices
+                     , plutus-tx
+                     , tasty
+                     , tasty-quickcheck
+                     , text
+  if !(impl(ghcjs) || os(ghcjs))
+    build-depends: plutus-tx-plugin -any
+
