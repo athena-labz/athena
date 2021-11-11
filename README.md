@@ -1,3 +1,5 @@
+##### [Gabriele] Account datum/Datum/Datums are the same, right ?
+
 # DigiServices
 DigiServices is a Cardano-based project that aims to be a trustworthy,
 reward-driven platform for goods and service exchanges by allowing users to
@@ -49,6 +51,7 @@ buy "trustworthy" accounts, making those attacks profitable. To avoid this, our
 project will make use of a proof of uniqueness mechanism, in which users that
 have CAS scores will need to prove somehow that they have an unique account.
 
+
 ##### adContracts
 `adContracts` holds a list of asset classes representing each NFT identifying
 a contract the user is part of. This is important so that we can later search
@@ -59,6 +62,8 @@ our account datum by making sure they are in our list.
 `adSigSymbol` is currency symbol of the SIG token.
 
 ##### adTickets
+##### [Gabriele]  each ticket corresponds to an action, which in turn mint a token
+
 `adTickets` is a map, matching ticket names to their currency symbols. The
 account should only validate if at least one ticket is present in the output.
 This is done so that the heavy validation logic occurs outside the script in the
@@ -70,6 +75,9 @@ Each action is handled by a minting policy, in this case an account is created
 if the SIG minting policy mints an equivalent of 100 SIG tokens and transfers
 them to the account validator, creating a new UTxO, which will be used to handle
 all platform transactions by this user.
+
+##### [Gabriele] a UTxO can be used only once -> please expand
+
 
 In order to create an account the following must be met:
 
@@ -110,6 +118,10 @@ data ContractDatum = ContractDatum
     cdJudges :: [Address],
     cdAccusations :: [Accusation],
     cdRoles :: Integer, -- The maximum role index
+   
+###### [Gabriele]  -- The maximum role index [???]
+    
+    
     cdRoleMap :: PlutusMap.Map PubKeyHash Integer
   }
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
@@ -235,19 +247,31 @@ regarding the case, including the actions that must be done in order to punish
 the guilty user. This token can, then, be used by the injured part in order to
 ask for real-life punishments.
 
+##### [Gabriele]  ' real-life punishments' -> do you mean to use it to go to court ? How is the legal procedure ? I cannot figure it out
+
+
 #### Judges
 Judges are addresses that will be responsible for determining the inputs, which
 will be used to trigger dispute resolution actions. These addresses may be from
 human users or from scripts, meaning someone could, for example, replicate the
 Kleros court system in Cardano and use it's address as a judge.
 
+##### [Gabriele] how can a judge use the 'adress' of Kleros in Cardano ?
+
+
 **TODO:** What should happen if a judge "disappears"? Some contracts may be
 present for years
+##### [Gabriele] a judge must indicate a time frame to proceed to next step. If he fails w/o reasons, collateral he stacked will be affected (penalty). If he fails a new judge to take over, having at disposal all previous investigation, inputs records
+
 **TODO:** What if we have five disputes at the same time? Should the same judge
-mediate all of them?
+mediate all of them? ##### [Gabriele] yes
+
 **TODO:** What if a judge never answers? Who sets the deadline? Who should
 replace him?
+##### [Gabriele] as already set: deadline (24h) set in at smart contract signature, a judge selected at random  from all registered ones, if nobody is in the list or nobody applies as in Kleros
+
 **TODO:** What if there are no more judges available?
+##### [Gabriele] we , 3 of us, can initially cover it up as long as additional judges are not registering
 
 #### Accusations
 An accusation is a data type the holds the accuser and accused public key hashes,
@@ -259,6 +283,8 @@ Roles are integers that represent different, well... roles. This means that some
 users may be affected by some rules, while other are not. The contract stores
 the maximum index, as well as, a map, matching each participant to a role.
 
+##### [Gabriele] why the maximum index is relevant ?
+
 #### Create Contract
 Ticket: create-contract
 
@@ -269,10 +295,12 @@ the user account only if the following criteria are met:
 The newly created contract datum must be valid, meaning it should:
 
 * Have the publisher corresponding to the account calling this transaction
-* Have all inputs with roles less or equal `cdRoles`
+* Have all inputs with roles less or equal `cdRoles` ##### [Gabriele] not clear
+
+
 * Have no accusations
 * If the contract is private, have a role map with **at least** the publisher role,
-otherwise, the role map must **only** have the publisher role.
+otherwise, the role map must **only** have the publisher role.  ##### [Gabriele] not clear
 
 ##### Contract Value
 The newly created contract should receive the collateral value and the judge
@@ -283,7 +311,7 @@ The account datum must be equal, except for the addition of the contract to the
 list.
 
 ##### Account Value
-Account value must be equal the original value minus one SIG token.
+Account value must be equal the original value minus one SIG token. ##### [Gabriele] SIG is transferred to contract
 
 ##### Signautre
 Must be signed by the account owner.
@@ -300,7 +328,7 @@ If the contract is private, the user must be in the role map.
 
 ##### Contract Datum
 If the contract is private, the contract datum must be equal. Otherwise, should
-only change the role map, with an additional role for the added user.
+only change the role map, with an additional role for the added user. ##### [Gabriele] not clear
 
 ##### Contract Value
 The newly created contract should receive the collateral value and the judge
@@ -368,6 +396,8 @@ account from an expelled user.
 **TODO:** If a user loses collateral, wouldn't he need to be automatically
 expelled, since he doesn't have sufficent collateral anymore? This doesn't look
 ideal.
+
+##### [Gabriele] when collateral is staked at account registration the amount is set to be sufficiently high, e.g. 200 ADA. if a contract requires a higher amount, say 500 ADA, the user / publisher need to add 500 ADA -> 700 ADA stacked, before signing a contract
 
 ##### Signautre
 Must be signed by the judge responsible for this accusation.
