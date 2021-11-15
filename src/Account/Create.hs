@@ -29,31 +29,6 @@ import qualified PlutusTx.Ratio as R
 import Utils
 import qualified Prelude
 
-data CreateAccountSettings = CreateAccountSettings
-  { casAccValHash :: ValidatorHash,
-    casToken :: AssetClass,
-    casEntranceFee :: Integer,
-    casTickets :: PlutusMap.Map TokenName CurrencySymbol
-  }
-  deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
-
-instance Eq CreateAccountSettings where
-  {-# INLINEABLE (==) #-}
-  (CreateAccountSettings vh tn entFee tkt)
-    == (CreateAccountSettings vh' tn' entFee' tkt') =
-      vh == vh' && tn == tn' && entFee == entFee' && tkt == tkt'
-
-PlutusTx.unstableMakeIsData ''CreateAccountSettings
-PlutusTx.makeLift ''CreateAccountSettings
-
-{-# INLINEABLE parseTokenName #-}
-parseTokenName :: TokenName -> PubKeyHash
-parseTokenName = PubKeyHash . unTokenName
-
-{-# INLINEABLE parsePubKeyHash #-}
-parsePubKeyHash :: PubKeyHash -> TokenName
-parsePubKeyHash = TokenName . getPubKeyHash
-
 {-# INLINEABLE sigPolicyTraceIfFalse #-}
 sigPolicyTraceIfFalse :: BuiltinString -> Bool -> Bool
 sigPolicyTraceIfFalse msg = traceIfFalse ("Sig Policy - " <> msg)
@@ -66,7 +41,7 @@ sigPolicyTraceError msg = traceError ("Sig Policy - " <> msg)
 -- Signature tokens are DigiService's way of authenticating accounts,
 -- making sure the fees are paid and identifying users
 {-# INLINEABLE mkSignaturePolicy #-}
-mkSignaturePolicy :: CreateAccountSettings -> PubKeyHash -> ScriptContext -> Bool
+mkSignaturePolicy :: AccountSettings -> PubKeyHash -> ScriptContext -> Bool
 mkSignaturePolicy sett pkh ctx =
   sigPolicyTraceIfFalse "Transaction not signed by public key" (txSignedBy info pkh)
     && sigPolicyTraceIfFalse "Invalid token name or amount" validMinting
@@ -82,7 +57,8 @@ mkSignaturePolicy sett pkh ctx =
 
     validMinting :: Bool
     validMinting = case flattenValue (txInfoMint info) of
-      [(_, tn, amt)] -> tn == expectedTokenName && amt == 100
+      [(cs, tn, amt)] ->
+        cs == ownCurrencySymbol ctx && tn == expectedTokenName && amt == 100
       _ -> False
 
     sigValue :: Value
@@ -109,11 +85,11 @@ mkSignaturePolicy sett pkh ctx =
     validAccountDatum =
       accountDatum == initDatum (ownCurrencySymbol ctx) (casTickets sett)
 
-signaturePolicy :: CreateAccountSettings -> Scripts.MintingPolicy
+signaturePolicy :: AccountSettings -> Scripts.MintingPolicy
 signaturePolicy sett =
   mkMintingPolicyScript $
     $$(PlutusTx.compile [||Scripts.wrapMintingPolicy . mkSignaturePolicy||])
       `PlutusTx.applyCode` PlutusTx.liftCode sett
 
-signatureCurrencySymbol :: CreateAccountSettings -> CurrencySymbol
+signatureCurrencySymbol :: AccountSettings -> CurrencySymbol
 signatureCurrencySymbol = scriptCurrencySymbol . signaturePolicy

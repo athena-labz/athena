@@ -17,6 +17,9 @@ module Test.Trace where
 import Account
 import Account.Create
 import Account.Safe.OffChain
+import Contract
+import Contract.Create
+import Contract.Safe.OffChain
 import Control.Monad (void)
 import Control.Monad.Freer.Extras as Extras (logError, logInfo)
 import Data.Default (Default (..))
@@ -57,7 +60,24 @@ import qualified Prelude
 
 createAccountTrace ::
   ContractHandle () AccountSchema Text ->
-  CreateAccountSettings ->
+  AccountSettings ->
   EmulatorTrace ()
-createAccountTrace h cas = do
-  callEndpoint @"create-account" h cas
+createAccountTrace h sett = do
+  callEndpoint @"create-account" h sett
+
+displayAccountTrace ::
+  ContractHandle () AccountSchema Text ->
+  PubKeyHash ->
+  AccountSettings ->
+  EmulatorTrace ()
+displayAccountTrace h pkh sett = do
+  callEndpoint @"display-account" h (pkh, sett)
+
+createContractTrace ::
+  ContractHandle () ContractSchema Text -> 
+  AccountSettings ->
+  ContractSettings ->
+  ContractDatum ->
+  EmulatorTrace ()
+createContractTrace h aSett cSett cDat = do
+  callEndpoint @"create-contract" h (aSett, cSett, cDat)

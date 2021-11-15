@@ -1,6 +1,6 @@
 cradle:
   cabal:
     - path: "./src"
-      component: "lib:digiservices"
-    - path: "./test"
-      component: "test:digiservices-test"
+      component: "lib:dike"
+    - path: "./tests"
+      component: "test:tests"

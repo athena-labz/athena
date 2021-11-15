@@ -57,6 +57,10 @@ import qualified Prelude
 runCreateAccountExample :: IO ()
 runCreateAccountExample = runEmulatorTraceIO' def (abstractConfig 1) createAccountExample
 
+-- An example of a contract being created
+runCreateContractExample :: IO ()
+runCreateContractExample = runEmulatorTraceIO' def (abstractConfig 1) createContractExample
+
 abstractConfig :: Integer -> EmulatorConfig
 abstractConfig n =
   EmulatorConfig

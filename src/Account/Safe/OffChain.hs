@@ -16,46 +16,25 @@ module Account.Safe.OffChain where
 import Account
 import Account.Create
 import Account.Safe.OnChain
-import Control.Monad (forever, void)
-import qualified Data.Map as Map
-import Data.Monoid (Last (Last), mempty)
-import Data.Monoid as M (Last (Last), Monoid (mconcat))
+import Control.Lens hiding (elements)
+import Control.Monad
+import qualified Data.Map as HaskellMap
 import Data.Text (Text)
 import Ledger hiding (singleton)
 import Ledger.Constraints as Constraints
 import qualified Ledger.Constraints.TxConstraints as Constraints
-import Ledger.Contexts (pubKeyHash)
+import Ledger.Contexts
 import Ledger.Scripts
-import Ledger.Typed.Scripts (ValidatorTypes (..))
+import Ledger.Typed.Scripts
 import Ledger.Value as Value
-  ( AssetClass,
-    CurrencySymbol,
-    TokenName,
-    Value,
-    assetClassValue,
-    assetClassValueOf,
-    singleton,
-  )
+import Plutus.ChainIndex
 import Plutus.ChainIndex.Tx (ChainIndexTx)
 import Plutus.Contract as Contract
-  ( Contract,
-    Endpoint,
-    Promise (awaitPromise),
-    awaitTxConfirmed,
-    endpoint,
-    handleError,
-    logError,
-    logInfo,
-    ownPubKey,
-    select,
-    submitTxConstraintsWith,
-    tell,
-    type (.\/),
-  )
 import qualified PlutusTx
-import qualified PlutusTx.AssocMap as AM
+import qualified PlutusTx.AssocMap as PlutusMap
 import PlutusTx.Prelude
-  ( Integer,
+  ( Bool (..),
+    Integer,
     Maybe (..),
     fst,
     length,
@@ -68,12 +47,16 @@ import PlutusTx.Prelude
     (<>),
   )
 import Text.Printf (printf)
+import Utils
 import qualified Prelude as Haskell
+
+lookupChainIndexDatum :: ChainIndexTx -> DatumHash -> Maybe Datum
+lookupChainIndexDatum ciTx dh = HaskellMap.lookup dh (ciTx ^. citxData)
 
 -- Create account, mint's 100 SIG tokens with the user's public key hash
 -- embeded on and transfers it directly to a new account UTxO, therefore
 -- "creating a new account"
-createAccount :: CreateAccountSettings -> Contract () AccountSchema Text ()
+createAccount :: AccountSettings -> Contract () AccountSchema Text ()
 createAccount cas = do
   -- The public key hash from the user who is trying to create an account
   pkh <- pubKeyHash <$> Contract.ownPubKey
@@ -116,14 +99,69 @@ createAccount cas = do
     @Haskell.String
     $ printf "%s successfully created account" (Haskell.show pkh)
 
+-- Return the UTxO from the account with a PubKeyHash
+findAccount ::
+  forall w s.
+  PubKeyHash ->
+  AccountSettings ->
+  Contract w s Text (Maybe (TxOutRef, ChainIndexTxOut, AccountDatum))
+findAccount pkh sett = do
+  -- All UTxOs located at the account address
+  utxos <- HaskellMap.filter f <$> utxosTxOutTxAt accountAddress
+
+  -- Return UTxO if there is only one UTxO in the filtered list
+  return $ case HaskellMap.toList utxos of
+    [(oref, o)] -> do
+      let cTxOut :: ChainIndexTxOut
+          cTxOut = Haskell.fst o
+
+          cTxTx :: ChainIndexTx
+          cTxTx = Haskell.snd o
+      dat <- findAccountDatum (toTxOut cTxOut) (lookupChainIndexDatum cTxTx)
+      return (oref, cTxOut, dat)
+    _ -> Nothing
+  where
+    sigSymbol :: CurrencySymbol
+    sigSymbol = signatureCurrencySymbol sett
+
+    -- Only return UTxOs that contain a SIG values, whose signatory is the given user
+    f :: (ChainIndexTxOut, ChainIndexTx) -> Haskell.Bool
+    f (cTxOut, _) =
+      valueOf (txOutValue $ toTxOut cTxOut) sigSymbol (parsePubKeyHash pkh)
+        Haskell.> 1
+
+-- Return the UTxO from the account with a PubKeyHash
+displayAccount ::
+  forall w s.
+  PubKeyHash ->
+  AccountSettings ->
+  Contract w s Text ()
+displayAccount pkh sett = do
+  m <- findAccount pkh sett
+
+  case m of
+    Nothing -> logError @Haskell.String "No account found"
+    Just (oref, o, dat) -> do
+      logInfo @AccountInfo (parseAccount sigSymbol pkh o dat)
+  where
+    sigSymbol :: CurrencySymbol
+    sigSymbol = signatureCurrencySymbol sett
+
 type AccountSchema =
-  Endpoint "create-account" CreateAccountSettings
+  Endpoint
+    "create-account"
+    AccountSettings
+    .\/ Endpoint
+          "display-account"
+          (PubKeyHash, AccountSettings)
 
 accountEndpoints :: Contract () AccountSchema Text ()
 accountEndpoints =
   forever $
     handleError logError $
       awaitPromise $
-        createAccount'
+        createAccount' `select` displayAccount'
   where
-    createAccount' = endpoint @"create-account" $ \cas -> createAccount cas
+    createAccount' = endpoint @"create-account" $ \sett -> createAccount sett
+    displayAccount' =
+      endpoint @"display-account" $ \(pkh, sett) -> displayAccount pkh sett

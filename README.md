@@ -271,6 +271,7 @@ The newly created contract datum must be valid, meaning it should:
 * Have the publisher corresponding to the account calling this transaction
 * Have all inputs with roles less or equal `cdRoles`
 * Have no accusations
+* Collateral must be positive
 * If the contract is private, have a role map with **at least** the publisher role,
 otherwise, the role map must **only** have the publisher role.
 

@@ -15,6 +15,8 @@
 module Test.Example where
 
 import Account.Safe.OffChain
+import Contract.Safe.OffChain
+import Contract.Create
 import Control.Monad (void)
 import Control.Monad.Freer.Extras as Extras (logError, logInfo)
 import Data.Default (Default (..))
@@ -43,10 +45,55 @@ import Prelude (IO, Show (..), String)
 
 createAccountExample :: EmulatorTrace ()
 createAccountExample = do
-  let alice = knownWallet 1
+  let alice :: Wallet
+      alice = knownWallet 1
 
-  aliceAccountHandler <- activateContractWallet alice accountEndpoints
+      tkts :: [AssetClass]
+      tkts =
+        [ assetClass
+            (createContractCurrencySymbol sampleContractSettings)
+            "create-contract"
+        ]
 
-  createAccountTrace aliceAccountHandler sampleCreateAccountSettings
+  aHdr <- activateContractWallet alice accountEndpoints
+
+  createAccountTrace aHdr (sampleAccountSettings tkts)
+
+  void $ Emulator.waitNSlots 1
+
+  -- displayAccountTrace
+  --   aHdr
+  --   (pubKeyHash $ walletPubKey alice)
+  --   (sampleAccountSettings tkts)
+
+  -- void $ Emulator.waitNSlots 1
+
+createContractExample :: EmulatorTrace ()
+createContractExample = do
+  let alice, judge :: Wallet
+      alice = knownWallet 1
+      judge = knownWallet 7
+
+      tkts :: [AssetClass]
+      tkts =
+        [ assetClass
+            (createContractCurrencySymbol sampleContractSettings)
+            "create-contract"
+        ]
+
+  createAccountExample
+
+  aHdr <- activateContractWallet alice contractEndpoints
+
+  createContractTrace
+    aHdr
+    (sampleAccountSettings tkts)
+    sampleContractSettings
+    ( sampleContractDatum
+        (pubKeyHash $ walletPubKey alice)
+        0
+        [(pubKeyHashAddress $ pubKeyHash $ walletPubKey judge)]
+        []
+    )
   
   void $ Emulator.waitNSlots 1

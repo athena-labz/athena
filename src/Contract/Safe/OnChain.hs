@@ -12,12 +12,12 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Account.Safe.OnChain where
+module Contract.Safe.OnChain where
 
-import Account
 import Control.Monad (void)
 import Data.Aeson
 import GHC.Generics
+import Contract
 import Ledger
 import Ledger.Scripts
 import Ledger.Typed.Scripts as Scripts hiding (validatorHash)
@@ -29,28 +29,28 @@ import PlutusTx.Prelude
 import qualified PlutusTx.Ratio as R
 import qualified Prelude
 
-{-# INLINEABLE mkAccountValidator #-}
-mkAccountValidator ::
-  AccountDatum ->
+{-# INLINEABLE mkContractValidator #-}
+mkContractValidator ::
+  ContractDatum ->
   AssetClass ->
   ScriptContext ->
   Bool
-mkAccountValidator dat tkt ctx =
-  traceIfFalse "Account Safe - Invalid ticket" validTicket
-    && traceIfFalse "Account Safe - Ticket not present" ticketPresent
+mkContractValidator dat tkt ctx =
+  traceIfFalse "Contract Safe - Invalid ticket" validTicket
+    && traceIfFalse "Contract Safe - Ticket not present" ticketPresent
   where
     ownInput :: TxOut
     ownInput = case findOwnInput ctx of
-      Nothing -> traceError "Account Safe - Input not found"
+      Nothing -> traceError "Contract Safe - Input not found"
       Just o -> txInInfoResolved o
-
+    
     ownOutput :: TxOut
     ownOutput = case getContinuingOutputs ctx of
       [o] -> o
-      _ -> traceError "Account Safe - Own unique output not found"
-
+      _ -> traceError "Contract Safe - Own unique output not found"
+    
     validTicket :: Bool
-    validTicket = tkt `elem` (adTickets dat)
+    validTicket = tkt `elem` (cdTickets dat)
 
     ticketPresent :: Bool
     ticketPresent =
@@ -60,25 +60,25 @@ mkAccountValidator dat tkt ctx =
       )
         == 1
 
-data AccountType
+data ContractType
 
-instance Scripts.ValidatorTypes AccountType where
-  type DatumType AccountType = AccountDatum
-  type RedeemerType AccountType = AssetClass
+instance Scripts.ValidatorTypes ContractType where
+  type DatumType ContractType = ContractDatum
+  type RedeemerType ContractType = AssetClass
 
-typedAccountValidator :: Scripts.TypedValidator AccountType
-typedAccountValidator =
-  Scripts.mkTypedValidator @AccountType
-    $$(PlutusTx.compile [||mkAccountValidator||])
+typedContractValidator :: Scripts.TypedValidator ContractType
+typedContractValidator =
+  Scripts.mkTypedValidator @ContractType
+    $$(PlutusTx.compile [||mkContractValidator||])
     $$(PlutusTx.compile [||wrap||])
   where
-    wrap = Scripts.wrapValidator @AccountDatum @AssetClass
+    wrap = Scripts.wrapValidator @ContractDatum @AssetClass
 
-accountValidator :: Validator
-accountValidator = Scripts.validatorScript typedAccountValidator
+contractValidator :: Validator
+contractValidator = Scripts.validatorScript typedContractValidator
 
-accountValidatorHash :: ValidatorHash
-accountValidatorHash = validatorHash accountValidator
+contractValidatorHash :: ValidatorHash
+contractValidatorHash = validatorHash contractValidator
 
-accountAddress :: Ledger.Address
-accountAddress = scriptAddress accountValidator
+contractAddress :: Ledger.Address
+contractAddress = scriptAddress contractValidator

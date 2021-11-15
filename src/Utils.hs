@@ -13,56 +13,24 @@
 
 module Utils where
 
-import Ledger
-  ( TxInInfo (txInInfoResolved),
-    TxInfo (txInfoInputs, txInfoOutputs),
-    TxOut (TxOut),
-    ValidatorHash,
-    toValidatorHash,
-  )
-import Ledger.Scripts (ValidatorHash (..))
-import PlutusTx.AssocMap as Map (Map, keys, lookup, member)
+import Control.Monad (void)
+import Data.Aeson hiding (Value)
+import GHC.Generics
+import Ledger hiding (singleton)
+import Ledger.Scripts
+import Ledger.Typed.Scripts as Scripts hiding (validatorHash)
+import Ledger.Value
+import Plutus.ChainIndex
+import qualified PlutusTx
+import qualified PlutusTx.AssocMap as PlutusMap
 import PlutusTx.Prelude
-  ( BuiltinByteString,
-    Eq (..),
-    Maybe (..),
-    filter,
-    find,
-    map,
-    not,
-    return,
-    ($),
-    (.),
-  )
+import qualified PlutusTx.Ratio as R
+import qualified Prelude
 
 -- Transforms a ValidatorHash into a BuiltinByteString
 {-# INLINEABLE unValidatorHash #-}
 unValidatorHash :: ValidatorHash -> BuiltinByteString
 unValidatorHash vh = case vh of ValidatorHash h -> h
-
--- Given a triple (a, b, c) returns a (the first element)
-{-# INLINEABLE tripleFst #-}
-tripleFst :: (a, b, c) -> a
-tripleFst (a, _, _) = a
-
--- Given a triple (a, b, c) returns b (the second element)
-{-# INLINEABLE tripleSnd #-}
-tripleSnd :: (a, b, c) -> b
-tripleSnd (_, b, _) = b
-
--- Given a triple (a, b, c) returns c (the third element)
-{-# INLINEABLE tripleThd #-}
-tripleThd :: (a, b, c) -> c
-tripleThd (_, _, c) = c
-
--- Given two AssocMaps, tries to get a key from the fisrt map which is not in the second
--- If it's able to find it, returns a pair (key, value) 
-{-# INLINEABLE subtractMaps #-}
-subtractMaps :: forall k v. (Eq k) => Map.Map k v -> Map.Map k v -> Maybe (k, v)
-subtractMaps m m' = do
-  k <- find (\k' -> not $ k' `Map.member` m') (keys m)
-  v <- lookup k m
-  return (k, v)
 
 -- Given a ValidatorHash and a TxInfo, tries to find an output inside the inputs from this TxInfo
 -- that has the same ValidatorHash as the given one
@@ -99,3 +67,21 @@ strictFindOutputWithValHash vh info = case filter predicate (txInfoOutputs info)
   _ -> Nothing
   where
     predicate (TxOut addr _ _) = toValidatorHash addr == Just vh
+
+{-# INLINEABLE parseTokenName #-}
+parseTokenName :: TokenName -> PubKeyHash
+parseTokenName = PubKeyHash . unTokenName
+
+{-# INLINEABLE parsePubKeyHash #-}
+parsePubKeyHash :: PubKeyHash -> TokenName
+parsePubKeyHash = TokenName . getPubKeyHash
+
+{-# INLINABLE validTicket #-}
+validTicket :: ScriptContext -> BuiltinByteString -> Bool
+validTicket ctx bbs = case flattenValue (txInfoMint info) of
+  [(cs, tn, amt)] ->
+    cs == ownCurrencySymbol ctx && tn == (TokenName bbs) && amt == 1
+  _ -> False
+  where
+    info :: TxInfo
+    info = scriptContextTxInfo ctx
