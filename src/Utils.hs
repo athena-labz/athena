@@ -13,14 +13,17 @@
 
 module Utils where
 
+import Control.Lens hiding (elements)
 import Control.Monad (void)
 import Data.Aeson hiding (Value)
+import qualified Data.Map as HaskellMap
 import GHC.Generics
 import Ledger hiding (singleton)
 import Ledger.Scripts
 import Ledger.Typed.Scripts as Scripts hiding (validatorHash)
 import Ledger.Value
 import Plutus.ChainIndex
+import Plutus.ChainIndex.Tx (ChainIndexTx)
 import qualified PlutusTx
 import qualified PlutusTx.AssocMap as PlutusMap
 import PlutusTx.Prelude
@@ -76,12 +79,27 @@ parseTokenName = PubKeyHash . unTokenName
 parsePubKeyHash :: PubKeyHash -> TokenName
 parsePubKeyHash = TokenName . getPubKeyHash
 
-{-# INLINABLE validTicket #-}
-validTicket :: ScriptContext -> BuiltinByteString -> Bool
-validTicket ctx bbs = case flattenValue (txInfoMint info) of
+{-# INLINEABLE validTicket #-}
+validTicket :: ScriptContext -> BuiltinByteString -> Integer -> Bool
+validTicket ctx bbs expAmt = case flattenValue (txInfoMint info) of
   [(cs, tn, amt)] ->
-    cs == ownCurrencySymbol ctx && tn == (TokenName bbs) && amt == 1
+    cs == ownCurrencySymbol ctx && tn == (TokenName bbs) && amt == expAmt
   _ -> False
   where
     info :: TxInfo
     info = scriptContextTxInfo ctx
+
+lookupChainIndexDatum :: ChainIndexTx -> DatumHash -> Maybe Datum
+lookupChainIndexDatum ciTx dh = HaskellMap.lookup dh (ciTx ^. citxData)
+
+{-# INLINEABLE init #-}
+init :: [a] -> [a]
+init [x] = []
+init (x : xs) = x : init xs
+init [] = traceError "init called with empty list"
+
+{-# INLINEABLE last #-}
+last :: [a] -> a
+last [x] = x
+last (_ : xs) = last xs
+last [] = traceError "last called with empty list"

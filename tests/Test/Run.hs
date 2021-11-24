@@ -55,16 +55,28 @@ import qualified Prelude
 
 -- An example of an account being created
 runCreateAccountExample :: IO ()
-runCreateAccountExample = runEmulatorTraceIO' def (abstractConfig 1) createAccountExample
+runCreateAccountExample = runEmulatorTraceIO' def (abstractConfig [1]) createAccountExample
 
 -- An example of a contract being created
 runCreateContractExample :: IO ()
-runCreateContractExample = runEmulatorTraceIO' def (abstractConfig 1) createContractExample
+runCreateContractExample = runEmulatorTraceIO' def (abstractConfig [1]) createContractExample
 
-abstractConfig :: Integer -> EmulatorConfig
-abstractConfig n =
+-- An example of a contract being signed
+runSignContractExample :: IO ()
+runSignContractExample = runEmulatorTraceIO' def (abstractConfig [1, 2]) signContractExample
+
+-- An example of a dispute being raised
+runRaiseDisputeExample :: IO ()
+runRaiseDisputeExample = runEmulatorTraceIO' def (abstractConfig [1, 2]) raiseDisputeExample
+
+-- An example of a dispute being resolved
+runResolveDisputeExample :: IO ()
+runResolveDisputeExample = runEmulatorTraceIO' def (abstractConfig [1, 2, 7]) resolveDisputeExample
+
+abstractConfig :: [Integer] -> EmulatorConfig
+abstractConfig usrs =
   EmulatorConfig
-    (Left $ Map.fromList [(knownWallet w, setValue w) | w <- [1 .. n]]) def def
+    (Left $ Map.fromList [(knownWallet w, setValue) | w <- usrs]) def def
   where
-    setValue :: Integer -> Value
-    setValue _ = Ada.lovelaceValueOf 1_000_000_000
+    setValue :: Value
+    setValue = Ada.lovelaceValueOf 1_000_000_000

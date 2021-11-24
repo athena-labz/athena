@@ -27,6 +27,7 @@ import qualified PlutusTx.AssocMap as PlutusMap
 import PlutusTx.Prelude
 import qualified PlutusTx.Ratio as R
 import qualified Prelude
+import Utils
 
 data ContractSettings = ContractSettings
   { ccsAccValHash :: ValidatorHash,
@@ -49,9 +50,8 @@ data RelationType = RT_Convergent | RT_Distributed
 
 instance Eq RelationType where
   {-# INLINEABLE (==) #-}
-  RT_Convergent == RT_Convergent = True
-  RT_Distributed == RT_Distributed = True
-  _ == _ = False
+  RT_Convergent == RT_Distributed = False
+  _ == _ = True
 
 PlutusTx.unstableMakeIsData ''RelationType
 PlutusTx.makeLift ''RelationType
@@ -61,9 +61,8 @@ data PrivacyType = PT_Public | PT_Private
 
 instance Eq PrivacyType where
   {-# INLINEABLE (==) #-}
-  PT_Public == PT_Public = True
-  PT_Private == PT_Private = True
-  _ == _ = False
+  PT_Public == PT_Private = False
+  _ == _ = True
 
 PlutusTx.unstableMakeIsData ''PrivacyType
 PlutusTx.makeLift ''PrivacyType
@@ -126,8 +125,7 @@ PlutusTx.makeLift ''Trigger
 
 data Action
   = DecreaseCAS R.Rational
-  | SuspendFromPlatform POSIXTime
-  | ExpelFromContract
+  | SuspendFromContract POSIXTime
   | PayFromCollateral Value
   | DoInRealLife BuiltinByteString
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
@@ -135,8 +133,7 @@ data Action
 instance Eq Action where
   {-# INLINEABLE (==) #-}
   (DecreaseCAS p) == (DecreaseCAS p') = p == p'
-  (SuspendFromPlatform t) == (SuspendFromPlatform t') = t == t'
-  ExpelFromContract == ExpelFromContract = True
+  (SuspendFromContract t) == (SuspendFromContract t') = t == t'
   (PayFromCollateral v) == (PayFromCollateral v') = v == v'
   (DoInRealLife bs) == (DoInRealLife bs') = bs == bs'
   _ == _ = False
@@ -147,26 +144,29 @@ PlutusTx.makeLift ''Action
 data Accusation = Accusation
   { aAccuser :: PubKeyHash,
     aAccused :: PubKeyHash,
-    aTime :: POSIXTime
+    aTime :: POSIXTime,
+    aDeadline :: POSIXTime
   }
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
 instance Eq Accusation where
   {-# INLINEABLE (==) #-}
-  (Accusation acr acd t) == (Accusation acr' acd' t') =
-    acr == acr' && acd == acd' && t == t'
+  (Accusation acr acd t dln) == (Accusation acr' acd' t' dln') =
+    acr == acr' && acd == acd' && t == t' && dln == dln'
 
 PlutusTx.unstableMakeIsData ''Accusation
 PlutusTx.makeLift ''Accusation
 
 data ContractDatum = ContractDatum
-  { cdRelationType :: RelationType,
+  { cdSigSymbol :: CurrencySymbol,
+    cdRelationType :: RelationType,
     cdPrivacyType :: PrivacyType,
     cdPublisher :: PubKeyHash,
     cdCollateral :: Value, -- Must be positive
-    cdTerms :: PlutusMap.Map Trigger [Action],
+    cdTermsHash :: BuiltinByteString,
     cdJudges :: [Address],
     cdAccusations :: [Accusation],
+    cdResolutions :: [(Accusation, BuiltinByteString)],
     cdRoles :: Integer, -- The maximum role index
     cdRoleMap :: PlutusMap.Map PubKeyHash Integer,
     cdTickets :: [AssetClass]
@@ -175,15 +175,17 @@ data ContractDatum = ContractDatum
 
 instance Eq ContractDatum where
   {-# INLINEABLE (==) #-}
-  ContractDatum rt pt p c t j a r rm tk
-    == ContractDatum rt' pt' p' c' t' j' a' r' rm' tk' =
-      rt == rt'
+  ContractDatum s rt pt p c t j a rs r rm tk
+    == ContractDatum s' rt' pt' p' c' t' j' a' rs' r' rm' tk' =
+      s == s'
+        && rt == rt'
         && pt == pt'
         && p == p'
         && c == c'
         && t == t'
         && j == j'
         && a == a'
+        && rs == rs'
         && r == r'
         && rm == rm'
         && tk == tk'
@@ -198,7 +200,65 @@ findContractDatum o f = do
   Datum d <- f dh
   PlutusTx.fromBuiltinData d
 
-{-# INLINABLE validRoles #-}
+{-# INLINEABLE addUserToContract #-}
+addUserToContract :: PubKeyHash -> Integer -> ContractDatum -> ContractDatum
+addUserToContract pkh role dat =
+  ContractDatum
+    { cdSigSymbol = cdSigSymbol dat,
+      cdRelationType = cdRelationType dat,
+      cdPrivacyType = cdPrivacyType dat,
+      cdPublisher = cdPublisher dat,
+      cdCollateral = cdCollateral dat,
+      cdTermsHash = cdTermsHash dat,
+      cdJudges = cdJudges dat,
+      cdAccusations = cdAccusations dat,
+      cdResolutions = cdResolutions dat,
+      cdRoles = cdRoles dat,
+      cdRoleMap = PlutusMap.insert pkh role (cdRoleMap dat),
+      cdTickets = cdTickets dat
+    }
+
+{-# INLINEABLE addAccusationToContract #-}
+addAccusationToContract :: Accusation -> ContractDatum -> ContractDatum
+addAccusationToContract acc dat =
+  ContractDatum
+    { cdSigSymbol = cdSigSymbol dat,
+      cdRelationType = cdRelationType dat,
+      cdPrivacyType = cdPrivacyType dat,
+      cdPublisher = cdPublisher dat,
+      cdCollateral = cdCollateral dat,
+      cdTermsHash = cdTermsHash dat,
+      cdJudges = cdJudges dat,
+      cdAccusations = acc : cdAccusations dat,
+      cdResolutions = cdResolutions dat,
+      cdRoles = cdRoles dat,
+      cdRoleMap = cdRoleMap dat,
+      cdTickets = cdTickets dat
+    }
+
+-- ! We are assuming the judge will always judge the last case
+{-# INLINEABLE resolveDisputeInContract #-}
+resolveDisputeInContract :: BuiltinByteString -> ContractDatum -> ContractDatum
+resolveDisputeInContract vdt dat =
+  ContractDatum
+    { cdSigSymbol = cdSigSymbol dat,
+      cdRelationType = cdRelationType dat,
+      cdPrivacyType = cdPrivacyType dat,
+      cdPublisher = cdPublisher dat,
+      cdCollateral = cdCollateral dat,
+      cdTermsHash = cdTermsHash dat,
+      cdJudges = cdJudges dat,
+      cdAccusations = init (cdAccusations dat),
+      cdResolutions = ((acc, vdt) : cdResolutions dat),
+      cdRoles = cdRoles dat,
+      cdRoleMap = cdRoleMap dat,
+      cdTickets = cdTickets dat
+    }
+  where
+    acc :: Accusation
+    acc = last (cdAccusations dat)
+
+{-# INLINEABLE validRoles #-}
 validRoles :: ContractDatum -> Bool
 validRoles dat = all p (PlutusMap.elems $ cdRoleMap dat)
   where
@@ -207,3 +267,40 @@ validRoles dat = all p (PlutusMap.elems $ cdRoleMap dat)
 
     p :: Integer -> Bool
     p n = n <= maxRole
+
+-- TODO: Randomly select judge
+{-# INLINEABLE currentJudge #-}
+currentJudge :: ContractDatum -> Maybe Address
+currentJudge dat = case cdJudges dat of
+  [] -> Nothing
+  (x : xs) -> Just x
+
+-- What our off-chain code will actually need to create a contract.
+-- Other parameters can be derived
+data ContractCore = ContractCore
+  { ccRelationType :: RelationType,
+    ccPrivacyType :: PrivacyType,
+    ccCollateral :: Value,
+    ccTermsHash :: BuiltinByteString,
+    ccJudges :: [Address],
+    ccRoles :: Integer,
+    ccRoleMap :: PlutusMap.Map PubKeyHash Integer,
+    ccTickets :: [AssetClass]
+  }
+  deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
+
+instance Eq ContractCore where
+  {-# INLINEABLE (==) #-}
+  ContractCore rt pt c t j r rm tk
+    == ContractCore rt' pt' c' t' j' r' rm' tk' =
+      rt == rt'
+        && pt == pt'
+        && c == c'
+        && t == t'
+        && j == j'
+        && r == r'
+        && rm == rm'
+        && tk == tk'
+
+PlutusTx.unstableMakeIsData ''ContractCore
+PlutusTx.makeLift ''ContractCore

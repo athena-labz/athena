@@ -36,7 +36,7 @@ mkAccountValidator ::
   ScriptContext ->
   Bool
 mkAccountValidator dat tkt ctx =
-  traceIfFalse "Account Safe - Invalid ticket" validTicket
+  traceIfFalse "Account Safe - Invalid ticket" (validTicket')
     && traceIfFalse "Account Safe - Ticket not present" ticketPresent
   where
     ownInput :: TxOut
@@ -49,8 +49,8 @@ mkAccountValidator dat tkt ctx =
       [o] -> o
       _ -> traceError "Account Safe - Own unique output not found"
 
-    validTicket :: Bool
-    validTicket = tkt `elem` (adTickets dat)
+    validTicket' :: Bool
+    validTicket' = tkt `elem` (adTickets dat)
 
     ticketPresent :: Bool
     ticketPresent =

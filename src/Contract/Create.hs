@@ -41,7 +41,7 @@ mkCreateContractPolicy ::
   ScriptContext ->
   Bool
 mkCreateContractPolicy sett (pkh, nft) ctx =
-  traceIfFalse "Create Contract - Invalid ticket produced" (validTicket ctx "create-contract")
+  traceIfFalse "Create Contract - Invalid ticket produced" (validTicket ctx "create-contract" 1)
     && traceIfFalse "Create Contract - Missing signature" (txSignedBy info pkh)
     && traceIfFalse "Create Contract - Invalid account datum" validAccountDatum
     && traceIfFalse "Create Contract - Invalid account value" validAccountValue
@@ -98,7 +98,8 @@ mkCreateContractPolicy sett (pkh, nft) ctx =
 
     validContractDatum :: Bool
     validContractDatum =
-      (cdPublisher contractDatum == pkh)
+      (cdSigSymbol contractDatum == adSigSymbol inputAccountDatum)
+        && (cdPublisher contractDatum == pkh)
         && (validRoles contractDatum)
         && (null $ cdAccusations contractDatum)
         && ( case cdPrivacyType contractDatum of

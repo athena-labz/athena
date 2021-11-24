@@ -74,10 +74,44 @@ displayAccountTrace h pkh sett = do
   callEndpoint @"display-account" h (pkh, sett)
 
 createContractTrace ::
-  ContractHandle () ContractSchema Text -> 
+  ContractHandle (Last AssetClass) ContractSchema Text ->
   AccountSettings ->
   ContractSettings ->
-  ContractDatum ->
-  EmulatorTrace ()
+  ContractCore ->
+  EmulatorTrace (Maybe AssetClass)
 createContractTrace h aSett cSett cDat = do
   callEndpoint @"create-contract" h (aSett, cSett, cDat)
+
+  void $ Emulator.waitNSlots 3
+
+  Last mNft <- observableState h
+  Prelude.return mNft
+
+signContractTrace ::
+  ContractHandle (Last AssetClass) ContractSchema Text ->
+  AccountSettings ->
+  ContractSettings ->
+  Integer ->
+  AssetClass ->
+  EmulatorTrace ()
+signContractTrace h aSett cSett role nft = do
+  callEndpoint @"sign-contract" h (aSett, cSett, role, nft)
+
+raiseDisputeTrace ::
+  ContractHandle (Last AssetClass) ContractSchema Text ->
+  ContractSettings ->
+  PubKeyHash ->
+  Integer ->
+  AssetClass ->
+  EmulatorTrace ()
+raiseDisputeTrace h cSett acd daysToDln nft = do
+  callEndpoint @"raise-dispute" h (cSett, acd, daysToDln, nft)
+
+resolveDisputeTrace ::
+  ContractHandle (Last AssetClass) ContractSchema Text ->
+  ContractSettings ->
+  BuiltinByteString ->
+  AssetClass ->
+  EmulatorTrace ()
+resolveDisputeTrace h cSett vdt nft = do
+  callEndpoint @"resolve-dispute" h (cSett, vdt, nft)

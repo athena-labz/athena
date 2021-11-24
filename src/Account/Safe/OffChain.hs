@@ -16,7 +16,6 @@ module Account.Safe.OffChain where
 import Account
 import Account.Create
 import Account.Safe.OnChain
-import Control.Lens hiding (elements)
 import Control.Monad
 import qualified Data.Map as HaskellMap
 import Data.Text (Text)
@@ -49,9 +48,6 @@ import PlutusTx.Prelude
 import Text.Printf (printf)
 import Utils
 import qualified Prelude as Haskell
-
-lookupChainIndexDatum :: ChainIndexTx -> DatumHash -> Maybe Datum
-lookupChainIndexDatum ciTx dh = HaskellMap.lookup dh (ciTx ^. citxData)
 
 -- Create account, mint's 100 SIG tokens with the user's public key hash
 -- embeded on and transfers it directly to a new account UTxO, therefore
@@ -128,9 +124,8 @@ findAccount pkh sett = do
     f :: (ChainIndexTxOut, ChainIndexTx) -> Haskell.Bool
     f (cTxOut, _) =
       valueOf (txOutValue $ toTxOut cTxOut) sigSymbol (parsePubKeyHash pkh)
-        Haskell.> 1
+        Haskell.> 0
 
--- Return the UTxO from the account with a PubKeyHash
 displayAccount ::
   forall w s.
   PubKeyHash ->
@@ -142,18 +137,11 @@ displayAccount pkh sett = do
   case m of
     Nothing -> logError @Haskell.String "No account found"
     Just (oref, o, dat) -> do
-      logInfo @AccountInfo (parseAccount sigSymbol pkh o dat)
-  where
-    sigSymbol :: CurrencySymbol
-    sigSymbol = signatureCurrencySymbol sett
+      logInfo @AccountInfo (parseAccount pkh o dat)
 
 type AccountSchema =
-  Endpoint
-    "create-account"
-    AccountSettings
-    .\/ Endpoint
-          "display-account"
-          (PubKeyHash, AccountSettings)
+  Endpoint "create-account" AccountSettings
+    .\/ Endpoint "display-account" (PubKeyHash, AccountSettings)
 
 accountEndpoints :: Contract () AccountSchema Text ()
 accountEndpoints =

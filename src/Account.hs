@@ -102,12 +102,11 @@ instance Eq AccountInfo where
 PlutusTx.unstableMakeIsData ''AccountInfo
 
 parseAccount ::
-  CurrencySymbol ->
   PubKeyHash ->
   ChainIndexTxOut ->
   AccountDatum ->
   AccountInfo
-parseAccount sigSymbol pkh out dat =
+parseAccount pkh out dat =
   AccountInfo
     { aiSig = sig,
       aiFees = fees,
@@ -121,7 +120,7 @@ parseAccount sigSymbol pkh out dat =
     val = txOutValue (toTxOut out)
 
     sig :: Integer
-    sig = valueOf val sigSymbol (parsePubKeyHash pkh)
+    sig = valueOf val (adSigSymbol dat) (parsePubKeyHash pkh)
 
     fees :: Integer
     fees = (getLovelace . fromValue) val

@@ -17,6 +17,8 @@ module Test.Example where
 import Account.Safe.OffChain
 import Contract.Safe.OffChain
 import Contract.Create
+import Contract.Sign
+import Contract.Accuse
 import Control.Monad (void)
 import Control.Monad.Freer.Extras as Extras (logError, logInfo)
 import Data.Default (Default (..))
@@ -41,7 +43,7 @@ import PlutusTx.Prelude
   )
 import Test.Sample
 import Test.Trace
-import Prelude (IO, Show (..), String)
+import Prelude (IO, Show (..), String, return)
 
 createAccountExample :: EmulatorTrace ()
 createAccountExample = do
@@ -61,13 +63,6 @@ createAccountExample = do
 
   void $ Emulator.waitNSlots 1
 
-  -- displayAccountTrace
-  --   aHdr
-  --   (pubKeyHash $ walletPubKey alice)
-  --   (sampleAccountSettings tkts)
-
-  -- void $ Emulator.waitNSlots 1
-
 createContractExample :: EmulatorTrace ()
 createContractExample = do
   let alice, judge :: Wallet
@@ -85,15 +80,214 @@ createContractExample = do
 
   aHdr <- activateContractWallet alice contractEndpoints
 
-  createContractTrace
-    aHdr
-    (sampleAccountSettings tkts)
-    sampleContractSettings
-    ( sampleContractDatum
-        (pubKeyHash $ walletPubKey alice)
-        0
-        [(pubKeyHashAddress $ pubKeyHash $ walletPubKey judge)]
-        []
-    )
+  mNft <- createContractTrace
+            aHdr
+            (sampleAccountSettings tkts)
+            sampleContractSettings
+            ( sampleContractCore
+                (pubKeyHash $ walletPubKey alice)
+                0
+                [(pubKeyHashAddress $ pubKeyHash $ walletPubKey judge)]
+                []
+            )
   
   void $ Emulator.waitNSlots 1
+
+signContractExample :: EmulatorTrace ()
+signContractExample = do
+  let alice, bob, judge :: Wallet
+      alice = knownWallet 1
+      bob = knownWallet 2
+      judge = knownWallet 7
+
+      tkts :: [AssetClass]
+      tkts =
+        [ assetClass
+            (createContractCurrencySymbol sampleContractSettings)
+            "create-contract",
+          assetClass
+            (signContractCurrencySymbol sampleContractSettings)
+            "sign-contract"
+        ]
+
+  aHdr <- activateContractWallet alice accountEndpoints
+  bHdr <- activateContractWallet bob accountEndpoints
+
+  createAccountTrace aHdr (sampleAccountSettings tkts)
+  createAccountTrace bHdr (sampleAccountSettings tkts)
+
+  void $ Emulator.waitNSlots 1
+
+  aCHdr <- activateContractWallet alice contractEndpoints
+  bCHdr <- activateContractWallet bob contractEndpoints
+
+  mNft <- createContractTrace
+            aCHdr
+            (sampleAccountSettings tkts)
+            sampleContractSettings
+            ( sampleContractCore
+                (pubKeyHash $ walletPubKey alice)
+                0
+                [(pubKeyHashAddress $ pubKeyHash $ walletPubKey judge)]
+                tkts
+            )
+  
+  void $ Emulator.waitNSlots 1
+
+  case mNft of
+    Nothing -> Extras.logError @String "Sign contract error: contract not found"
+    Just nft -> do
+      signContractTrace
+        bCHdr
+        (sampleAccountSettings tkts)
+        sampleContractSettings
+        0
+        nft
+      
+      void $ Emulator.waitNSlots 1
+
+raiseDisputeExample :: EmulatorTrace ()
+raiseDisputeExample = do
+  let alice, bob, judge :: Wallet
+      alice = knownWallet 1
+      bob = knownWallet 2
+      judge = knownWallet 7
+
+      tkts :: [AssetClass]
+      tkts =
+        [ assetClass
+            (createContractCurrencySymbol sampleContractSettings)
+            "create-contract",
+          assetClass
+            (signContractCurrencySymbol sampleContractSettings)
+            "sign-contract",
+          assetClass
+            (raiseDisputeCurrencySymbol sampleContractSettings)
+            "raise-dispute"
+        ]
+
+  alcAccHnd <- activateContractWallet alice accountEndpoints
+  bobAccHnd <- activateContractWallet bob accountEndpoints
+
+  createAccountTrace alcAccHnd (sampleAccountSettings tkts)
+  createAccountTrace bobAccHnd (sampleAccountSettings tkts)
+
+  void $ Emulator.waitNSlots 1
+
+  alcCtrHnd <- activateContractWallet alice contractEndpoints
+  bobCtrHnd <- activateContractWallet bob contractEndpoints
+
+  mNft <- createContractTrace
+            alcCtrHnd
+            (sampleAccountSettings tkts)
+            sampleContractSettings
+            ( sampleContractCore
+                (pubKeyHash $ walletPubKey alice)
+                0
+                [(pubKeyHashAddress $ pubKeyHash $ walletPubKey judge)]
+                tkts
+            )
+  
+  void $ Emulator.waitNSlots 1
+
+  case mNft of
+    Nothing -> Extras.logError @String "Sign contract error: contract not found"
+    Just nft -> do
+      signContractTrace
+        bobCtrHnd
+        (sampleAccountSettings tkts)
+        sampleContractSettings
+        0
+        nft
+      
+      void $ Emulator.waitNSlots 1
+
+      raiseDisputeTrace
+        alcCtrHnd
+        sampleContractSettings
+        (pubKeyHash $ walletPubKey bob)
+        5
+        nft
+      
+      void $ Emulator.waitNSlots 1
+
+resolveDisputeExample :: EmulatorTrace ()
+resolveDisputeExample = do
+  let alice, bob, judge :: Wallet
+      alice = knownWallet 1
+      bob = knownWallet 2
+      judge = knownWallet 7
+
+      tkts :: [AssetClass]
+      tkts =
+        [ assetClass
+            (createContractCurrencySymbol sampleContractSettings)
+            "create-contract",
+          assetClass
+            (signContractCurrencySymbol sampleContractSettings)
+            "sign-contract",
+          assetClass
+            (raiseDisputeCurrencySymbol sampleContractSettings)
+            "raise-dispute",
+          assetClass
+            (raiseDisputeCurrencySymbol sampleContractSettings)
+            "resolve-dispute"
+        ]
+
+  alcAccHnd <- activateContractWallet alice accountEndpoints
+  bobAccHnd <- activateContractWallet bob accountEndpoints
+
+  createAccountTrace alcAccHnd (sampleAccountSettings tkts)
+  createAccountTrace bobAccHnd (sampleAccountSettings tkts)
+
+  void $ Emulator.waitNSlots 1
+
+  alcCtrHnd <- activateContractWallet alice contractEndpoints
+  bobCtrHnd <- activateContractWallet bob contractEndpoints
+  jdgCtrHnd <- activateContractWallet judge contractEndpoints
+
+  mNft <- createContractTrace
+            alcCtrHnd
+            (sampleAccountSettings tkts)
+            sampleContractSettings
+            ( sampleContractCore
+                (pubKeyHash $ walletPubKey alice)
+                0
+                [(pubKeyHashAddress $ pubKeyHash $ walletPubKey judge)]
+                tkts
+            )
+  
+  void $ Emulator.waitNSlots 1
+
+  case mNft of
+    Nothing -> Extras.logError @String "Sign contract error: contract not found"
+    Just nft -> do
+      signContractTrace
+        bobCtrHnd
+        (sampleAccountSettings tkts)
+        sampleContractSettings
+        0
+        nft
+      
+      void $ Emulator.waitNSlots 1
+
+      raiseDisputeTrace
+        alcCtrHnd
+        sampleContractSettings
+        (pubKeyHash $ walletPubKey bob)
+        5
+        nft
+      
+      void $ Emulator.waitNSlots 1
+
+      resolveDisputeTrace
+        jdgCtrHnd
+        sampleContractSettings
+        resolution
+        nft
+      
+      void $ Emulator.waitNSlots 1
+
+
+
+

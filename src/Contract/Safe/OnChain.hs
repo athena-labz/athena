@@ -36,7 +36,7 @@ mkContractValidator ::
   ScriptContext ->
   Bool
 mkContractValidator dat tkt ctx =
-  traceIfFalse "Contract Safe - Invalid ticket" validTicket
+  traceIfFalse "Contract Safe - Invalid ticket" validTicket'
     && traceIfFalse "Contract Safe - Ticket not present" ticketPresent
   where
     ownInput :: TxOut
@@ -49,8 +49,8 @@ mkContractValidator dat tkt ctx =
       [o] -> o
       _ -> traceError "Contract Safe - Own unique output not found"
     
-    validTicket :: Bool
-    validTicket = tkt `elem` (cdTickets dat)
+    validTicket' :: Bool
+    validTicket' = tkt `elem` (cdTickets dat)
 
     ticketPresent :: Bool
     ticketPresent =
