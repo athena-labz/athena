@@ -24,7 +24,7 @@ import Ledger
 import Ledger.Ada as Ada (lovelaceValueOf)
 import Ledger.TimeSlot
 import Ledger.Value (AssetClass (AssetClass), assetClass, assetClassValue)
-import Plutus.Contract.Test (Wallet (Wallet), knownWallet, walletPubKey)
+import Plutus.Contract.Test (Wallet (Wallet), knownWallet)
 import Plutus.Trace.Emulator as Emulator
   ( ContractHandle,
     EmulatorConfig (EmulatorConfig),

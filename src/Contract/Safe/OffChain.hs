@@ -43,6 +43,7 @@ import PlutusTx.Prelude
 import Text.Printf (printf)
 import Utils
 import qualified Prelude as Haskell
+import qualified Plutus.Contract.Request as Contract
 
 {-# INLINABLE dayInMs #-}
 dayInMs :: Integer
@@ -79,12 +80,15 @@ createContract ::
   Contract (Last AssetClass) ContractSchema Text ()
 createContract aSett cSett cCore = do
   -- The public key hash from the user who is trying to create a contract
-  pkh <- pubKeyHash <$> Contract.ownPubKey
+  pmtPkh <- Contract.ownPaymentPubKeyHash
+
+  let pkh :: PubKeyHash
+      pkh = unPaymentPubKeyHash pmtPkh
 
   contractNFT <-
     mapError
       (pack Haskell.. Haskell.show)
-      ( mintContract pkh [("cid", 1)] ::
+      ( mintContract pmtPkh [("cid", 1)] ::
           Contract w s CurrencyError OneShotCurrency
       )
 
@@ -96,13 +100,10 @@ createContract aSett cSett cCore = do
       logError @Haskell.String "Failed to create contract: user has no account"
     Just (aRef, aOut, aDat) -> do
       -- Submits the transaction to the blockchain
-      ledgerTx <- submitTxConstraintsWith @AccountType lookups tx
+      void $ submitTxConstraintsWith @AccountType lookups tx
 
       -- Tell the user our contract nft
       tell $ Last $ Just nft
-
-      -- Waits for the transaction to be confirmed
-      void $ awaitTxConfirmed $ txId ledgerTx
 
       Contract.logInfo
         @Haskell.String
@@ -174,7 +175,10 @@ signContract ::
   Contract (Last AssetClass) ContractSchema Text ()
 signContract aSett cSett role nft = do
   -- The public key hash from the user who is trying to sign a contract
-  pkh <- pubKeyHash <$> Contract.ownPubKey
+  pmtPkh <- Contract.ownPaymentPubKeyHash
+
+  let pkh :: PubKeyHash
+      pkh = unPaymentPubKeyHash pmtPkh
 
   m <- findAccount pkh aSett
   m' <- findContract nft
@@ -182,10 +186,7 @@ signContract aSett cSett role nft = do
   case (m, m') of
     (Just (aRef, aOut, aDat), Just (cRef, cOut, cDat)) -> do
       -- Submits the transaction to the blockchain
-      ledgerTx <- submitTxConstraintsWith @AccountType lookups tx
-
-      -- Waits for the transaction to be confirmed
-      void $ awaitTxConfirmed $ txId ledgerTx
+      void $ submitTxConstraintsWith @AccountType lookups tx
 
       Contract.logInfo @Haskell.String "successfully signed contract"
       where
@@ -249,7 +250,10 @@ raiseDispute ::
   Contract (Last AssetClass) ContractSchema Text ()
 raiseDispute cSett acd daysToDln nft = do
   -- The public key hash from the user who is trying to raise a dispute
-  pkh <- pubKeyHash <$> Contract.ownPubKey
+  pmtPkh <- Contract.ownPaymentPubKeyHash
+
+  let pkh :: PubKeyHash
+      pkh = unPaymentPubKeyHash pmtPkh
 
   -- Current POSIXTime
   time <- Contract.currentTime
@@ -260,10 +264,7 @@ raiseDispute cSett acd daysToDln nft = do
     Nothing -> logError @Haskell.String "Failed to raise dispute: contract not found"
     Just (cRef, cOut, cDat) -> do
       -- Submits the transaction to the blockchain
-      ledgerTx <- submitTxConstraintsWith @ContractType lookups tx
-
-      -- Waits for the transaction to be confirmed
-      void $ awaitTxConfirmed $ txId ledgerTx
+      void $ submitTxConstraintsWith @ContractType lookups tx
 
       Contract.logInfo @Haskell.String "successfully raised dispute"
       where
@@ -309,7 +310,10 @@ resolveDispute ::
   Contract (Last AssetClass) ContractSchema Text ()
 resolveDispute cSett verdict nft = do
   -- The public key hash from the user who is trying to resolve a dispute
-  pkh <- pubKeyHash <$> Contract.ownPubKey
+  pmtPkh <- Contract.ownPaymentPubKeyHash
+
+  let pkh :: PubKeyHash
+      pkh = unPaymentPubKeyHash pmtPkh
 
   m <- findContract nft
 
@@ -317,10 +321,7 @@ resolveDispute cSett verdict nft = do
     Nothing -> logError @Haskell.String "Failed to resolve dispute: contract not found"
     Just (cRef, cOut, cDat) -> do
       -- Submits the transaction to the blockchain
-      ledgerTx <- submitTxConstraintsWith @ContractType lookups tx
-
-      -- Waits for the transaction to be confirmed
-      void $ awaitTxConfirmed $ txId ledgerTx
+      void $ submitTxConstraintsWith @ContractType lookups tx
 
       Contract.logInfo @Haskell.String "successfully resolved dispute"
       where

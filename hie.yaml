@@ -1,6 +1,2 @@
 cradle:
   cabal:
-    - path: "./src"
-      component: "lib:dike"
-    - path: "./tests"
-      component: "test:tests"

@@ -15,10 +15,10 @@
 module Test.Example where
 
 import Account.Safe.OffChain
-import Contract.Safe.OffChain
-import Contract.Create
-import Contract.Sign
 import Contract.Accuse
+import Contract.Create
+import Contract.Safe.OffChain
+import Contract.Sign
 import Control.Monad (void)
 import Control.Monad.Freer.Extras as Extras (logError, logInfo)
 import Data.Default (Default (..))
@@ -27,7 +27,7 @@ import Data.Monoid (Last (..))
 import Data.Text (Text, pack)
 import Ledger
 import Ledger.Value
-import Plutus.Contract.Test (Wallet (Wallet), knownWallet, walletPubKey)
+import Plutus.Contract.Test (Wallet (Wallet), knownWallet, mockWalletPaymentPubKey)
 import Plutus.Trace.Emulator as Emulator
 import PlutusTx.AssocMap as PlutusMap
 import PlutusTx.Prelude
@@ -80,17 +80,18 @@ createContractExample = do
 
   aHdr <- activateContractWallet alice contractEndpoints
 
-  mNft <- createContractTrace
-            aHdr
-            (sampleAccountSettings tkts)
-            sampleContractSettings
-            ( sampleContractCore
-                (pubKeyHash $ walletPubKey alice)
-                0
-                [(pubKeyHashAddress $ pubKeyHash $ walletPubKey judge)]
-                []
-            )
-  
+  mNft <-
+    createContractTrace
+      aHdr
+      (sampleAccountSettings tkts)
+      sampleContractSettings
+      ( sampleContractCore
+          (unPaymentPubKeyHash $ paymentPubKeyHash $ mockWalletPaymentPubKey alice)
+          0
+          [pubKeyHashAddress (paymentPubKeyHash $ mockWalletPaymentPubKey judge) Nothing]
+          []
+      )
+
   void $ Emulator.waitNSlots 1
 
 signContractExample :: EmulatorTrace ()
@@ -121,17 +122,18 @@ signContractExample = do
   aCHdr <- activateContractWallet alice contractEndpoints
   bCHdr <- activateContractWallet bob contractEndpoints
 
-  mNft <- createContractTrace
-            aCHdr
-            (sampleAccountSettings tkts)
-            sampleContractSettings
-            ( sampleContractCore
-                (pubKeyHash $ walletPubKey alice)
-                0
-                [(pubKeyHashAddress $ pubKeyHash $ walletPubKey judge)]
-                tkts
-            )
-  
+  mNft <-
+    createContractTrace
+      aCHdr
+      (sampleAccountSettings tkts)
+      sampleContractSettings
+      ( sampleContractCore
+          (unPaymentPubKeyHash $ paymentPubKeyHash $ mockWalletPaymentPubKey alice)
+          0
+          [pubKeyHashAddress (paymentPubKeyHash $ mockWalletPaymentPubKey judge) Nothing]
+          []
+      )
+
   void $ Emulator.waitNSlots 1
 
   case mNft of
@@ -143,7 +145,7 @@ signContractExample = do
         sampleContractSettings
         0
         nft
-      
+
       void $ Emulator.waitNSlots 1
 
 raiseDisputeExample :: EmulatorTrace ()
@@ -177,17 +179,18 @@ raiseDisputeExample = do
   alcCtrHnd <- activateContractWallet alice contractEndpoints
   bobCtrHnd <- activateContractWallet bob contractEndpoints
 
-  mNft <- createContractTrace
-            alcCtrHnd
-            (sampleAccountSettings tkts)
-            sampleContractSettings
-            ( sampleContractCore
-                (pubKeyHash $ walletPubKey alice)
-                0
-                [(pubKeyHashAddress $ pubKeyHash $ walletPubKey judge)]
-                tkts
-            )
-  
+  mNft <-
+    createContractTrace
+      alcCtrHnd
+      (sampleAccountSettings tkts)
+      sampleContractSettings
+      ( sampleContractCore
+          (unPaymentPubKeyHash $ paymentPubKeyHash $ mockWalletPaymentPubKey alice)
+          0
+          [pubKeyHashAddress (paymentPubKeyHash $ mockWalletPaymentPubKey judge) Nothing]
+          []
+      )
+
   void $ Emulator.waitNSlots 1
 
   case mNft of
@@ -199,16 +202,16 @@ raiseDisputeExample = do
         sampleContractSettings
         0
         nft
-      
+
       void $ Emulator.waitNSlots 1
 
       raiseDisputeTrace
         alcCtrHnd
         sampleContractSettings
-        (pubKeyHash $ walletPubKey bob)
+        (unPaymentPubKeyHash $ paymentPubKeyHash $ mockWalletPaymentPubKey bob)
         5
         nft
-      
+
       void $ Emulator.waitNSlots 1
 
 resolveDisputeExample :: EmulatorTrace ()
@@ -246,17 +249,18 @@ resolveDisputeExample = do
   bobCtrHnd <- activateContractWallet bob contractEndpoints
   jdgCtrHnd <- activateContractWallet judge contractEndpoints
 
-  mNft <- createContractTrace
-            alcCtrHnd
-            (sampleAccountSettings tkts)
-            sampleContractSettings
-            ( sampleContractCore
-                (pubKeyHash $ walletPubKey alice)
-                0
-                [(pubKeyHashAddress $ pubKeyHash $ walletPubKey judge)]
-                tkts
-            )
-  
+  mNft <-
+    createContractTrace
+      alcCtrHnd
+      (sampleAccountSettings tkts)
+      sampleContractSettings
+      ( sampleContractCore
+          (unPaymentPubKeyHash $ paymentPubKeyHash $ mockWalletPaymentPubKey alice)
+          0
+          [pubKeyHashAddress (paymentPubKeyHash $ mockWalletPaymentPubKey judge) Nothing]
+          tkts
+      )
+
   void $ Emulator.waitNSlots 1
 
   case mNft of
@@ -268,16 +272,16 @@ resolveDisputeExample = do
         sampleContractSettings
         0
         nft
-      
+
       void $ Emulator.waitNSlots 1
 
       raiseDisputeTrace
         alcCtrHnd
         sampleContractSettings
-        (pubKeyHash $ walletPubKey bob)
+        (unPaymentPubKeyHash $ paymentPubKeyHash $ mockWalletPaymentPubKey bob)
         5
         nft
-      
+
       void $ Emulator.waitNSlots 1
 
       resolveDisputeTrace
@@ -285,9 +289,5 @@ resolveDisputeExample = do
         sampleContractSettings
         resolution
         nft
-      
+
       void $ Emulator.waitNSlots 1
-
-
-
-

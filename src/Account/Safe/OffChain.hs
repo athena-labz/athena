@@ -55,9 +55,12 @@ import qualified Prelude as Haskell
 createAccount :: AccountSettings -> Contract () AccountSchema Text ()
 createAccount cas = do
   -- The public key hash from the user who is trying to create an account
-  pkh <- pubKeyHash <$> Contract.ownPubKey
+  pmtPkh <- Contract.ownPaymentPubKeyHash
 
-  let -- The currency symbol we'll use to create the SIG token
+  let pkh :: PubKeyHash
+      pkh = unPaymentPubKeyHash pmtPkh
+    
+      -- The currency symbol we'll use to create the SIG token
       sigSymbol :: CurrencySymbol
       sigSymbol = signatureCurrencySymbol cas
 
@@ -86,10 +89,7 @@ createAccount cas = do
             (sigTokensValue <> entranceFeeValue)
 
   -- Submits the transaction to the blockchain
-  ledgerTx <- submitTxConstraintsWith @AccountType lookups tx
-
-  -- Waits for the transaction to be confirmed
-  void $ awaitTxConfirmed $ txId ledgerTx
+  void $ submitTxConstraintsWith @AccountType lookups tx
 
   Contract.logInfo
     @Haskell.String

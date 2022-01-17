@@ -72,7 +72,9 @@ mkResolveDisputePolicy sett (pkh, vdt, dln) ctx =
 
     -- TODO: In the future scripts should also be allowed to be judges
     userAllowed :: Bool
-    userAllowed = currentJudge inputContractDatum == Just (pubKeyHashAddress pkh)
+    userAllowed =
+      currentJudge inputContractDatum
+        == Just (pubKeyHashAddress (PaymentPubKeyHash pkh) Nothing)
 
     validDeadline :: Bool
     validDeadline = dln == aDeadline (last (cdAccusations inputContractDatum))
