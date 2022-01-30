@@ -52,7 +52,7 @@ import qualified Prelude as Haskell
 -- Create account, mint's 100 SIG tokens with the user's public key hash
 -- embeded on and transfers it directly to a new account UTxO, therefore
 -- "creating a new account"
-createAccount :: AccountSettings -> Contract () AccountSchema Text ()
+createAccount :: AsContractError e => AccountSettings -> Contract () AccountSchema e ()
 createAccount cas = do
   -- The public key hash from the user who is trying to create an account
   pmtPkh <- Contract.ownPaymentPubKeyHash
@@ -97,10 +97,11 @@ createAccount cas = do
 
 -- Return the UTxO from the account with a PubKeyHash
 findAccount ::
+  AsContractError e =>
   forall w s.
   PubKeyHash ->
   AccountSettings ->
-  Contract w s Text (Maybe (TxOutRef, ChainIndexTxOut, AccountDatum))
+  Contract w s e (Maybe (TxOutRef, ChainIndexTxOut, AccountDatum))
 findAccount pkh sett = do
   -- All UTxOs located at the account address
   utxos <- HaskellMap.filter f <$> utxosTxOutTxAt accountAddress
@@ -127,10 +128,11 @@ findAccount pkh sett = do
         Haskell.> 0
 
 displayAccount ::
+  AsContractError e =>
   forall w s.
   PubKeyHash ->
   AccountSettings ->
-  Contract w s Text ()
+  Contract w s e ()
 displayAccount pkh sett = do
   m <- findAccount pkh sett
 
@@ -143,10 +145,9 @@ type AccountSchema =
   Endpoint "create-account" AccountSettings
     .\/ Endpoint "display-account" (PubKeyHash, AccountSettings)
 
-accountEndpoints :: Contract () AccountSchema Text ()
+accountEndpoints :: AsContractError e => Contract () AccountSchema e ()
 accountEndpoints =
   forever $
-    handleError logError $
       awaitPromise $
         createAccount' `select` displayAccount'
   where

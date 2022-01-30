@@ -22,6 +22,7 @@ import Ledger.Ada
 import Ledger.Scripts
 import Ledger.Typed.Scripts as Scripts hiding (validatorHash)
 import Ledger.Value
+import Playground.Contract
 import Plutus.ChainIndex
 import qualified PlutusTx
 import qualified PlutusTx.AssocMap as PlutusMap
@@ -36,7 +37,7 @@ data AccountSettings = AccountSettings
     casEntranceFee :: Integer,
     casTickets :: [AssetClass]
   }
-  deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
+  deriving (Prelude.Show, Generic, FromJSON, ToJSON, ToSchema, Prelude.Eq)
 
 instance Eq AccountSettings where
   {-# INLINEABLE (==) #-}

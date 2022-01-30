@@ -15,19 +15,12 @@
 module Account.Create where
 
 import Account
-import Data.Aeson hiding (Value)
-import GHC.Generics
 import Ledger hiding (singleton)
-import Ledger.Scripts
 import Ledger.Typed.Scripts as Scripts
 import Ledger.Value
-import Plutus.ChainIndex
 import qualified PlutusTx
-import qualified PlutusTx.AssocMap as PlutusMap
 import PlutusTx.Prelude
-import qualified PlutusTx.Ratio as R
 import Utils
-import qualified Prelude
 
 {-# INLINEABLE sigPolicyTraceIfFalse #-}
 sigPolicyTraceIfFalse :: BuiltinString -> Bool -> Bool

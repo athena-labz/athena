@@ -15,19 +15,11 @@
 module Account.Safe.OnChain where
 
 import Account
-import Control.Monad (void)
-import Data.Aeson
-import GHC.Generics
 import Ledger
-import Ledger.Scripts
 import Ledger.Typed.Scripts as Scripts hiding (validatorHash)
 import Ledger.Value
-import Plutus.ChainIndex
 import qualified PlutusTx
-import qualified PlutusTx.AssocMap as PlutusMap
 import PlutusTx.Prelude
-import qualified PlutusTx.Ratio as R
-import qualified Prelude
 
 {-# INLINEABLE mkAccountValidator #-}
 mkAccountValidator ::
@@ -36,7 +28,7 @@ mkAccountValidator ::
   ScriptContext ->
   Bool
 mkAccountValidator dat tkt ctx =
-  traceIfFalse "Account Safe - Invalid ticket" (validTicket')
+  traceIfFalse "Account Safe - Invalid ticket" validTicket'
     && traceIfFalse "Account Safe - Ticket not present" ticketPresent
   where
     ownInput :: TxOut

@@ -48,11 +48,9 @@ library
                      , base ^>=4.14.1.0
                      , bytestring -any
                      , data-default
-                     , cardano-api -any
                      , containers -any
                      , freer-extras
                      , lens
-                     , playground-common
                      , plutus-contract
                      , plutus-ledger
                      , plutus-ledger-api
@@ -115,6 +113,5 @@ executable plutus-starter-pab
     plutus-ledger -any,
     openapi3 -any,
     purescript-bridge,
-    text,
 
 

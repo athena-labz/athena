@@ -13,22 +13,16 @@
 
 module Utils where
 
+import qualified Cardano.Api.Shelley as Shelley
 import Control.Lens hiding (elements)
-import Control.Monad (void)
 import Data.Aeson hiding (Value)
+import qualified Data.ByteString.Lazy as LazyByteString
 import qualified Data.Map as HaskellMap
-import GHC.Generics
 import Ledger hiding (singleton)
-import Ledger.Scripts
-import Ledger.Typed.Scripts as Scripts hiding (validatorHash)
 import Ledger.Value
 import Plutus.ChainIndex
-import Plutus.ChainIndex.Tx (ChainIndexTx)
 import qualified PlutusTx
-import qualified PlutusTx.AssocMap as PlutusMap
 import PlutusTx.Prelude
-import qualified PlutusTx.Ratio as R
-import qualified Prelude
 
 -- Transforms a ValidatorHash into a BuiltinByteString
 {-# INLINEABLE unValidatorHash #-}
@@ -103,3 +97,6 @@ last :: [a] -> a
 last [x] = x
 last (_ : xs) = last xs
 last [] = traceError "last called with empty list"
+
+plutusDataToJSON :: PlutusTx.ToData a => a -> LazyByteString.ByteString
+plutusDataToJSON = encode . Shelley.scriptDataToJson Shelley.ScriptDataJsonDetailedSchema . Shelley.fromPlutusData . PlutusTx.toData
