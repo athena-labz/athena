@@ -133,3 +133,10 @@ signContractPolicy sett =
 
 signContractCurrencySymbol :: ContractSettings -> CurrencySymbol
 signContractCurrencySymbol = scriptCurrencySymbol . signContractPolicy
+
+signContractPlutusScript :: ContractSettings -> Script
+signContractPlutusScript = unMintingPolicyScript . signContractPolicy
+
+signContractValidator :: ContractSettings -> Validator
+signContractValidator = Validator . signContractPlutusScript
+

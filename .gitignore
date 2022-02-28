@@ -1,2 +1,4 @@
-dist-newstyle/
+dist-newstyle
 .devcontainer
+testnet
+scripts

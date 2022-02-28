@@ -54,6 +54,10 @@ import Prelude (IO, Show (..), String)
 import qualified Prelude
 
 -- An example of an account being created
+runMintNFT :: IO ()
+runMintNFT = runEmulatorTraceIO' def (abstractConfig [1]) mintNFTExample
+
+-- An example of an account being created
 runCreateAccountExample :: IO ()
 runCreateAccountExample = runEmulatorTraceIO' def (abstractConfig [1]) createAccountExample
 

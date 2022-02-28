@@ -22,6 +22,7 @@ common lang
       -Wredundant-constraints -Widentities -rtsopts
       -- See Plutus Tx readme
       -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas
+      -fno-strictness -fno-specialise
     if flag(defer-plugin-errors)
         ghc-options: -fplugin-opt PlutusTx.Plugin:defer-errors
 
@@ -40,6 +41,9 @@ library
                      , Contract.Safe.OffChain
                      , Contract.Safe.OnChain
                      , Utils
+                     , NFT.NFT
+                     , NFT.NFTUtils
+                     , NFT.OffChain
                      , Test.Run
                      , Test.Example
                      , Test.Sample
@@ -117,4 +121,23 @@ executable plutus-starter-pab
     purescript-bridge,
     text,
 
-
+executable scripts-tools
+  import: lang
+  main-is: Main.hs
+  hs-source-dirs: app
+  build-depends:
+    base >= 4.9 && < 5,
+    bytestring -any,
+    cardano-api -any,
+    data-default -any,
+    plutus-contract -any,
+    text -any,
+    athena -any,
+    plutus-tx -any,
+    aeson -any,
+    freer-simple -any,
+    prettyprinter -any,
+    freer-extras -any,
+    plutus-ledger -any,
+    openapi3 -any,
+    serialise -any

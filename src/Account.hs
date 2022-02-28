@@ -16,17 +16,16 @@ module Account where
 
 import Control.Monad (void)
 import Data.Aeson hiding (Value)
-import GHC.Generics
 import Ledger
 import Ledger.Ada
 import Ledger.Scripts
 import Ledger.Typed.Scripts as Scripts hiding (validatorHash)
 import Ledger.Value
-import Playground.Contract
+import Playground.Contract (Generic, ToSchema)
 import Plutus.ChainIndex
 import qualified PlutusTx
 import qualified PlutusTx.AssocMap as PlutusMap
-import PlutusTx.Prelude
+import PlutusTx.Prelude (Eq, Maybe (..), Integer, (==), (&&), (.))
 import qualified PlutusTx.Ratio as R
 import Utils
 import qualified Prelude
@@ -45,24 +44,19 @@ instance Eq AccountSettings where
     == (AccountSettings vh' tn' entFee' tkt') =
       vh == vh' && tn == tn' && entFee == entFee' && tkt == tkt'
 
-PlutusTx.unstableMakeIsData ''AccountSettings
-PlutusTx.makeLift ''AccountSettings
-
 -- The datatype that represents the account information on-chain
 data AccountDatum = AccountDatum
-  { adCAS :: Integer,
-    adContracts :: [AssetClass],
-    adSigSymbol :: CurrencySymbol,
-    adTickets :: [AssetClass]
+  { adCAS :: !Integer,
+    adContracts :: ![AssetClass],
+    adSigSymbol :: !CurrencySymbol,
+    adTickets :: ![AssetClass]
   }
-  deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
+  deriving (Prelude.Show, Prelude.Eq)
 
 instance Eq AccountDatum where
   {-# INLINEABLE (==) #-}
   (AccountDatum cas ctrs sig tkts) == (AccountDatum cas' ctrs' sig' tkts') =
     cas == cas' && ctrs == ctrs' && sig == sig' && tkts == tkts'
-
-PlutusTx.unstableMakeIsData ''AccountDatum
 
 {-# INLINEABLE findAccountDatum #-}
 findAccountDatum :: TxOut -> (DatumHash -> Maybe Datum) -> Maybe AccountDatum
@@ -70,20 +64,6 @@ findAccountDatum o f = do
   dh <- txOutDatum o
   Datum d <- f dh
   PlutusTx.fromBuiltinData d
-
--- The expected initial datum
-{-# INLINEABLE initDatum #-}
-initDatum ::
-  CurrencySymbol ->
-  [AssetClass] ->
-  AccountDatum
-initDatum cs tkts =
-  AccountDatum
-    { adCAS = 60_000,
-      adContracts = [],
-      adSigSymbol = cs,
-      adTickets = tkts
-    }
 
 data AccountInfo = AccountInfo
   { aiSig :: Integer,
@@ -100,7 +80,19 @@ instance Eq AccountInfo where
   (AccountInfo s f cas ctr ss t) == (AccountInfo s' f' cas' ctr' ss' t') =
     s == s' && f == f' && cas == cas' && ctr == ctr' && ss == ss' && t == t'
 
-PlutusTx.unstableMakeIsData ''AccountInfo
+-- The expected initial datum
+{-# INLINEABLE initDatum #-}
+initDatum ::
+  CurrencySymbol ->
+  [AssetClass] ->
+  AccountDatum
+initDatum cs tkts =
+  AccountDatum
+    { adCAS = 60_000,
+      adContracts = [],
+      adSigSymbol = cs,
+      adTickets = tkts
+    }
 
 parseAccount ::
   PubKeyHash ->
@@ -135,3 +127,19 @@ addContractToAccount dat cnt =
       adSigSymbol = adSigSymbol dat,
       adTickets = adTickets dat
     }
+
+{-# INLINEABLE changeAccountCAS #-}
+changeAccountCAS :: AccountDatum -> Integer -> AccountDatum
+changeAccountCAS dat cas =
+  AccountDatum
+    { adCAS = cas,
+      adContracts = adContracts dat,
+      adSigSymbol = adSigSymbol dat,
+      adTickets = adTickets dat
+    }
+
+PlutusTx.unstableMakeIsData ''AccountSettings
+PlutusTx.unstableMakeIsData ''AccountDatum
+PlutusTx.unstableMakeIsData ''AccountInfo
+
+PlutusTx.makeLift ''AccountSettings

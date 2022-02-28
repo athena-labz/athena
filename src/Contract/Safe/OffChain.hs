@@ -94,13 +94,15 @@ createContract aSett cSett cCore = do
 
   m <- findAccount pkh aSett
 
+  tell $ Last $ Just (assetClass (Currency.currencySymbol contractNFT) "cid")
+
   case m of
     Nothing -> do
       tell $ Last Nothing
       logError @Haskell.String "Failed to create contract: user has no account"
     Just (aRef, aOut, aDat) -> do
       -- Submits the transaction to the blockchain
-      void $ submitTxConstraintsWith @AccountType lookups tx
+      tx <- submitTxConstraintsWith @AccountType lookups tx
 
       -- Tell the user our contract nft
       tell $ Last $ Just nft

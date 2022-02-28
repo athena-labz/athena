@@ -101,3 +101,10 @@ raiseDisputePolicy sett =
 
 raiseDisputeCurrencySymbol :: ContractSettings -> CurrencySymbol
 raiseDisputeCurrencySymbol = scriptCurrencySymbol . raiseDisputePolicy
+
+raiseDisputePlutusScript :: ContractSettings -> Script
+raiseDisputePlutusScript = unMintingPolicyScript . raiseDisputePolicy
+
+raiseDisputeValidator :: ContractSettings -> Validator
+raiseDisputeValidator = Validator . raiseDisputePlutusScript
+

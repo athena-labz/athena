@@ -98,3 +98,9 @@ resolveDisputePolicy sett =
 
 resolveDisputeCurrencySymbol :: ContractSettings -> CurrencySymbol
 resolveDisputeCurrencySymbol = scriptCurrencySymbol . resolveDisputePolicy
+
+resolveDisputePlutusScript :: ContractSettings -> Script
+resolveDisputePlutusScript = unMintingPolicyScript . resolveDisputePolicy
+
+resolveDisputeValidator :: ContractSettings -> Validator
+resolveDisputeValidator = Validator . resolveDisputePlutusScript

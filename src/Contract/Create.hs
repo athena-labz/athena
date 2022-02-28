@@ -126,3 +126,9 @@ createContractPolicy sett =
 
 createContractCurrencySymbol :: ContractSettings -> CurrencySymbol
 createContractCurrencySymbol = scriptCurrencySymbol . createContractPolicy
+
+createContractPlutusScript :: ContractSettings -> Script
+createContractPlutusScript = unMintingPolicyScript . createContractPolicy
+
+createContractValidator :: ContractSettings -> Validator
+createContractValidator = Validator . createContractPlutusScript

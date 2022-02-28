@@ -14,6 +14,7 @@
 
 module Test.Trace where
 
+import NFT.OffChain
 import Account
 import Account.Create
 import Account.Safe.OffChain
@@ -58,6 +59,13 @@ import Test.Sample
 import Prelude (IO, Show (..), String)
 import qualified Prelude
 
+mintNFTTrace ::
+  ContractHandle () NFTSchema Text ->
+  Integer ->
+  EmulatorTrace ()
+mintNFTTrace h size = do
+  callEndpoint @"mint-nft" h size
+
 createAccountTrace ::
   ContractHandle () AccountSchema Text ->
   AccountSettings ->
@@ -82,7 +90,7 @@ createContractTrace ::
 createContractTrace h aSett cSett cDat = do
   callEndpoint @"create-contract" h (aSett, cSett, cDat)
 
-  void $ Emulator.waitNSlots 3
+  void $ Emulator.waitNSlots 5
 
   Last mNft <- observableState h
   Prelude.return mNft

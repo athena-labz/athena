@@ -14,6 +14,7 @@
 
 module Test.Example where
 
+import NFT.OffChain
 import Account.Safe.OffChain
 import Contract.Accuse
 import Contract.Create
@@ -43,7 +44,18 @@ import PlutusTx.Prelude
   )
 import Test.Sample
 import Test.Trace
-import Prelude (IO, Show (..), String, return)
+import Prelude (IO, Show (..), String, return, error)
+
+mintNFTExample :: EmulatorTrace ()
+mintNFTExample = do
+  let alice :: Wallet
+      alice = knownWallet 1
+
+  aHdr <- activateContractWallet alice nftEndpoints
+
+  mintNFTTrace aHdr 16
+
+  void $ Emulator.waitNSlots 1
 
 createAccountExample :: EmulatorTrace ()
 createAccountExample = do
@@ -137,7 +149,7 @@ signContractExample = do
   void $ Emulator.waitNSlots 1
 
   case mNft of
-    Nothing -> Extras.logError @String "Sign contract error: contract not found"
+    Nothing -> error "Sign contract error: contract not found"
     Just nft -> do
       signContractTrace
         bCHdr
@@ -147,6 +159,7 @@ signContractExample = do
         nft
 
       void $ Emulator.waitNSlots 1
+
 
 raiseDisputeExample :: EmulatorTrace ()
 raiseDisputeExample = do

@@ -19,7 +19,8 @@ import Ledger hiding (singleton)
 import Ledger.Typed.Scripts as Scripts
 import Ledger.Value
 import qualified PlutusTx
-import PlutusTx.Prelude
+import PlutusTx.Prelude (BuiltinString, Bool (..), Maybe (..), (==), (.),
+                         ($), (&&), (<>), traceError, traceIfFalse)
 import Utils
 
 {-# INLINEABLE sigPolicyTraceIfFalse #-}
@@ -74,6 +75,9 @@ mkSignaturePolicy sett pkh ctx =
     validAccountValue :: Bool
     validAccountValue = txOutValue accountOutput == sigValue <> fees
 
+    init :: AccountDatum
+    init = initDatum (ownCurrencySymbol ctx) (casTickets sett)
+
     validAccountDatum :: Bool
     validAccountDatum =
       accountDatum == initDatum (ownCurrencySymbol ctx) (casTickets sett)
@@ -86,3 +90,9 @@ signaturePolicy sett =
 
 signatureCurrencySymbol :: AccountSettings -> CurrencySymbol
 signatureCurrencySymbol = scriptCurrencySymbol . signaturePolicy
+
+signaturePlutusScript :: AccountSettings -> Script
+signaturePlutusScript = unMintingPolicyScript . signaturePolicy
+
+signatureValidator :: AccountSettings -> Validator
+signatureValidator = Validator . signaturePlutusScript

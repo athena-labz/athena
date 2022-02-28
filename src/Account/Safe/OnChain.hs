@@ -18,6 +18,7 @@ import Account
 import Ledger
 import Ledger.Typed.Scripts as Scripts hiding (validatorHash)
 import Ledger.Value
+import qualified Prelude
 import qualified PlutusTx
 import PlutusTx.Prelude
 
