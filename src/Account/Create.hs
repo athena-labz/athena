@@ -38,10 +38,10 @@ sigPolicyTraceError msg = traceError ("Sig Policy - " <> msg)
 {-# INLINEABLE mkSignaturePolicy #-}
 mkSignaturePolicy :: AccountSettings -> PubKeyHash -> ScriptContext -> Bool
 mkSignaturePolicy sett pkh ctx =
-  traceIfFalse "1" (txSignedBy info pkh)
-    && validMinting
-    && validAccountValue
-    && validAccountDatum
+  traceIfFalse "invalid signature" (txSignedBy info pkh)
+    && traceIfFalse "invalid minting" validMinting
+    && traceIfFalse "invalid account value" validAccountValue
+    && traceIfFalse "invalid account datum" validAccountDatum
   where
     -- The basic information about this transaction
     info :: TxInfo

@@ -35,7 +35,9 @@ mkContractValidator ::
   CurrencySymbol ->
   ScriptContext ->
   Bool
-mkContractValidator dat tkt ctx = validTicket' && ticketPresent
+mkContractValidator dat tkt ctx =
+  traceIfFalse "invalid ticket" validTicket'
+    && traceIfFalse "ticket not present" ticketPresent
   where
     ownInput :: TxOut
     ownInput = case findOwnInput ctx of
