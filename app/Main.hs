@@ -39,18 +39,18 @@ import Contract
 import Deploy
 
 main :: IO ()
-main = do
-  _ <- writeCreateContractValidator
+main = writeValidators
+  
+writeValidators :: IO ()
+writeValidators = do
+  result1 <- writeAccountValidator
+  result2 <- writeCreateAccountValidator
+  result3 <- writeContractValidator
+  result4 <- writeCreateContractValidator
+  result5 <- writeSignContractValidator
+  result6 <- writeRaiseDisputeValidator
+  result7 <- writeResolveDisputeValidator
   print "cool"
--- main = do
---   result1 <- writeAccountValidator
---   result2 <- writeCreateAccountValidator
---   result3 <- writeContractValidator
---   result4 <- writeCreateContractValidator
---   result5 <- writeSignContractValidator
---   result6 <- writeRaiseDisputeValidator
---   result7 <- writeResolveDisputeValidator
---   print "cool"
 
 initAccountDatum :: IO ()
 initAccountDatum = do

@@ -234,7 +234,7 @@ writeContractValidator = writeValidator "testnet/contract.plutus" $ contractVali
 -- validator being created is different ????????????/
 writeCreateContractValidator :: IO (Either (FileError ()) ())
 writeCreateContractValidator =
-    writeValidator "testnet/create-contract-wth.plutus" $ createContractValidator sampleContractSettings
+    writeValidator "testnet/create-contract.plutus" $ createContractValidator sampleContractSettings
 
 writeNFTPolicy :: IO ()
 writeNFTPolicy =
