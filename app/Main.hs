@@ -39,24 +39,18 @@ import Contract
 import Deploy
 
 main :: IO ()
-main = writeRedeemer
+main = do
+  _ <- writeCreateContractValidator
+  print "cool"
 -- main = do
---   res <- readAssetClass "testnet/asset-class.json"
---   case res of
---     Left _ -> print "ahm?"
---     Right ac -> print ac
--- main = do
---   res <- readAccountDatum
---   case res of
---     Left _ -> print "what?"
---     Right ad -> print $ adCAS ad
--- main = writeCreateContractRedeemer
--- main = do
---   result <- writeMintNFT
---   case result of
---     Right () -> print "cool"
---     _ -> print "not cool"
--- main = writeCostingScripts
+--   result1 <- writeAccountValidator
+--   result2 <- writeCreateAccountValidator
+--   result3 <- writeContractValidator
+--   result4 <- writeCreateContractValidator
+--   result5 <- writeSignContractValidator
+--   result6 <- writeRaiseDisputeValidator
+--   result7 <- writeResolveDisputeValidator
+--   print "cool"
 
 initAccountDatum :: IO ()
 initAccountDatum = do
@@ -111,7 +105,7 @@ writeCostingScripts = do
       -- Note: Here you can use any trace you wish.
       -- trace  = createAccountExample
       -- trace = resolveDisputeExample
-      trace = mintNFTExample
+      trace = signContractExample
   (totalSize, exBudget) <- writeScriptsTo config "script" trace (abstractConfig [1..10])
   putStrLn $ "Total size = " <> show totalSize
   putStrLn $ "ExBudget = " <> show exBudget

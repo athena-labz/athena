@@ -20,6 +20,7 @@ import Contract.Accuse
 import Contract.Create
 import Contract.Safe.OffChain
 import Contract.Sign
+import Contract.Mediate
 import Control.Monad (void)
 import Control.Monad.Freer.Extras as Extras (logError, logInfo)
 import Data.Default (Default (..))
@@ -62,12 +63,8 @@ createAccountExample = do
   let alice :: Wallet
       alice = knownWallet 1
 
-      tkts :: [AssetClass]
-      tkts =
-        [ assetClass
-            (createContractCurrencySymbol sampleContractSettings)
-            "create-contract"
-        ]
+      tkts :: [CurrencySymbol]
+      tkts = [(createContractCurrencySymbol sampleContractSettings)]
 
   aHdr <- activateContractWallet alice accountEndpoints
 
@@ -81,12 +78,9 @@ createContractExample = do
       alice = knownWallet 1
       judge = knownWallet 7
 
-      tkts :: [AssetClass]
+      tkts :: [CurrencySymbol]
       tkts =
-        [ assetClass
-            (createContractCurrencySymbol sampleContractSettings)
-            "create-contract"
-        ]
+        [(createContractCurrencySymbol sampleContractSettings)]
 
   createAccountExample
 
@@ -99,7 +93,7 @@ createContractExample = do
       sampleContractSettings
       ( sampleContractCore
           (unPaymentPubKeyHash $ paymentPubKeyHash $ mockWalletPaymentPubKey alice)
-          0
+          10_000_000
           [pubKeyHashAddress (paymentPubKeyHash $ mockWalletPaymentPubKey judge) Nothing]
           []
       )
@@ -113,14 +107,10 @@ signContractExample = do
       bob = knownWallet 2
       judge = knownWallet 7
 
-      tkts :: [AssetClass]
+      tkts :: [CurrencySymbol]
       tkts =
-        [ assetClass
-            (createContractCurrencySymbol sampleContractSettings)
-            "create-contract",
-          assetClass
-            (signContractCurrencySymbol sampleContractSettings)
-            "sign-contract"
+        [ (createContractCurrencySymbol sampleContractSettings),
+          (signContractCurrencySymbol sampleContractSettings)
         ]
 
   aHdr <- activateContractWallet alice accountEndpoints
@@ -141,9 +131,9 @@ signContractExample = do
       sampleContractSettings
       ( sampleContractCore
           (unPaymentPubKeyHash $ paymentPubKeyHash $ mockWalletPaymentPubKey alice)
-          0
+          10_000_000
           [pubKeyHashAddress (paymentPubKeyHash $ mockWalletPaymentPubKey judge) Nothing]
-          []
+          tkts
       )
 
   void $ Emulator.waitNSlots 1
@@ -168,17 +158,11 @@ raiseDisputeExample = do
       bob = knownWallet 2
       judge = knownWallet 7
 
-      tkts :: [AssetClass]
+      tkts :: [CurrencySymbol]
       tkts =
-        [ assetClass
-            (createContractCurrencySymbol sampleContractSettings)
-            "create-contract",
-          assetClass
-            (signContractCurrencySymbol sampleContractSettings)
-            "sign-contract",
-          assetClass
-            (raiseDisputeCurrencySymbol sampleContractSettings)
-            "raise-dispute"
+        [ (createContractCurrencySymbol sampleContractSettings),
+          (signContractCurrencySymbol sampleContractSettings),
+          (raiseDisputeCurrencySymbol sampleContractSettings)
         ]
 
   alcAccHnd <- activateContractWallet alice accountEndpoints
@@ -199,9 +183,9 @@ raiseDisputeExample = do
       sampleContractSettings
       ( sampleContractCore
           (unPaymentPubKeyHash $ paymentPubKeyHash $ mockWalletPaymentPubKey alice)
-          0
+          10_000_000
           [pubKeyHashAddress (paymentPubKeyHash $ mockWalletPaymentPubKey judge) Nothing]
-          []
+          tkts
       )
 
   void $ Emulator.waitNSlots 1
@@ -234,20 +218,12 @@ resolveDisputeExample = do
       bob = knownWallet 2
       judge = knownWallet 7
 
-      tkts :: [AssetClass]
+      tkts :: [CurrencySymbol]
       tkts =
-        [ assetClass
-            (createContractCurrencySymbol sampleContractSettings)
-            "create-contract",
-          assetClass
-            (signContractCurrencySymbol sampleContractSettings)
-            "sign-contract",
-          assetClass
-            (raiseDisputeCurrencySymbol sampleContractSettings)
-            "raise-dispute",
-          assetClass
-            (raiseDisputeCurrencySymbol sampleContractSettings)
-            "resolve-dispute"
+        [ (createContractCurrencySymbol sampleContractSettings),
+          (signContractCurrencySymbol sampleContractSettings),
+          (raiseDisputeCurrencySymbol sampleContractSettings),
+          (resolveDisputeCurrencySymbol sampleContractSettings)
         ]
 
   alcAccHnd <- activateContractWallet alice accountEndpoints
@@ -269,7 +245,7 @@ resolveDisputeExample = do
       sampleContractSettings
       ( sampleContractCore
           (unPaymentPubKeyHash $ paymentPubKeyHash $ mockWalletPaymentPubKey alice)
-          0
+          10_000_000
           [pubKeyHashAddress (paymentPubKeyHash $ mockWalletPaymentPubKey judge) Nothing]
           tkts
       )
@@ -292,7 +268,7 @@ resolveDisputeExample = do
         alcCtrHnd
         sampleContractSettings
         (unPaymentPubKeyHash $ paymentPubKeyHash $ mockWalletPaymentPubKey bob)
-        5
+        50
         nft
 
       void $ Emulator.waitNSlots 1

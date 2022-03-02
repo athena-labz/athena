@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -30,9 +31,9 @@ import qualified Prelude
 import Utils
 
 data ContractSettings = ContractSettings
-  { ccsAccValHash :: ValidatorHash,
-    ccsCtrValHash :: ValidatorHash,
-    ccsToken :: AssetClass
+  { ccsAccValHash :: !ValidatorHash,
+    ccsCtrValHash :: !ValidatorHash,
+    ccsToken :: !AssetClass
   }
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
@@ -142,10 +143,10 @@ PlutusTx.unstableMakeIsData ''Action
 PlutusTx.makeLift ''Action
 
 data Accusation = Accusation
-  { aAccuser :: PubKeyHash,
-    aAccused :: PubKeyHash,
-    aTime :: POSIXTime,
-    aDeadline :: POSIXTime
+  { aAccuser :: !PubKeyHash,
+    aAccused :: !PubKeyHash,
+    aTime :: !POSIXTime,
+    aDeadline :: !POSIXTime
   }
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
@@ -158,18 +159,18 @@ PlutusTx.unstableMakeIsData ''Accusation
 PlutusTx.makeLift ''Accusation
 
 data ContractDatum = ContractDatum
-  { cdSigSymbol :: CurrencySymbol,
-    cdRelationType :: RelationType,
-    cdPrivacyType :: PrivacyType,
-    cdPublisher :: PubKeyHash,
-    cdCollateral :: Value, -- Must be positive
-    cdTermsHash :: BuiltinByteString,
-    cdJudges :: [Address],
-    cdAccusations :: [Accusation],
-    cdResolutions :: [(Accusation, BuiltinByteString)],
-    cdRoles :: Integer, -- The maximum role index
-    cdRoleMap :: PlutusMap.Map PubKeyHash Integer,
-    cdTickets :: [AssetClass]
+  { cdSigSymbol :: !CurrencySymbol,
+    cdRelationType :: !RelationType,
+    cdPrivacyType :: !PrivacyType,
+    cdPublisher :: !PubKeyHash,
+    cdCollateral :: !Value, -- Must be positive
+    cdTermsHash :: !BuiltinByteString,
+    cdJudges :: ![Address],
+    cdAccusations :: ![Accusation],
+    cdResolutions :: ![(Accusation, BuiltinByteString)],
+    cdRoles :: !Integer, -- The maximum role index
+    cdRoleMap :: !(PlutusMap.Map PubKeyHash Integer),
+    cdTickets :: ![CurrencySymbol]
   }
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
@@ -285,7 +286,7 @@ data ContractCore = ContractCore
     ccJudges :: [Address],
     ccRoles :: Integer,
     ccRoleMap :: PlutusMap.Map PubKeyHash Integer,
-    ccTickets :: [AssetClass]
+    ccTickets :: [CurrencySymbol]
   }
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 

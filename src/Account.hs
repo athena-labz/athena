@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -31,10 +32,10 @@ import Utils
 import qualified Prelude
 
 data AccountSettings = AccountSettings
-  { casAccValHash :: ValidatorHash,
-    casToken :: AssetClass,
-    casEntranceFee :: Integer,
-    casTickets :: [AssetClass]
+  { casAccValHash :: !ValidatorHash,
+    casToken :: !AssetClass,
+    casEntranceFee :: !Integer,
+    casTickets :: ![CurrencySymbol]
   }
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, ToSchema, Prelude.Eq)
 
@@ -49,7 +50,7 @@ data AccountDatum = AccountDatum
   { adCAS :: !Integer,
     adContracts :: ![AssetClass],
     adSigSymbol :: !CurrencySymbol,
-    adTickets :: ![AssetClass]
+    adTickets :: ![CurrencySymbol]
   }
   deriving (Prelude.Show, Prelude.Eq)
 
@@ -66,12 +67,12 @@ findAccountDatum o f = do
   PlutusTx.fromBuiltinData d
 
 data AccountInfo = AccountInfo
-  { aiSig :: Integer,
-    aiFees :: Integer,
-    aiCAS :: Integer,
-    aiContracts :: [AssetClass],
-    aiSigSymbol :: CurrencySymbol,
-    aiTickets :: [AssetClass]
+  { aiSig :: !Integer,
+    aiFees :: !Integer,
+    aiCAS :: !Integer,
+    aiContracts :: ![AssetClass],
+    aiSigSymbol :: !CurrencySymbol,
+    aiTickets :: ![CurrencySymbol]
   }
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
@@ -84,7 +85,7 @@ instance Eq AccountInfo where
 {-# INLINEABLE initDatum #-}
 initDatum ::
   CurrencySymbol ->
-  [AssetClass] ->
+  [CurrencySymbol] ->
   AccountDatum
 initDatum cs tkts =
   AccountDatum

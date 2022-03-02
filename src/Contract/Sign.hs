@@ -39,13 +39,13 @@ mkSignContractPolicy ::
   ScriptContext ->
   Bool
 mkSignContractPolicy sett (pkh, role, nft) ctx =
-  traceIfFalse "Sign Contract - Invalid ticket produced" (validTicket ctx "sign-contract" 2)
-    && traceIfFalse "Sign Contract - User not allowed" userAllowed
-    && traceIfFalse "Sign Contract - Missing signature" (txSignedBy info pkh)
-    && traceIfFalse "Sign Contract - Invalid account datum" validAccountDatum
-    && traceIfFalse "Sign Contract - Invalid account value" validAccountValue
-    && traceIfFalse "Sign Contract - Invalid contract datum" validContractDatum
-    && traceIfFalse "Sign Contract - Invalid contract value" validContractValue
+  traceIfFalse "Invalid ticket produced" (validTicket ctx "sign-contract" 2)
+    && traceIfFalse "User not allowed" userAllowed
+    && traceIfFalse "Missing signature" (txSignedBy info pkh)
+    && traceIfFalse "Invalid account datum" validAccountDatum
+    && traceIfFalse "Invalid account value" validAccountValue
+    && traceIfFalse "Invalid contract datum" validContractDatum
+    && traceIfFalse "Invalid contract value" validContractValue
   where
     info :: TxInfo
     info = scriptContextTxInfo ctx
@@ -53,42 +53,42 @@ mkSignContractPolicy sett (pkh, role, nft) ctx =
     accountInput :: TxOut
     accountInput = case strictFindInputWithValHash (ccsAccValHash sett) info of
       Just o -> o
-      Nothing -> traceError "Create Contract - Account input not found"
+      Nothing -> traceError "Account input not found"
 
     accountOutput :: TxOut
     accountOutput = case strictFindOutputWithValHash (ccsAccValHash sett) info of
       Just o -> o
-      Nothing -> traceError "Create Contract - Account input not found"
+      Nothing -> traceError "Account input not found"
 
     inputAccountDatum :: AccountDatum
     inputAccountDatum = case findAccountDatum accountInput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Create Contract - Account input datum not found"
+      Nothing -> traceError "Account input datum not found"
 
     outputAccountDatum :: AccountDatum
     outputAccountDatum = case findAccountDatum accountOutput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Create Contract - Account output datum not found"
+      Nothing -> traceError "Account output datum not found"
 
     contractInput :: TxOut
     contractInput = case strictFindInputWithValHash (ccsCtrValHash sett) info of
       Just o -> o
-      Nothing -> traceError "Sign Contract - Contract input not found"
+      Nothing -> traceError "Contract input not found"
 
     contractOutput :: TxOut
     contractOutput = case strictFindOutputWithValHash (ccsCtrValHash sett) info of
       Just o -> o
-      Nothing -> traceError "Sign Contract - Contract output not found"
+      Nothing -> traceError "Contract output not found"
 
     inputContractDatum :: ContractDatum
     inputContractDatum = case findContractDatum contractInput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Sign Contract - Contract input datum not found"
+      Nothing -> traceError "Contract input datum not found"
 
     outputContractDatum :: ContractDatum
     outputContractDatum = case findContractDatum contractOutput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Sign Contract - Contract output datum not found"
+      Nothing -> traceError "Contract output datum not found"
 
     sig :: AssetClass
     sig = assetClass (cdSigSymbol inputContractDatum) (parsePubKeyHash pkh)

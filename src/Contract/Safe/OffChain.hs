@@ -159,7 +159,7 @@ createContract aSett cSett cCore = do
             tktVal
             Haskell.<> Constraints.mustSpendScriptOutput
               aRef
-              (Redeemer $ PlutusTx.toBuiltinData ticket)
+              (Redeemer $ PlutusTx.toBuiltinData tktSymbol)
             Haskell.<> Constraints.mustPayToOtherScript
               accountValidatorHash
               (Datum $ PlutusTx.toBuiltinData aDatNew)
@@ -187,6 +187,8 @@ signContract aSett cSett role nft = do
 
   case (m, m') of
     (Just (aRef, aOut, aDat), Just (cRef, cOut, cDat)) -> do
+      logInfo @ContractDatum cDat
+      logInfo @CurrencySymbol tktSymbol
       -- Submits the transaction to the blockchain
       void $ submitTxConstraintsWith @AccountType lookups tx
 
@@ -229,10 +231,10 @@ signContract aSett cSett role nft = do
             (tktVal <> tktVal)
             Haskell.<> Constraints.mustSpendScriptOutput
               aRef
-              (Redeemer $ PlutusTx.toBuiltinData ticket)
+              (Redeemer $ PlutusTx.toBuiltinData tktSymbol)
             Haskell.<> Constraints.mustSpendScriptOutput
               cRef
-              (Redeemer $ PlutusTx.toBuiltinData ticket)
+              (Redeemer $ PlutusTx.toBuiltinData tktSymbol)
             Haskell.<> Constraints.mustPayToOtherScript
               accountValidatorHash
               (Datum $ PlutusTx.toBuiltinData aOutDat)
@@ -299,7 +301,7 @@ raiseDispute cSett acd daysToDln nft = do
             tktVal
             Haskell.<> Constraints.mustSpendScriptOutput
               cRef
-              (Redeemer $ PlutusTx.toBuiltinData ticket)
+              (Redeemer $ PlutusTx.toBuiltinData tktSymbol)
             Haskell.<> Constraints.mustPayToOtherScript
               contractValidatorHash
               (Datum $ PlutusTx.toBuiltinData cOutDat)
@@ -317,11 +319,16 @@ resolveDispute cSett verdict nft = do
   let pkh :: PubKeyHash
       pkh = unPaymentPubKeyHash pmtPkh
 
+  time <- Contract.currentTime
+  Contract.logInfo @POSIXTime time
+
   m <- findContract nft
 
   case m of
     Nothing -> logError @Haskell.String "Failed to resolve dispute: contract not found"
     Just (cRef, cOut, cDat) -> do
+      Contract.logInfo @POSIXTime dln
+      
       -- Submits the transaction to the blockchain
       void $ submitTxConstraintsWith @ContractType lookups tx
 
@@ -346,7 +353,7 @@ resolveDispute cSett verdict nft = do
         lookups :: ScriptLookups ContractType
         lookups =
           Constraints.unspentOutputs (HaskellMap.fromList [(cRef, cOut)])
-            Haskell.<> Constraints.mintingPolicy (raiseDisputePolicy cSett)
+            Haskell.<> Constraints.mintingPolicy (resolveDisputePolicy cSett)
             Haskell.<> Constraints.otherScript contractValidator
 
         tx :: TxConstraints (RedeemerType ContractType) (DatumType ContractType)
@@ -356,7 +363,7 @@ resolveDispute cSett verdict nft = do
             tktVal
             Haskell.<> Constraints.mustSpendScriptOutput
               cRef
-              (Redeemer $ PlutusTx.toBuiltinData ticket)
+              (Redeemer $ PlutusTx.toBuiltinData tktSymbol)
             Haskell.<> Constraints.mustPayToOtherScript
               contractValidatorHash
               (Datum $ PlutusTx.toBuiltinData cOutDat)
@@ -373,7 +380,7 @@ contractEndpoints =
   forever $
     handleError logError $
       awaitPromise $
-        createContract' `select` signContract' `select` raiseDispute'
+        createContract' `select` signContract' `select` raiseDispute' `select` resolveDispute'
   where
     createContract' = endpoint @"create-contract" $
       \(aSett, cSett, cDat) -> createContract aSett cSett cDat

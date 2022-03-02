@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -37,10 +38,10 @@ sigPolicyTraceError msg = traceError ("Sig Policy - " <> msg)
 {-# INLINEABLE mkSignaturePolicy #-}
 mkSignaturePolicy :: AccountSettings -> PubKeyHash -> ScriptContext -> Bool
 mkSignaturePolicy sett pkh ctx =
-  sigPolicyTraceIfFalse "Transaction not signed by public key" (txSignedBy info pkh)
-    && sigPolicyTraceIfFalse "Invalid token name or amount" validMinting
-    && sigPolicyTraceIfFalse "Invalid account value" validAccountValue
-    && sigPolicyTraceIfFalse "Invalid account datum" validAccountDatum
+  traceIfFalse "1" (txSignedBy info pkh)
+    && validMinting
+    && validAccountValue
+    && validAccountDatum
   where
     -- The basic information about this transaction
     info :: TxInfo
@@ -53,7 +54,6 @@ mkSignaturePolicy sett pkh ctx =
     validMinting = case flattenValue (txInfoMint info) of
       [(cs, tn, amt)] ->
         cs == ownCurrencySymbol ctx && tn == expectedTokenName && amt == 100
-      _ -> False
 
     sigValue :: Value
     sigValue = singleton (ownCurrencySymbol ctx) expectedTokenName 100
@@ -65,12 +65,10 @@ mkSignaturePolicy sett pkh ctx =
     accountOutput :: TxOut
     accountOutput = case strictFindOutputWithValHash (casAccValHash sett) info of
       Just o -> o
-      Nothing -> sigPolicyTraceError "Unique account output missing"
 
     accountDatum :: AccountDatum
     accountDatum = case findAccountDatum accountOutput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> sigPolicyTraceError "Datum not found"
 
     validAccountValue :: Bool
     validAccountValue = txOutValue accountOutput == sigValue <> fees

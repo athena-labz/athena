@@ -29,7 +29,7 @@ import PlutusTx.Prelude
 adaAssetClass :: AssetClass
 adaAssetClass = assetClass adaSymbol adaToken
 
-sampleAccountSettings :: [AssetClass] -> AccountSettings
+sampleAccountSettings :: [CurrencySymbol] -> AccountSettings
 sampleAccountSettings tkts =
   AccountSettings
     { casAccValHash = accountValidatorHash,
@@ -50,7 +50,7 @@ sampleContractCore ::
   PubKeyHash ->
   Integer ->
   [Address] ->
-  [AssetClass] ->
+  [CurrencySymbol] ->
   ContractCore
 sampleContractCore pkh amt jdgs tkts =
   ContractCore

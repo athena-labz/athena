@@ -32,39 +32,33 @@ import qualified Prelude
 {-# INLINEABLE mkContractValidator #-}
 mkContractValidator ::
   ContractDatum ->
-  AssetClass ->
+  CurrencySymbol ->
   ScriptContext ->
   Bool
-mkContractValidator dat tkt ctx =
-  traceIfFalse "Contract Safe - Invalid ticket" validTicket'
-    && traceIfFalse "Contract Safe - Ticket not present" ticketPresent
+mkContractValidator dat tkt ctx = validTicket' && ticketPresent
   where
     ownInput :: TxOut
     ownInput = case findOwnInput ctx of
-      Nothing -> traceError "Contract Safe - Input not found"
       Just o -> txInInfoResolved o
     
     ownOutput :: TxOut
     ownOutput = case getContinuingOutputs ctx of
       [o] -> o
-      _ -> traceError "Contract Safe - Own unique output not found"
     
     validTicket' :: Bool
     validTicket' = tkt `elem` (cdTickets dat)
 
     ticketPresent :: Bool
     ticketPresent =
-      ( assetClassValueOf
-          (txOutValue ownOutput <> negate (txOutValue ownInput))
-          tkt
-      )
-        == 1
+      any
+        (\(cs, _, _) -> cs == tkt)
+        (flattenValue (txOutValue ownOutput <> negate (txOutValue ownInput)))
 
 data ContractType
 
 instance Scripts.ValidatorTypes ContractType where
   type DatumType ContractType = ContractDatum
-  type RedeemerType ContractType = AssetClass
+  type RedeemerType ContractType = CurrencySymbol
 
 typedContractValidator :: Scripts.TypedValidator ContractType
 typedContractValidator =
@@ -72,7 +66,7 @@ typedContractValidator =
     $$(PlutusTx.compile [||mkContractValidator||])
     $$(PlutusTx.compile [||wrap||])
   where
-    wrap = Scripts.wrapValidator @ContractDatum @AssetClass
+    wrap = Scripts.wrapValidator @ContractDatum @CurrencySymbol
 
 contractValidator :: Validator
 contractValidator = Scripts.validatorScript typedContractValidator

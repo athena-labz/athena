@@ -226,46 +226,39 @@ writeAccountValidator = writeValidator "testnet/account.plutus" $ accountValidat
 
 writeCreateAccountValidator :: IO (Either (FileError ()) ())
 writeCreateAccountValidator =
-    writeValidator "testnet/create-account.plutus"
-        $ signatureValidator (sampleAccountSettings tkts)
+    writeValidator "testnet/create-account.plutus" $ signatureValidator (sampleAccountSettings tkts)
 
 writeContractValidator :: IO (Either (FileError ()) ())
 writeContractValidator = writeValidator "testnet/contract.plutus" $ contractValidator
 
+-- validator being created is different ????????????/
 writeCreateContractValidator :: IO (Either (FileError ()) ())
 writeCreateContractValidator =
-    writeValidator "testnet/create-contract.plutus"
-        $ createContractValidator sampleContractSettings
+    writeValidator "testnet/create-contract-wth.plutus" $ createContractValidator sampleContractSettings
+
+writeNFTPolicy :: IO ()
+writeNFTPolicy =
+    writeJSON "testnet/nft-policy.json" $ nftCurrencySymbol 16
 
 writeSignContractValidator :: IO (Either (FileError ()) ())
 writeSignContractValidator =
-    writeValidator "testnet/sign-contract.plutus"
-        $ signContractValidator sampleContractSettings
+    writeValidator "testnet/sign-contract.plutus" $ signContractValidator sampleContractSettings
 
 writeRaiseDisputeValidator :: IO (Either (FileError ()) ())
 writeRaiseDisputeValidator =
-    writeValidator "testnet/raise-dispute.plutus"
-        $ raiseDisputeValidator sampleContractSettings
+    writeValidator "testnet/raise-dispute.plutus" $ raiseDisputeValidator sampleContractSettings
 
 writeResolveDisputeValidator :: IO (Either (FileError ()) ())
 writeResolveDisputeValidator =
-    writeValidator "testnet/resolve-dispute.plutus"
-        $ resolveDisputeValidator sampleContractSettings
+    writeValidator "testnet/resolve-dispute.plutus" $ resolveDisputeValidator sampleContractSettings
 
-tkts :: [AssetClass]
+tkts :: [CurrencySymbol]
 tkts =
-    [ assetClass
-        (createContractCurrencySymbol sampleContractSettings)
-        "create-contract",
-    assetClass
-        (signContractCurrencySymbol sampleContractSettings)
-        "sign-contract",
-    assetClass
-        (raiseDisputeCurrencySymbol sampleContractSettings)
-        "raise-dispute",
-    assetClass
-        (raiseDisputeCurrencySymbol sampleContractSettings)
-        "resolve-dispute"
+    [   
+        (createContractCurrencySymbol sampleContractSettings),
+        (signContractCurrencySymbol sampleContractSettings),
+        (raiseDisputeCurrencySymbol sampleContractSettings),
+        (resolveDisputeCurrencySymbol sampleContractSettings)
     ]
 
 ctr1 :: AssetClass

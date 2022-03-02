@@ -61,7 +61,6 @@ findOutputWithValHash vh info = find predicate (txInfoOutputs info)
 strictFindOutputWithValHash :: ValidatorHash -> TxInfo -> Maybe TxOut
 strictFindOutputWithValHash vh info = case filter predicate (txInfoOutputs info) of
   [o] -> Just o
-  _ -> Nothing
   where
     predicate (TxOut addr _ _) = toValidatorHash addr == Just vh
 
