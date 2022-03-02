@@ -38,57 +38,7 @@ mkResolveDisputePolicy ::
   (PubKeyHash, BuiltinByteString, POSIXTime) ->
   ScriptContext ->
   Bool
-mkResolveDisputePolicy sett (pkh, vdt, dln) ctx =
-  traceIfFalse "Resolve Dispute - Invalid ticket produced" (validTicket ctx ticketName 1)
-    && traceIfFalse "Resolve Dispute - User not allowed" userAllowed
-    && traceIfFalse "Resolve Dispute - Missing signature" (txSignedBy info pkh)
-    && traceIfFalse "Resolve Dispute - Invalid deadline" validDeadline
-    && traceIfFalse "Resolve Dispute - Deadline passed" ((to dln) `contains` (txInfoValidRange info))
-    && traceIfFalse "Resolve Dispute - Invalid contract datum" validContractDatum
-    && traceIfFalse "Resolve Dispute - Invalid contract value" validContractValue
-  where
-    info :: TxInfo
-    info = scriptContextTxInfo ctx
-
-    contractInput :: TxOut
-    contractInput = case strictFindInputWithValHash (ccsCtrValHash sett) info of
-      Just o -> o
-      Nothing -> traceError "Resolve Dispute - Contract input not found"
-
-    contractOutput :: TxOut
-    contractOutput = case strictFindOutputWithValHash (ccsCtrValHash sett) info of
-      Just o -> o
-      Nothing -> traceError "Resolve Dispute - Contract output not found"
-
-    inputContractDatum :: ContractDatum
-    inputContractDatum = case findContractDatum contractInput (`findDatum` info) of
-      Just dat -> dat
-      Nothing -> traceError "Resolve Dispute - Contract input datum not found"
-
-    outputContractDatum :: ContractDatum
-    outputContractDatum = case findContractDatum contractOutput (`findDatum` info) of
-      Just dat -> dat
-      Nothing -> traceError "Resolve Dispute - Contract output datum not found"
-
-    -- TODO: In the future scripts should also be allowed to be judges
-    userAllowed :: Bool
-    userAllowed =
-      currentJudge inputContractDatum
-        == Just (pubKeyHashAddress (PaymentPubKeyHash pkh) Nothing)
-
-    validDeadline :: Bool
-    validDeadline = dln == aDeadline (last (cdAccusations inputContractDatum))
-
-    validContractDatum :: Bool
-    validContractDatum =
-      outputContractDatum == resolveDisputeInContract vdt inputContractDatum
-
-    validContractValue :: Bool
-    validContractValue =
-      txOutValue contractOutput
-        == ( txOutValue contractInput
-               <> singleton (ownCurrencySymbol ctx) (TokenName ticketName) 1
-           )
+mkResolveDisputePolicy sett (pkh, vdt, dln) ctx = True
 
 resolveDisputePolicy :: ContractSettings -> Scripts.MintingPolicy
 resolveDisputePolicy sett =
