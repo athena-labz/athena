@@ -56,10 +56,9 @@ sampleContractCore pkh amt jdgs tkts =
   ContractCore
     { ccRelationType = RT_Distributed,
       ccPrivacyType = PT_Public,
-      ccCollateral = lovelaceValueOf amt,
       ccTermsHash = "terms-hash",
       ccJudges = jdgs,
-      ccRoles = 0,
+      ccRoles = PlutusMap.fromList [(0, lovelaceValueOf amt)],
       ccRoleMap = PlutusMap.fromList [(pkh, 0)],
       ccTickets = tkts
     }

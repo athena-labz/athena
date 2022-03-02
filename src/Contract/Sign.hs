@@ -93,6 +93,11 @@ mkSignContractPolicy sett (pkh, role, nft) ctx =
     sig :: AssetClass
     sig = assetClass (cdSigSymbol inputContractDatum) (parsePubKeyHash pkh)
 
+    collateral :: Value
+    collateral = case PlutusMap.lookup role (cdRoles inputContractDatum) of
+      Just val -> val
+      Nothing -> traceError "Role does not exist"
+
     userAllowed :: Bool
     userAllowed = case cdPrivacyType inputContractDatum of
       PT_Public -> True
@@ -121,7 +126,7 @@ mkSignContractPolicy sett (pkh, role, nft) ctx =
       txOutValue contractOutput
         == ( txOutValue contractInput
                <> assetClassValue sig 1
-               <> (cdCollateral inputContractDatum)
+               <> collateral
                <> singleton (ownCurrencySymbol ctx) (TokenName ticketName) 1
            )
 

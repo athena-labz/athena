@@ -163,12 +163,11 @@ data ContractDatum = ContractDatum
     cdRelationType :: !RelationType,
     cdPrivacyType :: !PrivacyType,
     cdPublisher :: !PubKeyHash,
-    cdCollateral :: !Value, -- Must be positive
     cdTermsHash :: !BuiltinByteString,
     cdJudges :: ![Address],
     cdAccusations :: ![Accusation],
     cdResolutions :: ![(Accusation, BuiltinByteString)],
-    cdRoles :: !Integer, -- The maximum role index
+    cdRoles :: !(PlutusMap.Map Integer Value), -- The maximum role index
     cdRoleMap :: !(PlutusMap.Map PubKeyHash Integer),
     cdTickets :: ![CurrencySymbol]
   }
@@ -176,13 +175,12 @@ data ContractDatum = ContractDatum
 
 instance Eq ContractDatum where
   {-# INLINEABLE (==) #-}
-  ContractDatum s rt pt p c t j a rs r rm tk
-    == ContractDatum s' rt' pt' p' c' t' j' a' rs' r' rm' tk' =
+  ContractDatum s rt pt p t j a rs r rm tk
+    == ContractDatum s' rt' pt' p' t' j' a' rs' r' rm' tk' =
       s == s'
         && rt == rt'
         && pt == pt'
         && p == p'
-        && c == c'
         && t == t'
         && j == j'
         && a == a'
@@ -209,7 +207,6 @@ addUserToContract pkh role dat =
       cdRelationType = cdRelationType dat,
       cdPrivacyType = cdPrivacyType dat,
       cdPublisher = cdPublisher dat,
-      cdCollateral = cdCollateral dat,
       cdTermsHash = cdTermsHash dat,
       cdJudges = cdJudges dat,
       cdAccusations = cdAccusations dat,
@@ -227,7 +224,6 @@ addAccusationToContract acc dat =
       cdRelationType = cdRelationType dat,
       cdPrivacyType = cdPrivacyType dat,
       cdPublisher = cdPublisher dat,
-      cdCollateral = cdCollateral dat,
       cdTermsHash = cdTermsHash dat,
       cdJudges = cdJudges dat,
       cdAccusations = acc : cdAccusations dat,
@@ -246,7 +242,6 @@ resolveDisputeInContract vdt dat =
       cdRelationType = cdRelationType dat,
       cdPrivacyType = cdPrivacyType dat,
       cdPublisher = cdPublisher dat,
-      cdCollateral = cdCollateral dat,
       cdTermsHash = cdTermsHash dat,
       cdJudges = cdJudges dat,
       cdAccusations = init (cdAccusations dat),
@@ -261,13 +256,10 @@ resolveDisputeInContract vdt dat =
 
 {-# INLINEABLE validRoles #-}
 validRoles :: ContractDatum -> Bool
-validRoles dat = all p (PlutusMap.elems $ cdRoleMap dat)
-  where
-    maxRole :: Integer
-    maxRole = cdRoles dat
-
-    p :: Integer -> Bool
-    p n = n <= maxRole
+validRoles dat =
+  all
+    (\r -> r `elem` (PlutusMap.keys $ cdRoles dat))
+    (PlutusMap.elems $ cdRoleMap dat)
 
 -- TODO: Randomly select judge
 {-# INLINEABLE currentJudge #-}
@@ -281,10 +273,9 @@ currentJudge dat = case cdJudges dat of
 data ContractCore = ContractCore
   { ccRelationType :: RelationType,
     ccPrivacyType :: PrivacyType,
-    ccCollateral :: Value,
     ccTermsHash :: BuiltinByteString,
     ccJudges :: [Address],
-    ccRoles :: Integer,
+    ccRoles :: PlutusMap.Map Integer Value,
     ccRoleMap :: PlutusMap.Map PubKeyHash Integer,
     ccTickets :: [CurrencySymbol]
   }
@@ -292,11 +283,10 @@ data ContractCore = ContractCore
 
 instance Eq ContractCore where
   {-# INLINEABLE (==) #-}
-  ContractCore rt pt c t j r rm tk
-    == ContractCore rt' pt' c' t' j' r' rm' tk' =
+  ContractCore rt pt t j r rm tk
+    == ContractCore rt' pt' t' j' r' rm' tk' =
       rt == rt'
         && pt == pt'
-        && c == c'
         && t == t'
         && j == j'
         && r == r'

@@ -126,7 +126,6 @@ createContract aSett cSett cCore = do
               cdRelationType = ccRelationType cCore,
               cdPrivacyType = ccPrivacyType cCore,
               cdPublisher = pkh,
-              cdCollateral = ccCollateral cCore,
               cdTermsHash = ccTermsHash cCore,
               cdJudges = ccJudges cCore,
               cdAccusations = [],
@@ -136,6 +135,14 @@ createContract aSett cSett cCore = do
               cdTickets = ccTickets cCore
             }
 
+        role :: Integer
+        role = case PlutusMap.lookup pkh (cdRoleMap cDat) of
+          Just r -> r
+
+        collateral :: Value
+        collateral = case PlutusMap.lookup role (cdRoles cDat) of
+          Just val -> val
+
         aDatNew :: AccountDatum
         aDatNew = addContractToAccount aDat nft
 
@@ -143,7 +150,7 @@ createContract aSett cSett cCore = do
         tktVal = assetClassValue ticket 1
         sigVal = singleton (adSigSymbol aDat) (parsePubKeyHash pkh) 1
         aVal = txOutValue (toTxOut aOut) <> negate sigVal <> tktVal
-        cVal = sigVal <> assetClassValue nft 1 <> cdCollateral cDat
+        cVal = sigVal <> assetClassValue nft 1 <> collateral
 
         lookups :: ScriptLookups AccountType
         lookups =
@@ -155,7 +162,7 @@ createContract aSett cSett cCore = do
         tx :: TxConstraints (RedeemerType AccountType) (DatumType AccountType)
         tx =
           Constraints.mustMintValueWithRedeemer
-            (Redeemer $ PlutusTx.toBuiltinData (pkh, nft))
+            (Redeemer $ PlutusTx.toBuiltinData (pkh, role, nft))
             tktVal
             Haskell.<> Constraints.mustSpendScriptOutput
               aRef
@@ -201,6 +208,10 @@ signContract aSett cSett role nft = do
         ticket :: AssetClass
         ticket = assetClass tktSymbol "sign-contract"
 
+        collateral :: Value
+        collateral = case PlutusMap.lookup role (cdRoles cDat) of
+          Just val -> val
+
         cOutDat :: ContractDatum
         cOutDat = addUserToContract pkh role cDat
 
@@ -214,7 +225,7 @@ signContract aSett cSett role nft = do
         cVal =
           txOutValue (toTxOut cOut)
             <> sigVal
-            <> cdCollateral cDat
+            <> collateral
             <> tktVal
 
         lookups :: ScriptLookups AccountType

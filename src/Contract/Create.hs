@@ -37,10 +37,10 @@ ticketName = "create-contract"
 {-# INLINEABLE mkCreateContractPolicy #-}
 mkCreateContractPolicy ::
   ContractSettings ->
-  (PubKeyHash, AssetClass) ->
+  (PubKeyHash, Integer, AssetClass) ->
   ScriptContext ->
   Bool
-mkCreateContractPolicy sett (pkh, nft) ctx =
+mkCreateContractPolicy sett (pkh, role, nft) ctx =
   traceIfFalse "Create Contract - Invalid ticket produced" (validTicket ctx "create-contract" 1)
     && traceIfFalse "Create Contract - Missing signature" (txSignedBy info pkh)
     && traceIfFalse "Create Contract - Invalid account datum" validAccountDatum
@@ -84,6 +84,11 @@ mkCreateContractPolicy sett (pkh, nft) ctx =
     sig :: AssetClass
     sig = assetClass (adSigSymbol inputAccountDatum) (parsePubKeyHash pkh)
 
+    collateral :: Value
+    collateral = case PlutusMap.lookup role (cdRoles contractDatum) of
+      Just val -> val
+      Nothing -> traceError "Create Contract - Role does not exist"
+
     validAccountDatum :: Bool
     validAccountDatum =
       outputAccountDatum == (addContractToAccount inputAccountDatum nft)
@@ -115,7 +120,7 @@ mkCreateContractPolicy sett (pkh, nft) ctx =
       txOutValue contractOutput
         == ( assetClassValue sig 1
                <> assetClassValue nft 1
-               <> (cdCollateral contractDatum)
+               <> collateral
            )
 
 createContractPolicy :: ContractSettings -> Scripts.MintingPolicy

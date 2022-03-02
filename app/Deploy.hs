@@ -141,12 +141,11 @@ writeContractDatum = writeJSON "testnet/contract-datum.json" datum
         cdRelationType = RT_Distributed,
         cdPrivacyType = PT_Public,
         cdPublisher = "fcf9960515d2ed06acefd8c16345cbf3cf65265ca1abf3c7d26351c9",
-        cdCollateral = lovelaceValueOf 5_000_000, -- Must be positive
         cdTermsHash = "bewaretheidesofmarch",
         cdJudges = judges,
         cdAccusations = accusations,
         cdResolutions = resolutions,
-        cdRoles = 1, -- The maximum role index
+        cdRoles = PlutusMap.fromList [(0, lovelaceValueOf 5_000_000), (1, lovelaceValueOf 10_000_000)],
         cdRoleMap = rolesMap,
         cdTickets = tkts
       }
