@@ -268,7 +268,7 @@ resolveDisputeExample = do
         alcCtrHnd
         sampleContractSettings
         (unPaymentPubKeyHash $ paymentPubKeyHash $ mockWalletPaymentPubKey bob)
-        50
+        1
         nft
 
       void $ Emulator.waitNSlots 1

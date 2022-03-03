@@ -35,15 +35,16 @@ ticketName = "resolve-dispute"
 {-# INLINEABLE mkResolveDisputePolicy #-}
 mkResolveDisputePolicy ::
   ContractSettings ->
-  (PubKeyHash, BuiltinByteString, POSIXTime) ->
+  (PubKeyHash, BuiltinByteString, POSIXTime, POSIXTime) ->
   ScriptContext ->
   Bool
-mkResolveDisputePolicy sett (pkh, vdt, dln) ctx =
+mkResolveDisputePolicy sett (pkh, vdt, time, dln) ctx =
   traceIfFalse "Resolve Dispute - Invalid ticket produced" (validTicket ctx ticketName 1)
     && traceIfFalse "Resolve Dispute - User not allowed" userAllowed
     && traceIfFalse "Resolve Dispute - Missing signature" (txSignedBy info pkh)
+    && traceIfFalse "Resolve Dispute - Invalid time" (time `member` (txInfoValidRange info))
     && traceIfFalse "Resolve Dispute - Invalid deadline" validDeadline
-    && traceIfFalse "Resolve Dispute - Deadline passed" ((to dln) `contains` (txInfoValidRange info))
+    && traceIfFalse "Resolve Dispute - Deadline passed" (time `member` (to dln))
     && traceIfFalse "Resolve Dispute - Invalid contract datum" validContractDatum
     && traceIfFalse "Resolve Dispute - Invalid contract value" validContractValue
   where

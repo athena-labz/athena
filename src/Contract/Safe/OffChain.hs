@@ -370,7 +370,7 @@ resolveDispute cSett verdict nft = do
         tx :: TxConstraints (RedeemerType ContractType) (DatumType ContractType)
         tx =
           Constraints.mustMintValueWithRedeemer
-            (Redeemer $ PlutusTx.toBuiltinData (pkh, verdict, dln))
+            (Redeemer $ PlutusTx.toBuiltinData (pkh, verdict, time, dln))
             tktVal
             Haskell.<> Constraints.mustSpendScriptOutput
               cRef
