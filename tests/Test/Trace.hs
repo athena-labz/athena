@@ -123,3 +123,13 @@ resolveDisputeTrace ::
   EmulatorTrace ()
 resolveDisputeTrace h cSett vdt nft = do
   callEndpoint @"resolve-dispute" h (cSett, vdt, nft)
+
+consumeCollateralTrace ::
+  ContractHandle (Last AssetClass) ContractSchema Text ->
+  ContractSettings ->
+  Integer ->
+  Integer ->
+  AssetClass ->
+  EmulatorTrace ()
+consumeCollateralTrace h cSett perc idx nft = do
+  callEndpoint @"consume-collateral" h (cSett, perc, idx, nft)

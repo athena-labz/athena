@@ -42,6 +42,7 @@ import qualified PlutusTx.AssocMap as PlutusMap
 import PlutusTx.Prelude
 import Text.Printf (printf)
 import Utils
+import Executors.Consume
 import qualified Prelude as Haskell
 import qualified Plutus.Contract.Request as Contract
 
@@ -380,18 +381,89 @@ resolveDispute cSett verdict nft = do
               (Datum $ PlutusTx.toBuiltinData cOutDat)
               cVal
 
+consumeCollateral ::
+  ContractSettings ->
+  Integer ->
+  Integer ->
+  AssetClass ->
+  Contract (Last AssetClass) ContractSchema Text ()
+consumeCollateral cSett perc idx nft = do
+  -- The public key hash from the user who is trying to resolve a dispute
+  pmtPkh <- Contract.ownPaymentPubKeyHash
+
+  let pkh :: PubKeyHash
+      pkh = unPaymentPubKeyHash pmtPkh
+
+  m <- findContract nft
+
+  case m of
+    Nothing -> logError @Haskell.String "Failed to consume collateral: contract not found"
+    Just (cRef, cOut, cDat) -> do
+      -- Submits the transaction to the blockchain
+      void $ submitTxConstraintsWith @ContractType lookups tx
+
+      Contract.logInfo @Haskell.String "successfully consumed collateral"
+      where
+        tktSymbol :: CurrencySymbol
+        tktSymbol = consumeCollateralCurrencySymbol cSett
+
+        ticket :: AssetClass
+        ticket = assetClass tktSymbol "consume-collateral"
+
+        role :: Integer
+        role = case PlutusMap.lookup pkh (cdRoleMap cDat) of
+          Just r -> r
+
+        collateral :: Value
+        collateral = case PlutusMap.lookup role (cdRoles cDat) of
+          Just val -> val
+
+        cOutDat :: ContractDatum
+        cOutDat = removeResolutionFromContract idx cDat
+
+        tktVal, cVal :: Value
+        tktVal = assetClassValue ticket 1
+        cVal =
+          txOutValue (toTxOut cOut)
+            <> negate (percentageFromValue perc collateral)
+            <> tktVal
+
+        lookups :: ScriptLookups ContractType
+        lookups =
+          Constraints.unspentOutputs (HaskellMap.fromList [(cRef, cOut)])
+            Haskell.<> Constraints.mintingPolicy (consumeCollateralPolicy cSett)
+            Haskell.<> Constraints.otherScript contractValidator
+
+        tx :: TxConstraints (RedeemerType ContractType) (DatumType ContractType)
+        tx =
+          Constraints.mustMintValueWithRedeemer
+            (Redeemer $ PlutusTx.toBuiltinData (perc, idx))
+            tktVal
+            Haskell.<> Constraints.mustSpendScriptOutput
+              cRef
+              (Redeemer $ PlutusTx.toBuiltinData tktSymbol)
+            Haskell.<> Constraints.mustPayToOtherScript
+              contractValidatorHash
+              (Datum $ PlutusTx.toBuiltinData cOutDat)
+              cVal
+
 type ContractSchema =
   Endpoint "create-contract" (AccountSettings, ContractSettings, ContractCore)
     .\/ Endpoint "sign-contract" (AccountSettings, ContractSettings, Integer, AssetClass)
     .\/ Endpoint "raise-dispute" (ContractSettings, PubKeyHash, Integer, AssetClass)
     .\/ Endpoint "resolve-dispute" (ContractSettings, BuiltinByteString, AssetClass)
+    .\/ Endpoint "consume-collateral" (ContractSettings, Integer, Integer, AssetClass)
 
 contractEndpoints :: Contract (Last AssetClass) ContractSchema Text ()
 contractEndpoints =
   forever $
     handleError logError $
       awaitPromise $
-        createContract' `select` signContract' `select` raiseDispute' `select` resolveDispute'
+        createContract'
+          `select` signContract'
+          `select` raiseDispute'
+          `select` resolveDispute'
+          `select` consumeCollateral'
   where
     createContract' = endpoint @"create-contract" $
       \(aSett, cSett, cDat) -> createContract aSett cSett cDat
@@ -404,3 +476,6 @@ contractEndpoints =
     
     resolveDispute' = endpoint @"resolve-dispute" $
       \(cSett, verdict, nft) -> resolveDispute cSett verdict nft
+
+    consumeCollateral' = endpoint @"consume-collateral" $
+      \(cSett, perc, idx, nft) -> consumeCollateral cSett perc idx nft

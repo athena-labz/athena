@@ -18,7 +18,7 @@ module Contract where
 import Control.Monad (void)
 import Data.Aeson hiding (Value)
 import GHC.Generics
-import Ledger
+import Ledger hiding (singleton)
 import Ledger.Scripts
 import Ledger.Typed.Scripts as Scripts hiding (validatorHash)
 import Ledger.Value
@@ -254,6 +254,55 @@ resolveDisputeInContract vdt dat =
     acc :: Accusation
     acc = last (cdAccusations dat)
 
+-- TODO: Was here!!!!
+{-# INLINEABLE removeResolutionFromContract #-}
+removeResolutionFromContract :: Integer -> ContractDatum -> ContractDatum
+removeResolutionFromContract idx dat =
+  ContractDatum
+    { cdSigSymbol = cdSigSymbol dat,
+      cdRelationType = cdRelationType dat,
+      cdPrivacyType = cdPrivacyType dat,
+      cdPublisher = cdPublisher dat,
+      cdTermsHash = cdTermsHash dat,
+      cdJudges = cdJudges dat,
+      cdAccusations = cdAccusations dat,
+      cdResolutions = resolutions,
+      cdRoles = cdRoles dat,
+      cdRoleMap = cdRoleMap dat,
+      cdTickets = cdTickets dat
+    }
+  where
+    resolutions :: [(Accusation, BuiltinByteString)]
+    resolutions =
+      fst $ foldr
+        (\res (hold, idx') ->
+          if idx == idx'
+          then (res : hold, idx' + 1)
+          else (hold, idx' + 1)
+        )
+        ([], 0)
+        (cdResolutions dat)
+
+{-# INLINEABLE removeUserFromContract #-}
+removeUserFromContract :: PubKeyHash -> ContractDatum -> ContractDatum
+removeUserFromContract pkh dat =
+  ContractDatum
+    { cdSigSymbol = cdSigSymbol dat,
+      cdRelationType = cdRelationType dat,
+      cdPrivacyType = cdPrivacyType dat,
+      cdPublisher = cdPublisher dat,
+      cdTermsHash = cdTermsHash dat,
+      cdJudges = cdJudges dat,
+      cdAccusations = cdAccusations dat,
+      cdResolutions = cdResolutions dat,
+      cdRoles = cdRoles dat,
+      cdRoleMap = roleMap,
+      cdTickets = cdTickets dat
+    }
+  where
+    roleMap :: PlutusMap.Map PubKeyHash Integer
+    roleMap = PlutusMap.delete pkh (cdRoleMap dat)
+
 {-# INLINEABLE validRoles #-}
 validRoles :: ContractDatum -> Bool
 validRoles dat =
@@ -261,12 +310,19 @@ validRoles dat =
     (\r -> r `elem` (PlutusMap.keys $ cdRoles dat))
     (PlutusMap.elems $ cdRoleMap dat)
 
--- TODO: Randomly select judge
 {-# INLINEABLE currentJudge #-}
 currentJudge :: ContractDatum -> Maybe Address
 currentJudge dat = case cdJudges dat of
   [] -> Nothing
   (x : xs) -> Just x
+
+{-# INLINEABLE percentageFromValue #-}
+percentageFromValue :: Integer -> Value -> Value
+percentageFromValue prc val =
+  foldr
+    (\(cs, tn, amt) val' -> val' <> (singleton cs tn amt))
+    mempty
+    (map (\(cs, tn, amt) -> (cs, tn, (round $ (amt * prc) R.% 100))) (flattenValue val))
 
 -- What our off-chain code will actually need to create a contract.
 -- Other parameters can be derived

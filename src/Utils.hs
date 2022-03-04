@@ -23,6 +23,7 @@ import Ledger.Value
 import Plutus.ChainIndex
 import qualified PlutusTx
 import PlutusTx.Prelude
+import PlutusTx.Builtins
 
 -- Transforms a ValidatorHash into a BuiltinByteString
 {-# INLINEABLE unValidatorHash #-}
@@ -96,6 +97,22 @@ last :: [a] -> a
 last [x] = x
 last (_ : xs) = last xs
 last [] = traceError "last called with empty list"
+
+{-# INLINABLE intToBuiltinByteString #-}
+intToBuiltinByteString :: Integer -> BuiltinByteString
+intToBuiltinByteString i
+    | i == 0 = "0"
+    | i == 1 = "1"
+    | i == 2 = "2"
+    | i == 3 = "3"
+    | i == 4 = "4"
+    | i == 5 = "5"
+    | i == 6 = "6"
+    | i == 7 = "7"
+    | i == 8 = "8"
+    | i == 9 = "9"
+    | otherwise = intToBuiltinByteString (i `divideInteger` 10)
+        `appendByteString` intToBuiltinByteString (i `modInteger` 10)
 
 plutusDataToJSON :: PlutusTx.ToData a => a -> LazyByteString.ByteString
 plutusDataToJSON = encode . Shelley.scriptDataToJson Shelley.ScriptDataJsonDetailedSchema . Shelley.fromPlutusData . PlutusTx.toData

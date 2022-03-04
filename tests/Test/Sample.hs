@@ -63,6 +63,6 @@ sampleContractCore pkh amt jdgs tkts =
       ccTickets = tkts
     }
 
-{-# INLINABLE resolution #-}
-resolution :: BuiltinByteString
-resolution = "resolved"
+{-# INLINABLE sampleResolution #-}
+sampleResolution :: BuiltinByteString
+sampleResolution = "100"

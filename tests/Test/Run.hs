@@ -77,6 +77,10 @@ runRaiseDisputeExample = runEmulatorTraceIO' def (abstractConfig [1, 2]) raiseDi
 runResolveDisputeExample :: IO ()
 runResolveDisputeExample = runEmulatorTraceIO' def (abstractConfig [1, 2, 7]) resolveDisputeExample
 
+runConsumeCollateralExample :: IO ()
+runConsumeCollateralExample =
+  runEmulatorTraceIO' def (abstractConfig [1, 2, 7]) consumeCollateralExample
+
 abstractConfig :: [Integer] -> EmulatorConfig
 abstractConfig usrs =
   EmulatorConfig
