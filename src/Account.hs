@@ -26,7 +26,7 @@ import Playground.Contract (Generic, ToSchema)
 import Plutus.ChainIndex
 import qualified PlutusTx
 import qualified PlutusTx.AssocMap as PlutusMap
-import PlutusTx.Prelude (Eq, Maybe (..), Integer, (==), (&&), (.))
+import PlutusTx.Prelude
 import qualified PlutusTx.Ratio as R
 import Utils
 import qualified Prelude
@@ -125,6 +125,16 @@ addContractToAccount dat cnt =
   AccountDatum
     { adCAS = adCAS dat,
       adContracts = cnt : (adContracts dat),
+      adSigSymbol = adSigSymbol dat,
+      adTickets = adTickets dat
+    }
+
+{-# INLINEABLE removeContractFromAccount #-}
+removeContractFromAccount :: AccountDatum -> AssetClass -> AccountDatum
+removeContractFromAccount dat cnt =
+  AccountDatum
+    { adCAS = adCAS dat,
+      adContracts = filter (\cnt' -> cnt' /= cnt) (adContracts dat),
       adSigSymbol = adSigSymbol dat,
       adTickets = adTickets dat
     }

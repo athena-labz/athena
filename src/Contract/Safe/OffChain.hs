@@ -23,6 +23,7 @@ import Contract.Create
 import Contract.Safe.OnChain
 import Contract.Sign
 import Contract.Mediate
+import Contract.Quit
 import Control.Monad (forever, void)
 import qualified Data.Map as HaskellMap
 import Data.Monoid (Last (..))
@@ -424,6 +425,9 @@ consumeCollateral cSett perc idx nft = do
         collateral = case PlutusMap.lookup role (cdRoles cDat) of
           Just val -> val
 
+        consumed :: Value
+        consumed = percentageFromValue perc collateral
+
         cOutDat :: ContractDatum
         cOutDat =
           subtractFromCollateral
@@ -435,7 +439,7 @@ consumeCollateral cSett perc idx nft = do
         tktVal = assetClassValue ticket 1
         cVal =
           txOutValue (toTxOut cOut)
-            <> negate (percentageFromValue perc collateral)
+            <> negate consumed
             <> tktVal
 
         lookups :: ScriptLookups ContractType
@@ -457,12 +461,106 @@ consumeCollateral cSett perc idx nft = do
               (Datum $ PlutusTx.toBuiltinData cOutDat)
               cVal
 
+quitContract ::
+  AccountSettings ->
+  ContractSettings ->
+  AssetClass ->
+  Contract (Last AssetClass) ContractSchema Text ()
+quitContract aSett cSett nft = do
+  -- The public key hash from the user who is trying to sign a contract
+  pmtPkh <- Contract.ownPaymentPubKeyHash
+
+  let pkh :: PubKeyHash
+      pkh = unPaymentPubKeyHash pmtPkh
+
+  m <- findAccount pkh aSett
+  m' <- findContract nft
+
+  case (m, m') of
+    (Just (aRef, aOut, aDat), Just (cRef, cOut, cDat)) -> do
+      logInfo @[Accusation] (cdAccusations cDat)
+      logInfo @[(Accusation, BuiltinByteString)] (cdResolutions cDat)
+    
+      -- Submits the transaction to the blockchain
+      void $ submitTxConstraintsWith @AccountType lookups tx
+
+      Contract.logInfo @Haskell.String "successfully left contract"
+      where
+        tktSymbol, sigSymbol :: CurrencySymbol
+        tktSymbol = quitContractCurrencySymbol cSett
+        sigSymbol = signatureCurrencySymbol aSett
+
+        ticket :: AssetClass
+        ticket = assetClass tktSymbol "quit-contract"
+
+        role :: Integer
+        role = case PlutusMap.lookup pkh (cdRoleMap cDat) of
+          Just (r, _) -> r
+
+        percentage :: Integer
+        percentage = case PlutusMap.lookup pkh (cdRoleMap cDat) of
+          Just (_, p) -> p
+
+        collateral :: Value
+        collateral = case PlutusMap.lookup role (cdRoles cDat) of
+          Just val -> val
+
+        consumed :: Value
+        consumed = percentageFromValue percentage collateral
+
+        cOutDat :: ContractDatum
+        cOutDat = removeUserFromContract pkh cDat
+
+        aOutDat :: AccountDatum
+        aOutDat = removeContractFromAccount aDat nft
+
+        tktVal, sigVal, aVal, cVal :: Value
+        tktVal = assetClassValue ticket 1
+        sigVal = singleton (adSigSymbol aDat) (parsePubKeyHash pkh) 1
+        aVal = txOutValue (toTxOut aOut) <> sigVal <> tktVal
+        cVal =
+          txOutValue (toTxOut cOut)
+            <> negate sigVal
+            <> negate (assetClassValue nft 1)
+            <> negate consumed
+            <> tktVal
+
+        lookups :: ScriptLookups AccountType
+        lookups =
+          Constraints.unspentOutputs (HaskellMap.fromList [(aRef, aOut), (cRef, cOut)])
+            Haskell.<> Constraints.mintingPolicy (quitContractPolicy cSett)
+            Haskell.<> Constraints.otherScript contractValidator
+            Haskell.<> Constraints.otherScript accountValidator
+
+        tx :: TxConstraints (RedeemerType AccountType) (DatumType AccountType)
+        tx =
+          Constraints.mustMintValueWithRedeemer
+            (Redeemer $ PlutusTx.toBuiltinData (pkh, nft))
+            (tktVal <> tktVal)
+            Haskell.<> Constraints.mustSpendScriptOutput
+              aRef
+              (Redeemer $ PlutusTx.toBuiltinData tktSymbol)
+            Haskell.<> Constraints.mustSpendScriptOutput
+              cRef
+              (Redeemer $ PlutusTx.toBuiltinData tktSymbol)
+            Haskell.<> Constraints.mustPayToOtherScript
+              accountValidatorHash
+              (Datum $ PlutusTx.toBuiltinData aOutDat)
+              aVal
+            Haskell.<> Constraints.mustPayToOtherScript
+              contractValidatorHash
+              (Datum $ PlutusTx.toBuiltinData cOutDat)
+              cVal
+    _ ->
+      logError @Haskell.String "Failed to leave contract: account or contract not found"
+
 type ContractSchema =
   Endpoint "create-contract" (AccountSettings, ContractSettings, ContractCore)
     .\/ Endpoint "sign-contract" (AccountSettings, ContractSettings, Integer, AssetClass)
     .\/ Endpoint "raise-dispute" (ContractSettings, PubKeyHash, Integer, AssetClass)
     .\/ Endpoint "resolve-dispute" (ContractSettings, BuiltinByteString, AssetClass)
     .\/ Endpoint "consume-collateral" (ContractSettings, Integer, Integer, AssetClass)
+    .\/ Endpoint "quit-contract" (AccountSettings, ContractSettings, AssetClass)
 
 contractEndpoints :: Contract (Last AssetClass) ContractSchema Text ()
 contractEndpoints =
@@ -474,6 +572,7 @@ contractEndpoints =
           `select` raiseDispute'
           `select` resolveDispute'
           `select` consumeCollateral'
+          `select` quitContract'
   where
     createContract' = endpoint @"create-contract" $
       \(aSett, cSett, cDat) -> createContract aSett cSett cDat
@@ -489,3 +588,6 @@ contractEndpoints =
 
     consumeCollateral' = endpoint @"consume-collateral" $
       \(cSett, perc, idx, nft) -> consumeCollateral cSett perc idx nft
+
+    quitContract' = endpoint @"quit-contract" $
+      \(aSett, cSett, nft) -> quitContract aSett cSett nft

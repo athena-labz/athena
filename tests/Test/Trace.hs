@@ -133,3 +133,12 @@ consumeCollateralTrace ::
   EmulatorTrace ()
 consumeCollateralTrace h cSett perc idx nft = do
   callEndpoint @"consume-collateral" h (cSett, perc, idx, nft)
+
+quitContractTrace ::
+  ContractHandle (Last AssetClass) ContractSchema Text ->
+  AccountSettings ->
+  ContractSettings ->
+  AssetClass ->
+  EmulatorTrace ()
+quitContractTrace h aSett cSett nft = do
+  callEndpoint @"quit-contract" h (aSett, cSett, nft)

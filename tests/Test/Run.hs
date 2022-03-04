@@ -81,6 +81,10 @@ runConsumeCollateralExample :: IO ()
 runConsumeCollateralExample =
   runEmulatorTraceIO' def (abstractConfig [1, 2, 7]) consumeCollateralExample
 
+runQuitContractExample :: IO ()
+runQuitContractExample =
+  runEmulatorTraceIO' def (abstractConfig [1, 2, 7]) quitContractExample
+
 abstractConfig :: [Integer] -> EmulatorConfig
 abstractConfig usrs =
   EmulatorConfig

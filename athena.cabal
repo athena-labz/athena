@@ -38,6 +38,7 @@ library
                      , Contract.Create
                      , Contract.Mediate
                      , Contract.Sign
+                     , Contract.Quit
                      , Contract.Safe.OffChain
                      , Contract.Safe.OnChain
                      , Utils

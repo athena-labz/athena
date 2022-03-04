@@ -299,8 +299,8 @@ removeResolutionFromContract idx dat =
       fst $ foldr
         (\res (hold, idx') ->
           if idx == idx'
-          then (res : hold, idx' + 1)
-          else (hold, idx' + 1)
+          then (hold, idx' + 1)
+          else (res : hold, idx' + 1)
         )
         ([], 0)
         (cdResolutions dat)
