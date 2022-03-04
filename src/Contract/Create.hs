@@ -41,12 +41,12 @@ mkCreateContractPolicy ::
   ScriptContext ->
   Bool
 mkCreateContractPolicy sett (pkh, role, nft) ctx =
-  traceIfFalse "Create Contract - Invalid ticket produced" (validTicket ctx "create-contract" 1)
-    && traceIfFalse "Create Contract - Missing signature" (txSignedBy info pkh)
-    && traceIfFalse "Create Contract - Invalid account datum" validAccountDatum
-    && traceIfFalse "Create Contract - Invalid account value" validAccountValue
-    && traceIfFalse "Create Contract - Invalid contract datum" validContractDatum
-    && traceIfFalse "Create Contract - Invalid contract value" validContractValue
+  traceIfFalse "Invalid ticket produced" (validTicket ctx "create-contract" 1)
+    && traceIfFalse "Missing signature" (txSignedBy info pkh)
+    && traceIfFalse "Invalid account datum" validAccountDatum
+    && traceIfFalse "Invalid account value" validAccountValue
+    && traceIfFalse "Invalid contract datum" validContractDatum
+    && traceIfFalse "Invalid contract value" validContractValue
   where
     info :: TxInfo
     info = scriptContextTxInfo ctx
@@ -54,32 +54,26 @@ mkCreateContractPolicy sett (pkh, role, nft) ctx =
     accountInput :: TxOut
     accountInput = case strictFindInputWithValHash (ccsAccValHash sett) info of
       Just o -> o
-      Nothing -> traceError "Create Contract - Account input not found"
 
     accountOutput :: TxOut
     accountOutput = case strictFindOutputWithValHash (ccsAccValHash sett) info of
       Just o -> o
-      Nothing -> traceError "Create Contract - Account input not found"
 
     inputAccountDatum :: AccountDatum
     inputAccountDatum = case findAccountDatum accountInput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Create Contract - Account input datum not found"
 
     outputAccountDatum :: AccountDatum
     outputAccountDatum = case findAccountDatum accountOutput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Create Contract - Account output datum not found"
 
     contractOutput :: TxOut
     contractOutput = case strictFindOutputWithValHash (ccsCtrValHash sett) info of
       Just o -> o
-      Nothing -> traceError "Create Contract - Contract output not found"
 
     contractDatum :: ContractDatum
     contractDatum = case findContractDatum contractOutput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Create Contract - Contract output datum not found"
 
     sig :: AssetClass
     sig = assetClass (adSigSymbol inputAccountDatum) (parsePubKeyHash pkh)
@@ -87,7 +81,6 @@ mkCreateContractPolicy sett (pkh, role, nft) ctx =
     collateral :: Value
     collateral = case PlutusMap.lookup role (cdRoles contractDatum) of
       Just val -> val
-      Nothing -> traceError "Create Contract - Role does not exist"
 
     validAccountDatum :: Bool
     validAccountDatum =

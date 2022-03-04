@@ -53,42 +53,34 @@ mkSignContractPolicy sett (pkh, role, nft) ctx =
     accountInput :: TxOut
     accountInput = case strictFindInputWithValHash (ccsAccValHash sett) info of
       Just o -> o
-      Nothing -> traceError "Account input not found"
 
     accountOutput :: TxOut
     accountOutput = case strictFindOutputWithValHash (ccsAccValHash sett) info of
       Just o -> o
-      Nothing -> traceError "Account input not found"
 
     inputAccountDatum :: AccountDatum
     inputAccountDatum = case findAccountDatum accountInput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Account input datum not found"
 
     outputAccountDatum :: AccountDatum
     outputAccountDatum = case findAccountDatum accountOutput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Account output datum not found"
 
     contractInput :: TxOut
     contractInput = case strictFindInputWithValHash (ccsCtrValHash sett) info of
       Just o -> o
-      Nothing -> traceError "Contract input not found"
 
     contractOutput :: TxOut
     contractOutput = case strictFindOutputWithValHash (ccsCtrValHash sett) info of
       Just o -> o
-      Nothing -> traceError "Contract output not found"
 
     inputContractDatum :: ContractDatum
     inputContractDatum = case findContractDatum contractInput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Contract input datum not found"
 
     outputContractDatum :: ContractDatum
     outputContractDatum = case findContractDatum contractOutput (`findDatum` info) of
       Just dat -> dat
-      Nothing -> traceError "Contract output datum not found"
 
     sig :: AssetClass
     sig = assetClass (cdSigSymbol inputContractDatum) (parsePubKeyHash pkh)
@@ -96,7 +88,6 @@ mkSignContractPolicy sett (pkh, role, nft) ctx =
     collateral :: Value
     collateral = case PlutusMap.lookup role (cdRoles inputContractDatum) of
       Just val -> val
-      Nothing -> traceError "Role does not exist"
 
     userAllowed :: Bool
     userAllowed = case cdPrivacyType inputContractDatum of
