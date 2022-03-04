@@ -168,7 +168,7 @@ data ContractDatum = ContractDatum
     cdAccusations :: ![Accusation],
     cdResolutions :: ![(Accusation, BuiltinByteString)],
     cdRoles :: !(PlutusMap.Map Integer Value), -- The maximum role index
-    cdRoleMap :: !(PlutusMap.Map PubKeyHash Integer),
+    cdRoleMap :: !(PlutusMap.Map PubKeyHash (Integer, Integer)),
     cdTickets :: ![CurrencySymbol]
   }
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
@@ -212,7 +212,7 @@ addUserToContract pkh role dat =
       cdAccusations = cdAccusations dat,
       cdResolutions = cdResolutions dat,
       cdRoles = cdRoles dat,
-      cdRoleMap = PlutusMap.insert pkh role (cdRoleMap dat),
+      cdRoleMap = PlutusMap.insert pkh (role, 100) (cdRoleMap dat),
       cdTickets = cdTickets dat
     }
 
@@ -254,7 +254,29 @@ resolveDisputeInContract vdt dat =
     acc :: Accusation
     acc = last (cdAccusations dat)
 
--- TODO: Was here!!!!
+{-# INLINEABLE subtractFromCollateral #-}
+subtractFromCollateral :: Integer -> PubKeyHash -> ContractDatum -> ContractDatum
+subtractFromCollateral perc pkh dat =
+  ContractDatum
+    { cdSigSymbol = cdSigSymbol dat,
+      cdRelationType = cdRelationType dat,
+      cdPrivacyType = cdPrivacyType dat,
+      cdPublisher = cdPublisher dat,
+      cdTermsHash = cdTermsHash dat,
+      cdJudges = cdJudges dat,
+      cdAccusations = cdAccusations dat,
+      cdResolutions = cdResolutions dat,
+      cdRoles = cdRoles dat,
+      cdRoleMap = roleMap,
+      cdTickets = cdTickets dat
+    }
+  where
+    roleMap :: PlutusMap.Map PubKeyHash (Integer, Integer)
+    roleMap =
+      PlutusMap.mapWithKey
+        (\k (r, p) -> if k == pkh then (r, p - perc) else (r, p))
+        (cdRoleMap dat)
+
 {-# INLINEABLE removeResolutionFromContract #-}
 removeResolutionFromContract :: Integer -> ContractDatum -> ContractDatum
 removeResolutionFromContract idx dat =
@@ -300,7 +322,7 @@ removeUserFromContract pkh dat =
       cdTickets = cdTickets dat
     }
   where
-    roleMap :: PlutusMap.Map PubKeyHash Integer
+    roleMap :: PlutusMap.Map PubKeyHash (Integer, Integer)
     roleMap = PlutusMap.delete pkh (cdRoleMap dat)
 
 {-# INLINEABLE validRoles #-}
@@ -308,7 +330,7 @@ validRoles :: ContractDatum -> Bool
 validRoles dat =
   all
     (\r -> r `elem` (PlutusMap.keys $ cdRoles dat))
-    (PlutusMap.elems $ cdRoleMap dat)
+    (map fst (PlutusMap.elems $ cdRoleMap dat))
 
 {-# INLINEABLE currentJudge #-}
 currentJudge :: ContractDatum -> Maybe Address
@@ -332,7 +354,7 @@ data ContractCore = ContractCore
     ccTermsHash :: BuiltinByteString,
     ccJudges :: [Address],
     ccRoles :: PlutusMap.Map Integer Value,
-    ccRoleMap :: PlutusMap.Map PubKeyHash Integer,
+    ccRoleMap :: PlutusMap.Map PubKeyHash (Integer, Integer),
     ccTickets :: [CurrencySymbol]
   }
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)

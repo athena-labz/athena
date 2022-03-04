@@ -170,12 +170,12 @@ writeContractDatum = writeJSON "testnet/contract-datum.json" datum
     resolutions :: [(Accusation, BuiltinByteString)]
     resolutions = [(head accusations, "guilty")]
 
-    rolesMap :: PlutusMap.Map PubKeyHash Integer
+    rolesMap :: PlutusMap.Map PubKeyHash (Integer, Integer)
     rolesMap =
       PlutusMap.fromList
         [
-        ("fcf9960515d2ed06acefd8c16345cbf3cf65265ca1abf3c7d26351c9", 0),
-        ("44d5415cfe04ac964fde31960f2e501f47ad06d90ded35674fb7583e", 0)
+        ("fcf9960515d2ed06acefd8c16345cbf3cf65265ca1abf3c7d26351c9", (0, 100)),
+        ("44d5415cfe04ac964fde31960f2e501f47ad06d90ded35674fb7583e", (0, 100))
         ]
 
 

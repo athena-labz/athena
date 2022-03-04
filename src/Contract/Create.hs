@@ -107,6 +107,7 @@ mkCreateContractPolicy sett (pkh, role, nft) ctx =
         && (cdPublisher contractDatum == pkh)
         && (validRoles contractDatum)
         && (null $ cdAccusations contractDatum)
+        && all (\(_, pct) -> pct == 100) roleMapElems
         && ( case cdPrivacyType contractDatum of
                PT_Private -> pkh `elem` roleMapKeys
                PT_Public -> roleMapKeys == [pkh]
@@ -114,6 +115,9 @@ mkCreateContractPolicy sett (pkh, role, nft) ctx =
       where
         roleMapKeys :: [PubKeyHash]
         roleMapKeys = PlutusMap.keys (cdRoleMap contractDatum)
+
+        roleMapElems :: [(Integer, Integer)]
+        roleMapElems = PlutusMap.elems (cdRoleMap contractDatum)
 
     validContractValue :: Bool
     validContractValue =

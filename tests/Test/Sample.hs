@@ -59,7 +59,7 @@ sampleContractCore pkh amt jdgs tkts =
       ccTermsHash = "terms-hash",
       ccJudges = jdgs,
       ccRoles = PlutusMap.fromList [(0, lovelaceValueOf amt)],
-      ccRoleMap = PlutusMap.fromList [(pkh, 0)],
+      ccRoleMap = PlutusMap.fromList [(pkh, (0, 100))],
       ccTickets = tkts
     }
 

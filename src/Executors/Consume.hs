@@ -75,7 +75,9 @@ mkConsumeCollateralPolicy sett (perc, idx) ctx =
 
     role :: Integer
     role = case PlutusMap.lookup accused (cdRoleMap inputContractDatum) of
-      Just r -> r
+      Just (r, p)
+        | p - perc < 0 -> traceError "Unbounded percentage"
+        | otherwise -> r
 
     collateral :: Value
     collateral = case PlutusMap.lookup role (cdRoles inputContractDatum) of
@@ -89,7 +91,8 @@ mkConsumeCollateralPolicy sett (perc, idx) ctx =
 
     validContractDatum :: Bool
     validContractDatum =
-      outputContractDatum == removeResolutionFromContract idx inputContractDatum
+      outputContractDatum
+        == subtractFromCollateral perc accused (removeResolutionFromContract idx inputContractDatum)
 
     validContractValue :: Bool
     validContractValue =

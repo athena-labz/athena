@@ -138,7 +138,7 @@ createContract aSett cSett cCore = do
 
         role :: Integer
         role = case PlutusMap.lookup pkh (cdRoleMap cDat) of
-          Just r -> r
+          Just (r, _) -> r
 
         collateral :: Value
         collateral = case PlutusMap.lookup role (cdRoles cDat) of
@@ -410,16 +410,26 @@ consumeCollateral cSett perc idx nft = do
         ticket :: AssetClass
         ticket = assetClass tktSymbol "consume-collateral"
 
+        resolution :: (Accusation, BuiltinByteString)
+        resolution = (cdResolutions cDat) !! idx
+
+        accused :: PubKeyHash
+        accused = aAccused $ fst resolution
+
         role :: Integer
-        role = case PlutusMap.lookup pkh (cdRoleMap cDat) of
-          Just r -> r
+        role = case PlutusMap.lookup accused (cdRoleMap cDat) of
+          Just (r, _) -> r
 
         collateral :: Value
         collateral = case PlutusMap.lookup role (cdRoles cDat) of
           Just val -> val
 
         cOutDat :: ContractDatum
-        cOutDat = removeResolutionFromContract idx cDat
+        cOutDat =
+          subtractFromCollateral
+            perc
+            accused
+            (removeResolutionFromContract idx cDat)
 
         tktVal, cVal :: Value
         tktVal = assetClassValue ticket 1
