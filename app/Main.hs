@@ -39,8 +39,22 @@ import Contract
 import Deploy
 
 main :: IO ()
-main = writeValidators
-  
+main = writeSamples
+
+writeSamples :: IO ()
+writeSamples = do
+  writeVoid
+  writeInteger
+  writeList
+  writeMap
+  writePubKeyHash
+  writeTxOutRef
+  writeAssetClass
+  writeValue
+  -- writeAccountSettings
+
+
+
 writeValidators :: IO ()
 writeValidators = do
   result1 <- writeAccountValidator
@@ -50,6 +64,8 @@ writeValidators = do
   result5 <- writeSignContractValidator
   result6 <- writeRaiseDisputeValidator
   result7 <- writeResolveDisputeValidator
+  result8 <- writeConsumeCollateralValidator
+  result9 <- writeQuitContractValidator
   print "cool"
 
 initAccountDatum :: IO ()

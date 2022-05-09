@@ -14,6 +14,7 @@ import           Data.Text             (pack)
 import           PlutusTx              (Data (..))
 import           PlutusTx.Builtins     (BuiltinByteString, builtinDataToData)
 import qualified PlutusTx
+import qualified PlutusTx.Prelude as Prelude
 import qualified Ledger
 import           Ledger.Credential
 import           Ledger.Ada
@@ -33,7 +34,9 @@ import           Contract.Accuse
 import           Contract.Create
 import           Contract.Mediate
 import           Contract.Sign
+import           Contract.Quit
 import           Contract.Safe.OnChain
+import           Executors.Consume
 import           Test.Sample
 
 dataToScriptData :: Data -> ScriptData
@@ -69,8 +72,20 @@ readAssetClass = readJSON
 writeValidator :: FilePath -> Ledger.Validator -> IO (Either (FileError ()) ())
 writeValidator file = writeFileTextEnvelope @(PlutusScript PlutusScriptV1) file Nothing . PlutusScriptSerialised . SBS.toShort . LBS.toStrict . serialise . Ledger.unValidatorScript
 
-writeMintNFT :: IO (Either (FileError ()) ())
-writeMintNFT = writeValidator "testnet/nft.plutus" $ nftValidator 16
+writeVoid :: IO ()
+writeVoid = writeJSON "samples/void.json" ()
+
+writeInteger :: IO ()
+writeInteger = writeJSON "samples/integer.json" (42 :: Prelude.Integer)
+
+writeList :: IO ()
+writeList = writeJSON "samples/list.json" ([42, 43] :: [Prelude.Integer])
+
+writeMap :: IO ()
+writeMap =
+    writeJSON
+        "samples/assoc-map.json"
+        ((PlutusMap.fromList [(1, 2), (3, 4)]) :: PlutusMap.Map Prelude.Integer Prelude.Integer)
 
 writeInitAccountDatum :: IO ()
 writeInitAccountDatum =
@@ -93,19 +108,19 @@ writeAccusation =
 
 writePubKeyHash :: IO ()
 writePubKeyHash =
-    writeJSON "testnet/pubkeyhash.json"
+    writeJSON "samples/pubkeyhash.json"
         ("fcf9960515d2ed06acefd8c16345cbf3cf65265ca1abf3c7d26351c9" :: PubKeyHash)
 
 writeTxOutRef :: IO ()
 writeTxOutRef =
-    writeJSON "testnet/outref.json" $
+    writeJSON "samples/outref.json" $
         Ledger.TxOutRef
             ("f318a17ffc1bd50afb6d0363a7c66fd2fff184b96e52e09c56eb4c77d7e156b5" :: Ledger.TxId)
             0
 
 writeAssetClass :: IO ()
 writeAssetClass =
-    writeJSON "testnet/asset-class.json" $
+    writeJSON "samples/asset-class.json" $
         assetClass
             (nftCurrencySymbol 16)
             "cool_asset------"
@@ -115,7 +130,7 @@ writeRelationType rt = writeJSON "testnet/relation-type.json" rt
 
 writeValue :: IO ()
 writeValue =
-    writeJSON "testnet/value.json" $
+    writeJSON "samples/value.json" $
         assetClassValue
             (assetClass
                 (nftCurrencySymbol 16)
@@ -124,8 +139,12 @@ writeValue =
 
 writeAddresses :: [PubKeyHash] -> IO ()
 writeAddresses pkhs =
-    writeJSON "testnet/addresses.json" $
+    writeJSON "samples/addresses.json" $
         map (\pkh -> Address (PubKeyCredential pkh) Nothing) pkhs
+
+writeNFTPolicy :: IO ()
+writeNFTPolicy =
+    writeJSON "testnet/nft-policy.json" $ nftCurrencySymbol 16
 
 writeRolesMap :: [(PubKeyHash, Integer)] -> IO ()
 writeRolesMap rm =
@@ -235,10 +254,6 @@ writeCreateContractValidator :: IO (Either (FileError ()) ())
 writeCreateContractValidator =
     writeValidator "testnet/create-contract.plutus" $ createContractValidator sampleContractSettings
 
-writeNFTPolicy :: IO ()
-writeNFTPolicy =
-    writeJSON "testnet/nft-policy.json" $ nftCurrencySymbol 16
-
 writeSignContractValidator :: IO (Either (FileError ()) ())
 writeSignContractValidator =
     writeValidator "testnet/sign-contract.plutus" $ signContractValidator sampleContractSettings
@@ -251,13 +266,26 @@ writeResolveDisputeValidator :: IO (Either (FileError ()) ())
 writeResolveDisputeValidator =
     writeValidator "testnet/resolve-dispute.plutus" $ resolveDisputeValidator sampleContractSettings
 
+writeConsumeCollateralValidator :: IO (Either (FileError ()) ())
+writeConsumeCollateralValidator =
+    writeValidator "testnet/consume-collateral.plutus" $ consumeCollateralValidator sampleContractSettings
+
+writeQuitContractValidator :: IO (Either (FileError ()) ())
+writeQuitContractValidator =
+    writeValidator "testnet/quit-contract.plutus" $ quitContractValidator sampleContractSettings
+
+writeMintNFTValidator :: IO (Either (FileError ()) ())
+writeMintNFTValidator = writeValidator "testnet/nft.plutus" $ nftValidator 16
+
 tkts :: [CurrencySymbol]
 tkts =
     [   
         (createContractCurrencySymbol sampleContractSettings),
         (signContractCurrencySymbol sampleContractSettings),
         (raiseDisputeCurrencySymbol sampleContractSettings),
-        (resolveDisputeCurrencySymbol sampleContractSettings)
+        (resolveDisputeCurrencySymbol sampleContractSettings),
+        (consumeCollateralCurrencySymbol sampleContractSettings),
+        (quitContractCurrencySymbol sampleContractSettings)
     ]
 
 ctr1 :: AssetClass

@@ -41,6 +41,7 @@ library
                      , Contract.Quit
                      , Contract.Safe.OffChain
                      , Contract.Safe.OnChain
+                     , Executors.Consume
                      , Utils
                      , NFT.NFT
                      , NFT.NFTUtils
