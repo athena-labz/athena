@@ -44,7 +44,7 @@ import PlutusTx.Prelude
 -- Action can be either a distribtuion, closing the contract and distributing it's value
 -- or StatusQuo which simply means the contract stays as it is
 
-data Action = Distribution (PlutusMap.Map Member Reward) | StatusQuo
+data Action = Distribution [(Member, Reward)] | StatusQuo
   deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
 
 instance Eq Action where
@@ -55,9 +55,9 @@ instance Eq Action where
 
 
 -- Defines who can execute any of these actions
-type DistributionMap = PlutusMap.Map Member [Action]
+type DistributionMap = [(Member, [Action])]
 
-type RequesterMap = PlutusMap.Map Member DistributionMap
+type RequesterMap = [(Member, DistributionMap)]
 
 -- A member can be either a specific user or a role
 
@@ -98,7 +98,7 @@ type TotalMembers = Integer
 data ContractDatum = ContractDatum
   { cdNFT :: TokenName,
     cdRules :: BuiltinByteString,
-    cdRoleMap :: PlutusMap.Map Integer (Collateral, TotalMembers),
+    cdRoleMap :: [(Integer, (Collateral, TotalMembers))],
     cdRequests :: RequesterMap,
     cdExecutions :: DistributionMap,
     cdFallbacks :: DistributionMap,
@@ -167,10 +167,10 @@ sampleContractDatum :: ContractDatum
 sampleContractDatum = ContractDatum
   { cdNFT = "aaa"
   , cdRules = "bbb"
-  , cdRoleMap = PlutusMap.fromList [(0, (mempty, 0))]
-  , cdRequests = PlutusMap.fromList [(Role 0, PlutusMap.fromList [(Role 1, [StatusQuo])])]
-  , cdExecutions = PlutusMap.fromList [(Role 1, [StatusQuo])]
-  , cdFallbacks = PlutusMap.fromList [(Role 1, [StatusQuo])]
+  , cdRoleMap = [(0, (mempty, 0))]
+  , cdRequests = [(Role 0, [(Role 1, [StatusQuo])])]
+  , cdExecutions = [(Role 1, [StatusQuo])]
+  , cdFallbacks = [(Role 1, [StatusQuo])]
   , cdFrozen = True
   }
 
