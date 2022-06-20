@@ -7,6 +7,7 @@
 {-# LANGUAGE LambdaCase                 #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
+{-# LANGUAGE NumericUnderscores         #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
@@ -114,6 +115,30 @@ instance Eq ContractDatum where
       nft == nft' && rls == rls' && rm == rm' && rq == rq'
         && ex == ex' && fb == fb' && fz == fz'
 
+data ActionRedeemer = Execution Integer Integer
+                    | Fallback Integer Integer
+                    | Request Integer Integer Integer
+  deriving (Prelude.Show, Generic, FromJSON, ToJSON, Prelude.Eq)
+
+{-# INLINABLE addMember #-}
+addMember :: [(Value, Integer)] -> Integer -> [(Value, Integer)]
+addMember roleMap idx = map (\(i, (val, mbs)) -> if i == idx then (val, mbs+1) else (val, mbs)) (zip [0,1..] roleMap)
+
+{-# INLINABLE integerToByteString #-}
+integerToByteString :: Integer -> BuiltinByteString
+integerToByteString n
+  | n == 0 = "0"
+  | n == 1 = "1"
+  | n == 2 = "2"
+  | n == 3 = "3"
+  | n == 4 = "4"
+  | n == 5 = "5"
+  | n == 6 = "6"
+  | n == 7 = "7"
+  | n == 8 = "8"
+  | n == 9 = "9"
+  | otherwise = integerToByteString (n `divide` 10) <> integerToByteString (n `modulo` 10)
+
 {-# INLINEABLE findContractDatum #-}
 findContractDatum :: DatumHash -> (DatumHash -> Maybe Datum) -> Maybe ContractDatum
 findContractDatum dh f = do
@@ -130,178 +155,209 @@ mkContractValidator ::
   CurrencySymbol ->
   ScriptContext ->
   Bool
-mkContractValidator alwTkts _ tkt ctx = validTicket && ticketPresent
-  where
-    txInfo :: TxInfo
-    txInfo = scriptContextTxInfo ctx
+mkContractValidator alwTkts _ tkt ctx = True
 
-    -- By ticket tkt I mean a minting policy, we are delegating our
-    -- validation to multiple possible scripts
+-- {-# INLINEABLE mkContractValidator #-}
+-- mkContractValidator ::
+--   [CurrencySymbol] ->
+--   ContractDatum ->
+--   CurrencySymbol ->
+--   ScriptContext ->
+--   Bool
+-- mkContractValidator alwTkts _ tkt ctx = validTicket && ticketPresent
+--   where
+--     txInfo :: TxInfo
+--     txInfo = scriptContextTxInfo ctx
 
-    -- Make sure the ticket we are validating is one of the allowed ones
-    validTicket :: Bool
-    validTicket = tkt `elem` alwTkts
+--     -- By ticket tkt I mean a minting policy, we are delegating our
+--     -- validation to multiple possible scripts
 
-    -- We simply valdiate that the minting policy is being used
-    -- We don't care about how many tokens are being minted or burnt
-    ticketPresent :: Bool
-    ticketPresent = 
-        any 
-            (\(cs,_,_) -> cs == tkt)
-            (flattenValue (txInfoMint txInfo))
+--     -- Make sure the ticket we are validating is one of the allowed ones
+--     validTicket :: Bool
+--     validTicket = tkt `elem` alwTkts
 
-{-# INLINABLE mkAlwaysValidatePolicy #-}
-mkAlwaysValidatePolicy :: () -> ScriptContext -> Bool
-mkAlwaysValidatePolicy _ _ = True
+--     -- We simply valdiate that the minting policy is being used
+--     -- We don't care about how many tokens are being minted or burnt
+--     ticketPresent :: Bool
+--     ticketPresent = 
+--         any 
+--             (\(cs,_,_) -> cs == tkt)
+--             (flattenValue (txInfoMint txInfo))
 
--- This should not be one of the tickets, since it doesn't validate
--- the script spending, but rather the contract creation
 {-# INLINEABLE mkCreatePolicy #-}
 mkCreatePolicy ::
   TxOutRef ->
   ValidatorHash ->
   ScriptContext ->
   Bool
-mkCreatePolicy oref vh ctx =
-    hasUTxO && validContractValue && validContractDatum && validMintedValue
-  where
-    info :: TxInfo
-    info = scriptContextTxInfo ctx
+mkCreatePolicy oref vh ctx = True
 
-    contractOutput :: TxOut 
-    contractOutput =  case filter predicate (txInfoOutputs info) of
-        [o] -> o
-      where
-        predicate (TxOut addr _ _) = toValidatorHash addr == Just vh
+-- Should create and sign policies be the same thing?
 
-    contractDatum :: ContractDatum 
-    contractDatum = case (do
-        dh <- txOutDatumHash contractOutput
-        findContractDatum dh (`findDatum` info)) of
-      Just dat -> dat
+-- This should not be one of the tickets, since it doesn't validate
+-- the script spending, but rather the contract creation
+-- {-# INLINEABLE mkCreatePolicy #-}
+-- mkCreatePolicy ::
+--   TxOutRef ->
+--   ValidatorHash ->
+--   ScriptContext ->
+--   Bool
+-- mkCreatePolicy oref vh ctx =
+--     hasUTxO && validContractValue && validContractDatum && validMintedValue
+--   where
+--     info :: TxInfo
+--     info = scriptContextTxInfo ctx
 
-    -- Make sure we are consuming the referenced utxo
-    hasUTxO :: Bool
-    hasUTxO = any (\i -> txInInfoOutRef i == oref) $ txInfoInputs info
+--     contractOutput :: TxOut 
+--     contractOutput =  case filter predicate (txInfoOutputs info) of
+--         [o] -> o
+--       where
+--         predicate (TxOut addr _ _) = toValidatorHash addr == Just vh
 
-    contractNFT :: Value
-    contractNFT = singleton (ownCurrencySymbol ctx) "" 1
+--     contractDatum :: ContractDatum 
+--     contractDatum = case (do
+--         dh <- txOutDatumHash contractOutput
+--         findContractDatum dh (`findDatum` info)) of
+--       Just dat -> dat
 
-    validContractValue :: Bool
-    validContractValue =
-      txOutValue contractOutput
-        `geq` (contractNFT -- Need to multiply value by total members
-          <> foldr (\cur acc -> acc <> fst cur `multiplyValue` snd cur) mempty (cdRoleMap contractDatum))
-        where
-          multiplyValue :: Value -> Integer -> Value
-          multiplyValue _ 0 = mempty
-          multiplyValue val 1 = val
-          multiplyValue val n = val <> multiplyValue val (n-1) 
+--     -- Make sure we are consuming the referenced utxo
+--     hasUTxO :: Bool
+--     hasUTxO = any (\i -> txInInfoOutRef i == oref) $ txInfoInputs info
 
-    validContractDatum :: Bool
-    validContractDatum = cdCreatePolicy contractDatum == ownCurrencySymbol ctx
+--     contractNFT :: Value
+--     contractNFT = singleton (ownCurrencySymbol ctx) "" 1
 
-    validMintedValue :: Bool
-    validMintedValue =
-      valueOf (txInfoMint info) (ownCurrencySymbol ctx) "" == 1
-        && all (\(i, (col, mbs)) ->
-            valueOf
-              (txInfoMint info)
-              (ownCurrencySymbol ctx)
-              (TokenName $ integerToByteString i) == mbs
-           ) (zip [0,1..] (cdRoleMap contractDatum))
+--     validContractValue :: Bool
+--     validContractValue =
+--       txOutValue contractOutput
+--         `geq` (contractNFT -- Need to multiply value by total members
+--           <> foldr
+--                 (\n acc -> acc <> singleton (ownCurrencySymbol ctx) (TokenName $ integerToByteString n) 10_000)
+--                 mempty
+--                 [0,1..(length $ cdRoleMap contractDatum)])
 
-    integerToByteString :: Integer -> BuiltinByteString
-    integerToByteString n
-      | n == 0 = "0"
-      | n == 1 = "1"
-      | n == 2 = "2"
-      | n == 3 = "3"
-      | n == 4 = "4"
-      | n == 5 = "5"
-      | n == 6 = "6"
-      | n == 7 = "7"
-      | n == 8 = "8"
-      | n == 9 = "9"
-      | otherwise = integerToByteString (n `divide` 10) <> integerToByteString (n `modulo` 10)
+--     validContractDatum :: Bool
+--     validContractDatum =
+--       cdCreatePolicy contractDatum == ownCurrencySymbol ctx
+--         && all (\(_, tot) -> tot == 0) (cdRoleMap contractDatum)
 
-
--- Sign and create should be same policy
+--     -- This validation allows for more tokens to be minted, shouldn't be a problem
+--     -- as long as we always valdiate the token name
+--     validMintedValue :: Bool
+--     validMintedValue =
+--       valueOf (txInfoMint info) (ownCurrencySymbol ctx) "" == 1
+--         && all (\i ->
+--             valueOf
+--               (txInfoMint info)
+--               (ownCurrencySymbol ctx)
+--               (TokenName $ integerToByteString i) == 10_000 
+--            ) [0,1..(length $ cdRoleMap contractDatum)]
 
 {-# INLINABLE mkSignPolicy #-}
-mkSignPolicy :: (ValidatorHash, [(Integer, Integer)]) -> ScriptContext -> Bool
-mkSignPolicy (vh, roles) ctx = validContractValue && validContractDatum
-  where
-    info :: TxInfo
-    info = scriptContextTxInfo ctx
+mkSignPolicy :: (ValidatorHash, Integer) -> ScriptContext -> Bool
+mkSignPolicy (vh, role) ctx = True
 
-    input :: TxOut
-    input = case filter predicate ((map txInInfoResolved . txInfoInputs) info) of
-        [o] -> o
-      where
-        predicate (TxOut addr _ _) = toValidatorHash addr == Just vh
+-- {-# INLINABLE mkSignPolicy #-}
+-- mkSignPolicy :: (ValidatorHash, Integer) -> ScriptContext -> Bool
+-- mkSignPolicy (vh, role) ctx = validContractValue && validContractDatum
+--   where
+--     info :: TxInfo
+--     info = scriptContextTxInfo ctx
 
-    output :: TxOut 
-    output =  case filter predicate (txInfoOutputs info) of
-        [o] -> o
-      where
-        predicate (TxOut addr _ _) = toValidatorHash addr == Just vh
+--     input :: TxOut
+--     input = case filter predicate ((map txInInfoResolved . txInfoInputs) info) of
+--         [o] -> o
+--       where
+--         predicate (TxOut addr _ _) = toValidatorHash addr == Just vh
 
-    inputDatum :: ContractDatum 
-    inputDatum = case (do
-        dh <- txOutDatumHash input
-        findContractDatum dh (`findDatum` info)) of
-      Just dat -> dat
+--     output :: TxOut 
+--     output =  case filter predicate (txInfoOutputs info) of
+--         [o] -> o
+--       where
+--         predicate (TxOut addr _ _) = toValidatorHash addr == Just vh
 
-    outputDatum :: ContractDatum 
-    outputDatum = case (do
-        dh <- txOutDatumHash output
-        findContractDatum dh (`findDatum` info)) of
-      Just dat -> dat
+--     inputDatum :: ContractDatum 
+--     inputDatum = case (do
+--         dh <- txOutDatumHash input
+--         findContractDatum dh (`findDatum` info)) of
+--       Just dat -> dat
 
-    validContractValue :: Bool
-    validContractValue =
-      txOutValue output
-        == txOutValue input
-          <> foldr (\cur acc -> acc <> fst (cdRoleMap inputDatum !! fst cur) `multiplyValue` snd cur) mempty roles
-        where
-          multiplyValue :: Value -> Integer -> Value
-          multiplyValue _ 0 = mempty
-          multiplyValue val 1 = val
-          multiplyValue val n = val <> multiplyValue val (n-1) 
+--     outputDatum :: ContractDatum 
+--     outputDatum = case (do
+--         dh <- txOutDatumHash output
+--         findContractDatum dh (`findDatum` info)) of
+--       Just dat -> dat
 
-    validContractDatum :: Bool
-    validContractDatum =
-      outputDatum == ContractDatum
-        { cdCreatePolicy = cdCreatePolicy inputDatum,
-          cdRules = cdRules inputDatum,
-          cdRoleMap = addMembers (cdRoleMap inputDatum) roles,
-          cdRequests = cdRequests inputDatum,
-          cdExecutions = cdExecutions inputDatum,
-          cdFallbacks = cdFallbacks inputDatum,
-          cdFrozen = cdFrozen inputDatum 
-        }
-    
+--     validContractValue :: Bool
+--     validContractValue =
+--       txOutValue output
+--         == txOutValue input
+--           <> fst (cdRoleMap inputDatum !! role)
+--           <> negate (singleton (cdCreatePolicy inputDatum) (TokenName $ integerToByteString role) 1)
 
-addMembers :: [(Value, Integer)] -> [(Integer, Integer)] -> [(Value, Integer)]
-addMembers roleMap [] = roleMap
-addMembers roleMap ((idx, mbs) : xs) =
-  addMembers (
-    map
-      (\(idx', (col, mbs')) -> if idx' == idx then (col, mbs) else (col, mbs'))
-      (zip [0,1..] roleMap)
-  ) xs
+--     validContractDatum :: Bool
+--     validContractDatum =
+--       outputDatum == ContractDatum
+--         { cdCreatePolicy = cdCreatePolicy inputDatum,
+--           cdRules = cdRules inputDatum,
+--           cdRoleMap = addMember (cdRoleMap inputDatum) role,
+--           cdRequests = cdRequests inputDatum,
+--           cdExecutions = cdExecutions inputDatum,
+--           cdFallbacks = cdFallbacks inputDatum,
+--           cdFrozen = cdFrozen inputDatum 
+--         }
 
--- addMembers :: ContractDatum -> [(Integer, Integer)] -> ContractDatum
--- addMembers dat ((idx, mbs) : xs) = ContractDatum
---   { cdCreatePolicy = cdCreatePolicy dat,
---     cdRules = cdRules dat,
---     cdRoleMap = map (\(idx', (col, mbs')) -> if idx' == idx then (col, mbs) else (col, mbs')) (zip [0,1..] (cdRoleMap dat)),
---     cdRequests = cdRequests dat,
---     cdExecutions = cdExecutions dat,
---     cdFallbacks = cdFallbacks dat,
---     cdFrozen = cdFrozen dat 
---   } 
+
+{-# INLINABLE mkActionPolicy #-}
+mkActionPolicy :: (ValidatorHash, ActionRedeemer) -> ScriptContext -> Bool
+mkActionPolicy (vh, ar) ctx = True
+
+
+-- {-# INLINABLE mkActionPolicy #-}
+-- mkActionPolicy :: (ValidatorHash, ActionRedeemer) -> ScriptContext -> Bool
+-- mkActionPolicy (vh, ar) ctx = validContractValue && validContractDatum && validActor
+--   where
+--     info :: TxInfo
+--     info = scriptContextTxInfo ctx
+
+--     input :: TxOut
+--     input = case filter predicate ((map txInInfoResolved . txInfoInputs) info) of
+--         [o] -> o
+--       where
+--         predicate (TxOut addr _ _) = toValidatorHash addr == Just vh
+
+--     output :: TxOut 
+--     output =  case filter predicate (txInfoOutputs info) of
+--         [o] -> o
+--       where
+--         predicate (TxOut addr _ _) = toValidatorHash addr == Just vh
+
+--     inputDatum :: ContractDatum 
+--     inputDatum = case (do
+--         dh <- txOutDatumHash input
+--         findContractDatum dh (`findDatum` info)) of
+--       Just dat -> dat
+
+--     outputDatum :: ContractDatum 
+--     outputDatum = case (do
+--         dh <- txOutDatumHash output
+--         findContractDatum dh (`findDatum` info)) of
+--       Just dat -> dat
+
+--     distribution :: Action
+--     distribution = case ar of
+--       Execution idx idx' -> snd (cdExecutions inputDatum !! idx) !! idx'
+--       Fallback idx idx' -> snd (cdFallbacks inputDatum !! idx) !! idx'
+--       Request idx idx' idx'' -> snd (snd (cdRequests inputDatum !! idx) !! idx') !! idx'' 
+
+--     validContractValue :: Bool
+--     validContractValue = case distribution of
+--       StatusQuo -> txOutValue input == txOutValue output 
+--       Distribution  -- Cannot distribute to roles!!!!
+--       -- Distribution [(Member, Reward)] | StatusQuo
+
+--     validContractDatum :: Bool
+--     validContractDatum = outputDatum == inputDatum 
 
 data ContractType
 
@@ -328,20 +384,6 @@ contractValidatorHash = validatorHash . contractValidator
 contractAddress :: [CurrencySymbol] -> Ledger.Address
 contractAddress = scriptAddress . contractValidator
 
-alwaysValidatePolicy :: Scripts.MintingPolicy
-alwaysValidatePolicy =
-  mkMintingPolicyScript
-    $$(PlutusTx.compile [||Scripts.wrapMintingPolicy mkAlwaysValidatePolicy||])
-
-alwaysValidateSymbol :: CurrencySymbol
-alwaysValidateSymbol = scriptCurrencySymbol alwaysValidatePolicy
-
-alwaysValidateScript :: Script
-alwaysValidateScript = unMintingPolicyScript alwaysValidatePolicy
-
-alwaysValidateValidator :: Validator
-alwaysValidateValidator = Validator alwaysValidateScript
-
 createPolicy :: TxOutRef -> Scripts.MintingPolicy
 createPolicy oref =
   mkMintingPolicyScript $
@@ -358,6 +400,36 @@ createScript = unMintingPolicyScript . createPolicy
 createValidator :: TxOutRef -> Validator
 createValidator = Validator . createScript
 
+
+signPolicy :: Scripts.MintingPolicy
+signPolicy = mkMintingPolicyScript $$(PlutusTx.compile [|| wrap ||])
+  where 
+    wrap = Scripts.wrapMintingPolicy mkSignPolicy
+
+signSymbol :: CurrencySymbol
+signSymbol = scriptCurrencySymbol signPolicy 
+
+signScript :: Script
+signScript = unMintingPolicyScript signPolicy
+
+signValidator :: Validator
+signValidator = Validator signScript
+
+
+actionPolicy :: Scripts.MintingPolicy
+actionPolicy = mkMintingPolicyScript $$(PlutusTx.compile [|| wrap ||])
+  where 
+    wrap = Scripts.wrapMintingPolicy mkActionPolicy
+
+actionSymbol :: CurrencySymbol
+actionSymbol = scriptCurrencySymbol actionPolicy
+
+actionScript :: Script
+actionScript = unMintingPolicyScript actionPolicy
+
+actionValidator :: Validator
+actionValidator = Validator actionScript
+
 PlutusTx.makeLift ''Member
 PlutusTx.makeIsDataIndexed ''Member [('User,0), ('Role,1)]
 
@@ -370,29 +442,35 @@ PlutusTx.makeIsDataIndexed ''Action [('Distribution,0),('StatusQuo,1)]
 PlutusTx.makeLift ''ContractDatum
 PlutusTx.makeIsDataIndexed ''ContractDatum [('ContractDatum,0)]
 
+PlutusTx.makeLift ''ActionRedeemer
+PlutusTx.makeIsDataIndexed ''ActionRedeemer [('Execution,0), ('Fallback,1), ('Request,2)]
+
 -- Serialization
 
 contractValidatorSerialized :: [CurrencySymbol] -> B.ByteString
 contractValidatorSerialized tkts = B16.encode $ serialiseToCBOR ((PlutusScriptSerialised $ SBS.toShort . LBS.toStrict $ serialise $ Plutus.unValidatorScript $ contractValidator tkts) :: PlutusScript PlutusScriptV1)
 
-alwaysValidateSerialized :: B.ByteString
-alwaysValidateSerialized = B16.encode $ serialiseToCBOR ((PlutusScriptSerialised $ SBS.toShort . LBS.toStrict $ serialise $ Plutus.unValidatorScript alwaysValidateValidator) :: PlutusScript PlutusScriptV1)
-
 createSerialized :: TxOutRef -> B.ByteString
-createSerialized oref = B16.encode $ serialiseToCBOR ((PlutusScriptSerialised $ SBS.toShort . LBS.toStrict $ serialise $ Plutus.unValidatorScript $ createValidator oref) :: PlutusScript PlutusScriptV1)
+createSerialized oref = B16.encode $ serialiseToCBOR ((PlutusScriptSerialised $ SBS.toShort . LBS.toStrict $ serialise $ Plutus.unMintingPolicyScript $ createPolicy oref) :: PlutusScript PlutusScriptV1)
+
+signSerialized :: B.ByteString
+signSerialized = B16.encode $ serialiseToCBOR ((PlutusScriptSerialised $ SBS.toShort . LBS.toStrict $ serialise $ Plutus.unMintingPolicyScript signPolicy) :: PlutusScript PlutusScriptV1)
+
+actionSerialized :: B.ByteString
+actionSerialized = B16.encode $ serialiseToCBOR ((PlutusScriptSerialised $ SBS.toShort . LBS.toStrict $ serialise $ Plutus.unMintingPolicyScript actionPolicy) :: PlutusScript PlutusScriptV1)
 
 -- Datum
 
-sampleContractDatum :: ContractDatum
-sampleContractDatum = ContractDatum
-  { cdCreatePolicy = alwaysValidateSymbol
-  , cdRules = "bbb"
-  , cdRoleMap = [(mempty, 0)]
-  , cdRequests = [(Role 0, [(Role 1, [StatusQuo])])]
-  , cdExecutions = [(Role 1, [StatusQuo])]
-  , cdFallbacks = [(Role 1, [StatusQuo])]
-  , cdFrozen = True
-  }
+-- sampleContractDatum :: ContractDatum
+-- sampleContractDatum = ContractDatum
+--   { cdCreatePolicy = createSymbol (TxOutRef "aaa" 0)
+--   , cdRules = "bbb"
+--   , cdRoleMap = [(mempty, 0)]
+--   , cdRequests = [(Role 0, [(Role 1, [StatusQuo])])]
+--   , cdExecutions = [(Role 1, [StatusQuo])]
+--   , cdFallbacks = [(Role 1, [StatusQuo])]
+--   , cdFrozen = True
+--   }
 
 dataToScriptData :: Data -> ScriptData
 dataToScriptData (Constr n xs) = ScriptDataConstructor n $ dataToScriptData <$> xs
@@ -407,11 +485,12 @@ writeJSON file = LBS.writeFile file . encode . scriptDataToJson ScriptDataJsonDe
 -- main
 
 tickets :: [CurrencySymbol]
-tickets = [alwaysValidateSymbol] 
+tickets = [signSymbol, actionSymbol] 
 
 main :: Prelude.IO ()
 main = do
-  Prelude.putStrLn $ "ContractValidator:\n" ++ Prelude.show (contractValidatorSerialized tickets)
-  Prelude.putStrLn $ "Always Validate:\n" ++ Prelude.show alwaysValidateSerialized
-  writeJSON "./contract.json" sampleContractDatum
+  Prelude.putStrLn $ "Contract Validator:\n" ++ Prelude.show (contractValidatorSerialized tickets)
+  Prelude.putStrLn $ "Sign Policy:\n" ++ Prelude.show signSerialized
+  Prelude.putStrLn $ "Action Policy:\n" ++ Prelude.show actionSerialized
+  -- writeJSON "./contract.json" sampleContractDatum
 
