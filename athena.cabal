@@ -44,11 +44,8 @@ executable serialise
                      , plutus-ledger
                      , plutus-ledger-api
                      , plutus-ledger-constraints
-                     , plutus-chain-index
-                     , plutus-chain-index-core
                      , plutus-tx-plugin
+                     , plutus-script-utils
                      , plutus-tx
-                     , plutus-pab
-                     , plutus-use-cases
                      , text
                      , serialise
