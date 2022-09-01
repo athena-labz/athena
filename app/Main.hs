@@ -30,7 +30,7 @@ import qualified Plutus.Script.Utils.V2.Scripts as PSU.V2
 import qualified Plutus.Script.Utils.V1.Scripts as PSU.V1
 import qualified Plutus.V2.Ledger.Api           as PlutusV2
 import qualified Plutus.V1.Ledger.Api           as PlutusV1
-import           Plutus.V2.Ledger.Contexts      (ownHash, findOwnInput)
+import           Plutus.V2.Ledger.Contexts      (ownHash, findOwnInput, txSignedBy)
 import           Ledger.Value (flattenValue)
 import 		 PlutusTx.AssocMap              as PlutusMap
 import qualified PlutusTx
@@ -75,9 +75,10 @@ tokenCountOf targetSymbol val =
 {-# INLINEABLE alwaysValidateLogic #-}
 alwaysValidateLogic :: ContractDatum -> ContractRedeemer -> PlutusV2.ScriptContext -> Bool
 alwaysValidateLogic dat red ctx =
-    traceIfFalse "wrong output" rightOutput
+  traceIfFalse "wrong output" rightOutput
+    && traceIfFalse "not signed by mediator" signedByMediator
     && traceIfFalse "deadline not reached" deadlineReached
-      where
+  where
     info :: PlutusV2.TxInfo
     info = PlutusV2.scriptContextTxInfo ctx
 
@@ -101,11 +102,28 @@ alwaysValidateLogic dat red ctx =
 	  ExecuteTarget -> tokenCountOf (cdTarget dat) val == 1
 	  ExecuteFallback -> tokenCountOf (cdFallback dat) val == 1
 
+    -- Should only be called if our redeemer is ExecuteFallback
+    mediatorReferenceInput :: PlutusV2.TxOut
+    mediatorReferenceInput = case P.find predicate (PlutusV2.txInfoReferenceInputs info) of
+        Just ref -> PlutusV2.txInInfoResolved ref
+	_ -> traceError "mediator ref inp not found"
+      where
+        predicate (PlutusV2.TxInInfo _ (PlutusV2.TxOut _ val _ _)) = tokenCountOf (cdMediators dat) val == 1
+
+    signedByMediator :: Bool
+    signedByMediator
+      | red == ExecuteTarget = True
+      | otherwise = case L.toPubKeyHash (PlutusV2.txOutAddress mediatorReferenceInput) of
+      Just pkh -> txSignedBy info pkh
+      _ -> False
+
     rightOutput :: Bool
     rightOutput = PlutusV2.txOutValue output == PlutusV2.txOutValue input
 
     deadlineReached :: Bool
-    deadlineReached = not $ (cdDeadline dat) `L.member` PlutusV1.Interval (PlutusV1.ivFrom $ PlutusV2.txInfoValidRange info) (PlutusV1.UpperBound PlutusV1.PosInf True)
+    deadlineReached
+      | red == ExecuteFallback = True
+      | otherwise = not $ (cdDeadline dat) `L.member` PlutusV1.Interval (PlutusV1.ivFrom $ PlutusV2.txInfoValidRange info) (PlutusV1.UpperBound PlutusV1.PosInf True)
 
 {-# INLINEABLE alwaysFailLogic #-}
 alwaysFailLogic :: () -> () -> PlutusV2.ScriptContext -> Bool
