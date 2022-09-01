@@ -30,7 +30,9 @@ import qualified Plutus.Script.Utils.V2.Scripts as PSU.V2
 import qualified Plutus.Script.Utils.V1.Scripts as PSU.V1
 import qualified Plutus.V2.Ledger.Api           as PlutusV2
 import qualified Plutus.V1.Ledger.Api           as PlutusV1
+import           Plutus.V2.Ledger.Contexts      (ownHash, findOwnInput)
 import           Ledger.Value (flattenValue)
+import 		 PlutusTx.AssocMap              as PlutusMap
 import qualified PlutusTx
 import           PlutusTx.Prelude               as P hiding (Semigroup (..),
                                                       unless, (.))
@@ -54,19 +56,53 @@ instance P.Eq ContractDatum where
   ContractDatum m t f d == ContractDatum m' t' f' d' =
     m == m' && t == t' && f == f' && d == d'
 
+data ContractRedeemer = ExecuteTarget | ExecuteFallback
+  deriving (Prelude.Show, Generic, A.FromJSON, A.ToJSON, Prelude.Eq)
+
+instance P.Eq ContractRedeemer where
+  {-# INLINABLE (==) #-}
+  ExecuteTarget == ExecuteTarget = True
+  ExecuteFallback == ExecuteFallback = True
+  _ == _ = False
+
+{-# INLINABLE tokenCountOf #-}
+tokenCountOf :: PlutusV2.CurrencySymbol -> PlutusV2.Value -> Integer
+tokenCountOf targetSymbol val =
+  case PlutusMap.lookup targetSymbol (PlutusV2.getValue val) of
+    Nothing     -> 0
+    Just tokens -> foldr (\acc amt -> amt + acc) 0 $ PlutusMap.elems tokens
+
 {-# INLINEABLE alwaysValidateLogic #-}
-alwaysValidateLogic :: ContractDatum -> () -> PlutusV2.ScriptContext -> Bool
-alwaysValidateLogic dat _ ctx =
-    traceIfFalse "deadline not reached" deadlineReached
-      && traceIfFalse "wrong output" rightOutput
-  where
+alwaysValidateLogic :: ContractDatum -> ContractRedeemer -> PlutusV2.ScriptContext -> Bool
+alwaysValidateLogic dat ExecuteTarget ctx =
+  traceIfFalse "wrong reference input" rightReferenceInput
+    && traceIfFalse "wrong output" rightOutput
+    && traceIfFalse "deadline not reached" deadlineReached
+      where
     info :: PlutusV2.TxInfo
     info = PlutusV2.scriptContextTxInfo ctx
 
+    input :: PlutusV2.TxOut
+    input = case findOwnInput ctx of
+      Just inp -> PlutusV2.txInInfoResolved inp 
+
+    output :: PlutusV2.TxOut
+    output = case P.filter predicate (PlutusV2.txInfoOutputs info) of
+      [o] -> o
+      _ -> traceError "output from expected address not found"
+      where
+        predicate (PlutusV2.TxOut addr _ _ _) = addr == PlutusV2.txOutAddress referenceInput
+
+    referenceInput :: PlutusV2.TxOut
+    referenceInput = case PlutusV2.txInfoReferenceInputs info of
+      [reference] -> PlutusV2.txInInfoResolved reference
+      _ -> traceError "reference input not found / not unique"
+
+    rightReferenceInput :: Bool
+    rightReferenceInput = tokenCountOf (cdTarget dat) (PlutusV2.txOutValue referenceInput) >= 1
+
     rightOutput :: Bool
-    rightOutput = case PlutusV2.txInfoOutputs info of
-      [out] -> any (\(cs, _, _) -> cs == (cdTarget dat)) (flattenValue $ PlutusV2.txOutValue out)
-      _ -> False
+    rightOutput = PlutusV2.txOutValue output == PlutusV2.txOutValue input
 
     deadlineReached :: Bool
     deadlineReached = not $ (cdDeadline dat) `L.member` PlutusV1.Interval (PlutusV1.ivFrom $ PlutusV2.txInfoValidRange info) (PlutusV1.UpperBound PlutusV1.PosInf True)
@@ -130,6 +166,9 @@ sampleContractDatum =
 
 PlutusTx.makeLift ''ContractDatum
 PlutusTx.makeIsDataIndexed ''ContractDatum [('ContractDatum,0)]
+
+PlutusTx.makeLift ''ContractRedeemer
+PlutusTx.makeIsDataIndexed ''ContractRedeemer [('ExecuteTarget,0), ('ExecuteFallback,1)]
 
 dataToScriptData :: PlutusTx.Data -> ScriptData
 dataToScriptData (PlutusTx.Constr n xs) = ScriptDataConstructor n $ dataToScriptData <$> xs
