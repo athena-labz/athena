@@ -74,9 +74,8 @@ tokenCountOf targetSymbol val =
 
 {-# INLINEABLE alwaysValidateLogic #-}
 alwaysValidateLogic :: ContractDatum -> ContractRedeemer -> PlutusV2.ScriptContext -> Bool
-alwaysValidateLogic dat ExecuteTarget ctx =
-  traceIfFalse "wrong reference input" rightReferenceInput
-    && traceIfFalse "wrong output" rightOutput
+alwaysValidateLogic dat red ctx =
+    traceIfFalse "wrong output" rightOutput
     && traceIfFalse "deadline not reached" deadlineReached
       where
     info :: PlutusV2.TxInfo
@@ -88,18 +87,19 @@ alwaysValidateLogic dat ExecuteTarget ctx =
 
     output :: PlutusV2.TxOut
     output = case P.filter predicate (PlutusV2.txInfoOutputs info) of
-      [o] -> o
-      _ -> traceError "output from expected address not found"
+        [o] -> o
+        _ -> traceError "output from expected address not found"
       where
         predicate (PlutusV2.TxOut addr _ _ _) = addr == PlutusV2.txOutAddress referenceInput
 
     referenceInput :: PlutusV2.TxOut
-    referenceInput = case PlutusV2.txInfoReferenceInputs info of
-      [reference] -> PlutusV2.txInInfoResolved reference
-      _ -> traceError "reference input not found / not unique"
-
-    rightReferenceInput :: Bool
-    rightReferenceInput = tokenCountOf (cdTarget dat) (PlutusV2.txOutValue referenceInput) >= 1
+    referenceInput = case P.find predicate (PlutusV2.txInfoReferenceInputs info) of
+        Just ref -> PlutusV2.txInInfoResolved ref
+        _ -> traceError "reference input not found"
+      where
+        predicate (PlutusV2.TxInInfo _ (PlutusV2.TxOut _ val _ _)) = case red of
+	  ExecuteTarget -> tokenCountOf (cdTarget dat) val == 1
+	  ExecuteFallback -> tokenCountOf (cdFallback dat) val == 1
 
     rightOutput :: Bool
     rightOutput = PlutusV2.txOutValue output == PlutusV2.txOutValue input
